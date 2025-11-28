@@ -1,3 +1,21 @@
+// // "use client";
+
+// import "./globals.css";
+
+// export default function RootLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="en">
+//       <body className="min-h-screen bg-black text-white">
+//         <main className="pt-16">{children}</main>
+//       </body>
+//     </html>
+//   );
+// }
+
 import type { Metadata } from "next";
 import {
   Dela_Gothic_One,
@@ -6,8 +24,8 @@ import {
   Caveat_Brush,
 } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+// import Header from "@/components/Header";
+// import Footer from "@/components/Footer";
 import Providers from "@/stores/Providers";
 
 const delaGothic = Dela_Gothic_One({
@@ -50,11 +68,12 @@ export default function RootLayout({
       >
         <Providers>
           <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center text-primary bg-white dark:bg-primary dark:text-white">
-            <Header />
+            <main className="pt-16">{children}</main>
+            {/* <Header />
             <main className="w-full grow justify-center items-center">
               {children}
             </main>
-            <Footer />
+            <Footer /> */}
           </div>
         </Providers>
       </body>
