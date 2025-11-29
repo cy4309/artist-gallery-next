@@ -1,18 +1,29 @@
 export const dynamic = "force-dynamic"; // 強制這支 route 每次請求都「動態執行」，不要被預先快取或當成 static。
 export const runtime = "nodejs"; // 這支 route 要跑在 Node.js Runtime，而不是 Edge Runtime。
 
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import axios, { AxiosError } from "axios";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
 const GAS_URL = process.env.GAS_URL!;
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+// const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
+// const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-export async function GET(req: Request) {
+// ⭐ 智能判斷 Base URL，用 host 自動變 localhost:3000 或 vercel domain
+function getBaseUrl(req: NextRequest) {
+  const host = req.headers.get("host")!;
+  const protocol = host.includes("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
+
+export async function GET(req: NextRequest) {
   try {
     console.log("=== Google OAuth Callback ===");
+
+    const baseUrl = getBaseUrl(req);
+    // ⭐ 不用 GOOGLE_REDIRECT_URI 的值，直接智能生成
+    const redirectUri = `${baseUrl}/api/auth/login`;
 
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
@@ -23,7 +34,7 @@ export async function GET(req: Request) {
 
       const authURL = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       authURL.searchParams.set("client_id", GOOGLE_CLIENT_ID);
-      authURL.searchParams.set("redirect_uri", REDIRECT_URI);
+      authURL.searchParams.set("redirect_uri", redirectUri);
       authURL.searchParams.set("response_type", "code");
       authURL.searchParams.set("scope", "openid email profile");
 
@@ -37,7 +48,7 @@ export async function GET(req: Request) {
       client_secret: GOOGLE_CLIENT_SECRET,
       code,
       grant_type: "authorization_code",
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
     });
 
     console.log("tokenRes:", tokenRes.data);
@@ -66,7 +77,7 @@ export async function GET(req: Request) {
 
     // STEP 5：設定 cookie
     console.log("→ Setting cookie...");
-    const response = NextResponse.redirect(`${BASE_URL}/dashboard`);
+    const response = NextResponse.redirect(`${baseUrl}/dashboard`);
 
     response.cookies.set("cyc_session", JSON.stringify(user), {
       httpOnly: true,

@@ -20,7 +20,7 @@ import type { Metadata } from "next";
 import {
   Dela_Gothic_One,
   Nunito,
-  Noto_Sans_TC,
+  // Noto_Sans_TC,
   Caveat_Brush,
 } from "next/font/google";
 import "./globals.css";
@@ -39,11 +39,11 @@ const nunito = Nunito({
   variable: "--font-nunito",
 });
 
-const noto = Noto_Sans_TC({
-  subsets: ["latin"],
-  weight: ["100", "300", "400", "500", "700", "900"],
-  variable: "--font-noto",
-});
+// const noto = Noto_Sans_TC({
+//   subsets: ["latin"],
+//   weight: ["100", "300", "400", "500", "700", "900"],
+//   variable: "--font-noto",
+// });
 
 const caveat = Caveat_Brush({
   subsets: ["latin"],
@@ -64,7 +64,7 @@ export default function RootLayout({
   return (
     <html lang="zh-Hant" suppressHydrationWarning>
       <body
-        className={`${nunito.variable} ${noto.variable} ${delaGothic.variable} ${caveat.variable} antialiased`}
+        className={`${nunito.variable} ${delaGothic.variable} ${caveat.variable} antialiased`}
       >
         <Providers>
           <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center text-primary bg-white dark:bg-primary dark:text-white">
