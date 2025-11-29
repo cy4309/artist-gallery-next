@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
-export default function Home() {
-  // 一律導向 dashboard（middleware 會在那邊決定是否要擋）
+export default async function Home() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get("cyc_session");
+  if (!session) redirect("/auth");
+
   redirect("/dashboard");
 }

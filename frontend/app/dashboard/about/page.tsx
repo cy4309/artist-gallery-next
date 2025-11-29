@@ -5,7 +5,7 @@ import BaseButton from "@/components/BaseButton";
 export default function About() {
   return (
     <>
-      <div className="fixed inset-0 w-full h-full flex flex-col justify-center items-center">
+      <div className="w-full grow flex flex-col justify-center items-center">
         <h5 className="my-4 text-center text-lg dela-gothic-one leading-relaxed">
           We’re dedicated to uncovering the human stories behind culture.
         </h5>

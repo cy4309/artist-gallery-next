@@ -64,11 +64,12 @@ export default function RootLayout({
   return (
     <html lang="zh-Hant" suppressHydrationWarning>
       <body
-        className={`${nunito.variable} ${delaGothic.variable} ${caveat.variable} antialiased`}
+        className={`${nunito.variable} ${delaGothic.variable} ${caveat.variable} antialiased text-primary bg-white dark:bg-primary dark:text-white`}
       >
         <Providers>
-          <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center text-primary bg-white dark:bg-primary dark:text-white">
-            <main className="pt-16">{children}</main>
+          {/* <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center text-primary bg-white dark:bg-primary dark:text-white"> */}
+          <div className="w-full min-h-dvh flex flex-col justify-center items-center">
+            <main className="w-full h-full">{children}</main>
             {/* <Header />
             <main className="w-full grow justify-center items-center">
               {children}

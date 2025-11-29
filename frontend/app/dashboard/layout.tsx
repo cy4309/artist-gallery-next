@@ -89,6 +89,8 @@
 // import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 // export const metadata: Metadata = {
 //   title: "CYC Studio",
@@ -100,13 +102,21 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const session = cookieStore.get("cyc_session");
+  if (!session) redirect("/auth");
+
   return (
-    <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center text-primary bg-white dark:bg-primary dark:text-white">
-      <Header />
-      <main className="w-full grow justify-center items-center">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <>
+      {/* <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center text-primary bg-white dark:bg-primary dark:text-white"> */}
+      <div className="p-4 w-full min-h-dvh flex flex-col">
+        <Header />
+        <main className="w-full flex flex-col grow justify-center items-center">
+          {children}
+        </main>
+        <Footer />
+      </div>
+      {/* </div> */}
+    </>
   );
 }

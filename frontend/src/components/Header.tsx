@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SunOutlined, AlignLeftOutlined } from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
+// import BaseButtonNormal from "@/components/BaseButtonNormal";
 import { useAppDispatch } from "@/utils/useRedux";
 import { toggleDarkMode } from "@/stores/features/styleSlice";
 import { useRouter } from "next/navigation";
@@ -33,25 +34,28 @@ export default function Nav() {
 
   return (
     <nav className="z-50 w-full flex justify-between items-center">
-      <Link href="/" className="text-3xl font-dela">
+      <Link href="/" className="text-2xl md:text-3xl font-dela">
         <h1>CYC STUDIO</h1>
       </Link>
 
       <div className="flex justify-end items-center fixed right-4">
-        <BaseButton onClick={() => setIsOpen(true)}>
+        <BaseButton
+          onClick={() => setIsOpen(true)}
+          className="hover:rotate-180"
+        >
           <AlignLeftOutlined />
         </BaseButton>
       </div>
 
       {/* Drawer / Side Menu */}
       <div
-        className={`fixed z-50 top-0 right-0 w-full bg-gray-900/80 transition-all duration-500 overflow-hidden flex flex-col items-center text-white gap-10 ${
+        className={`fixed z-50 top-0 right-0 w-full bg-gray-900/80 transition-all duration-500 overflow-hidden flex flex-col items-center text-white ${
           isOpen ? "h-screen" : "h-0"
         }`}
       >
         <div className="p-4 w-full flex justify-between items-center">
           <h1
-            className="cursor-pointer text-3xl font-dela"
+            className="text-2xl md:text-3xl cursor-pointer font-dela"
             onClick={() => {
               router.push("/dashboard");
               setIsOpen(false);
@@ -61,49 +65,48 @@ export default function Nav() {
           </h1>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-white text-3xl cursor-pointer"
+            className="text-white text-2xl md:text-3xl cursor-pointer"
           >
             &times;
           </button>
         </div>
 
-        <ul className="p-4 w-full md:w-1/4 flex flex-col justify-center items-center gap-10">
+        <ul className="p-4 w-full md:w-1/4 flex flex-col justify-center items-center gap-8">
           {/* Google Login / Profile */}
           <li className="w-full flex flex-col items-center gap-4">
             {loading ? (
               <div className="text-center text-gray-400">Checking...</div>
-            ) : user ? (
-              <>
-                <div className="flex flex-col items-center">
-                  <div className="relative w-16 h-16">
-                    <Image
-                      src={user.picture}
-                      alt="avatar"
-                      className="rounded-full border object-cover"
-                      fill
-                    />
-                  </div>
-                  <p className="mt-2 font-bold">{user.name}</p>
-                </div>
-
-                <BaseButton
-                  className="w-full bg-red-500 text-white"
-                  onClick={handleLogout}
-                  label="Logout"
-                />
-              </>
             ) : (
-              <BaseButton
-                className="w-full bg-blue-600 text-white"
-                onClick={() => router.push("/auth")}
-                label="Login with Google"
-              />
+              user && (
+                <>
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-16 h-16">
+                      <Image
+                        src={user.picture}
+                        alt="avatar"
+                        className="rounded-full border object-cover"
+                        fill
+                      />
+                    </div>
+                    <p className="mt-2 font-bold">{user.name}</p>
+                  </div>
+
+                  <BaseButton
+                    label="Logout"
+                    onClick={handleLogout}
+                    className="w-full hover:rotate-180"
+                  ></BaseButton>
+                </>
+              )
             )}
           </li>
 
           {/* Dark Mode */}
           <li className="w-full">
-            <BaseButton className="w-full" onClick={handleToggleDarkMode}>
+            <BaseButton
+              className="w-full hover:rotate-180"
+              onClick={handleToggleDarkMode}
+            >
               <SunOutlined />
             </BaseButton>
           </li>
@@ -116,7 +119,7 @@ export default function Nav() {
                 router.push("/dashboard/events");
                 setIsOpen(false);
               }}
-              className="w-full"
+              className="w-full hover:rotate-180"
             />
           </li>
           <li className="w-full">
@@ -126,7 +129,7 @@ export default function Nav() {
                 router.push("/dashboard/interviews");
                 setIsOpen(false);
               }}
-              className="w-full"
+              className="w-full hover:rotate-180"
             />
           </li>
           <li className="w-full">
@@ -136,7 +139,7 @@ export default function Nav() {
                 router.push("/dashboard/about");
                 setIsOpen(false);
               }}
-              className="w-full"
+              className="w-full hover:rotate-180"
             />
           </li>
         </ul>

@@ -12,16 +12,16 @@ export default function Home() {
     <>
       <div className="w-full h-full flex justify-center items-center relative">
         <video
+          className="my-4 hidden md:block w-full object-cover relative opacity-80 saturate-50"
           src="/videos/korea-tradition-1.mp4"
           autoPlay
           loop
           muted
           playsInline
-          className="mt-4 hidden md:block w-full object-cover relative opacity-80 saturate-50"
         />
 
         <Image
-          className="mt-4 block md:hidden w-full h-[80vh] object-cover relative"
+          className="my-4 block md:hidden w-full h-[80vh] object-cover relative"
           src="/images/home-banner.png"
           alt="Video Cover"
           fill={false}
@@ -29,7 +29,7 @@ export default function Home() {
           height={1080}
         />
 
-        <h1 className="absolute border-b-2 text-3xl text-white font-dela">
+        <h1 className="absolute border-b-2 text-2xl md:text-3xl text-white font-dela">
           Unearth Stories.
         </h1>
       </div>
