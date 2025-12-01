@@ -1,21 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import BaseButton from "@/components/BaseButton";
-import BaseButtonNormal from "@/components/BaseButtonNormal";
+// import BaseButtonNormal from "@/components/BaseButtonNormal";
 import Image from "next/image";
 import { GoogleOutlined } from "@ant-design/icons";
 
 export default function AuthPage() {
+  const [isWebView, setIsWebView] = useState(false);
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes("line") || ua.includes("fb") || ua.includes("instagram")) {
+      setIsWebView(true);
+      // queueMicrotask(() => setIsWebView(true)); // react19, 非同步寫法
+    }
+  }, []);
+
+  if (isWebView) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-lg font-bold mb-4">無法在應用程式內登入 Google</p>
+        <p className="text-sm text-gray-600 mb-6">
+          請點選右上角「在外部瀏覽器開啟」後再登入。
+        </p>
+
+        <a
+          href={`${window.location.href}?openExternalBrowser=1`}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          在瀏覽器開啟
+        </a>
+      </div>
+    );
+  }
+
   return (
-    // <div className="h-full flex justify-center items-center">
-    //   <BaseButton
-    //     onClick={() => (window.location.href = "/api/auth/login")}
-    //     className="bg-blue-600"
-    //   >
-    //     Sign in with Google
-    //   </BaseButton>
-    // </div>
-    <div className="w-full min-h-dvh flex justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-black dark:to-slate-900 px-4">
+    <div className="w-full h-full flex justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-black dark:to-slate-900 px-4">
       <div
         className="
           w-full max-w-md

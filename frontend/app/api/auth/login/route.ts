@@ -7,8 +7,6 @@ import axios, { AxiosError } from "axios";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const GAS_URL = process.env.GAS_URL!;
-// const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
-// const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 // ⭐ 智能判斷 Base URL，用 host 自動變 localhost:3000 或 vercel domain
 function getBaseUrl(req: NextRequest) {
@@ -20,9 +18,7 @@ function getBaseUrl(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     console.log("=== Google OAuth Callback ===");
-
     const baseUrl = getBaseUrl(req);
-    // ⭐ 不用 GOOGLE_REDIRECT_URI 的值，直接智能生成
     const redirectUri = `${baseUrl}/api/auth/login`;
 
     const { searchParams } = new URL(req.url);

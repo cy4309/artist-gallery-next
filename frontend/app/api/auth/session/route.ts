@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const cookieStore = await cookies(); // ← 需要 await！
+  const cookieStore = await cookies();
   const session = cookieStore.get("cyc_session");
 
   if (!session) {
