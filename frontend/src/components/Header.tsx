@@ -4,18 +4,17 @@ import { useState } from "react";
 import { SunOutlined, AlignLeftOutlined } from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
 // import BaseButtonNormal from "@/components/BaseButtonNormal";
-import { useAppDispatch } from "@/utils/useRedux";
-import { toggleDarkMode } from "@/stores/features/styleSlice";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 import Image from "next/image";
+import { useTheme } from "next-themes";
 
 export default function Nav() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const [isOpen, setIsOpen] = useState(false);
   const { user, loading } = useUser();
+  const { theme, setTheme } = useTheme();
 
   /** 🔥 登出 */
   const handleLogout = async () => {
@@ -26,9 +25,7 @@ export default function Nav() {
 
   /** 🌙 Dark Mode */
   const handleToggleDarkMode = () => {
-    dispatch(toggleDarkMode());
-    const currentMode = localStorage.getItem("darkMode") === "true";
-    localStorage.setItem("darkMode", (!currentMode).toString());
+    setTheme(theme === "dark" ? "light" : "dark");
     setIsOpen(false);
   };
 
@@ -86,6 +83,7 @@ export default function Nav() {
                         alt="avatar"
                         className="rounded-full border object-cover"
                         fill
+                        sizes="48px"
                       />
                     </div>
                     <p className="mt-2 font-bold">{user.name}</p>

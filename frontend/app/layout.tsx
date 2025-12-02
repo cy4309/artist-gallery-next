@@ -6,7 +6,8 @@ import {
   Caveat_Brush,
 } from "next/font/google";
 import "./globals.css";
-import Providers from "@/stores/Providers";
+// import Providers from "@/stores/Providers";
+import { ThemeProvider } from "next-themes";
 
 const delaGothic = Dela_Gothic_One({
   subsets: ["latin"],
@@ -46,11 +47,17 @@ export default function RootLayout({
       <body
         className={`${nunito.variable} ${delaGothic.variable} ${caveat.variable} antialiased text-primary bg-white dark:bg-primary dark:text-white`}
       >
-        <Providers>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem={true}
+        >
+          {/* <Providers> */}
           <div className="w-full min-h-dvh flex flex-col justify-center items-center">
             <main className="w-full h-full">{children}</main>
           </div>
-        </Providers>
+          {/* </Providers> */}
+        </ThemeProvider>
       </body>
     </html>
   );
