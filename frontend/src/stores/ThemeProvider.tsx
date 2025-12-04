@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/utils/useRedux";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { ConfigProvider, theme } from "antd";
 import { setDarkMode } from "@/stores/features/styleSlice";
 

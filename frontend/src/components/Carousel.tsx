@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import BaseButton from "@/components/BaseButton";
+import FavoriteButton from "@/components/FavoriteButton";
 
 export interface CarouselItem {
+  actId: number;
   actName: string;
   startTime: string;
   endTime: string;
@@ -12,6 +14,8 @@ export interface CarouselItem {
   imageUrl: string;
   description: string;
   website: string;
+  // cityName: string;
+  // cityId: number;
 }
 
 export interface CarouselProps {
@@ -217,6 +221,11 @@ const Carousel = ({
               transition={effectiveTransition}
             >
               <ul className="p-4 flex flex-col justify-center items-center gap-2 text-white">
+                {/* ⭐ 收藏按鈕（使用 actId 作 eventId） */}
+                <div className="w-full flex justify-end items-center mb-4 text-sm">
+                  <FavoriteButton eventId={String(item.actId)} />
+                </div>
+
                 <li className="font-black text-lg">{item.actName}</li>
                 <li className="text-sm">
                   {item.startTime.split(",")[0]} - {item.endTime.split(",")[0]}

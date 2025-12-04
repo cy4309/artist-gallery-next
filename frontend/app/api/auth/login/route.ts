@@ -7,7 +7,7 @@ import axios from "axios";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const GAS_URL = process.env.GAS_URL!;
+const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
 
 // ⭐ 智能判斷 Base URL，用 host 自動變 localhost:3000 或 vercel domain
 function getBaseUrl(req: NextRequest) {
@@ -55,17 +55,23 @@ export async function GET(req: NextRequest) {
 
     const googleUser = userInfoRes.data;
 
+    console.log("=== GOOGLE USER INFO ===");
+    console.log(googleUser);
+
     // STEP 4 — Ask GAS: does user exist?
-    const checkUser = await axios.post(GAS_URL, {
+    const checkUser = await axios.post(NEXT_PUBLIC_GAS_URL, {
       action: "checkUser",
       email: googleUser.email,
     });
+
+    console.log("=== GAS checkUser result ===");
+    console.log(JSON.stringify(checkUser.data, null, 2));
 
     let finalUser = googleUser;
 
     if (!checkUser.data.exists) {
       // First register
-      await axios.post(GAS_URL, {
+      await axios.post(NEXT_PUBLIC_GAS_URL, {
         action: "createUser",
         user: googleUser,
       });
@@ -74,18 +80,40 @@ export async function GET(req: NextRequest) {
       finalUser = checkUser.data.user;
 
       // optional: update name/photo every login
-      await axios.post(GAS_URL, {
+      await axios.post(NEXT_PUBLIC_GAS_URL, {
         action: "updateUser",
         user: googleUser,
       });
     }
 
     // STEP 5 — Cookie
-    const response = NextResponse.redirect(`${baseUrl}/dashboard`);
+    const response = NextResponse.redirect(`${baseUrl}/auth/callback`, {
+      status: 302, // ⭐ 必加
+    });
 
+    console.log("➡ Setting cookie cyc_session:", finalUser);
+
+    const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
+    // const isLocalhost = req.headers.get("host")?.includes("localhost");
+
+    // Secure session cookie
     response.cookies.set("cyc_session", JSON.stringify(finalUser), {
-      httpOnly: true,
+      httpOnly: true, // JavaScript 無法讀取 cookie
       sameSite: "lax",
+      secure: isProd,
+      // secure: false,
+      // secure: !isLocalhost,
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    // Public user cookie (給前端讀取)
+    response.cookies.set("cyc_user", JSON.stringify(finalUser), {
+      httpOnly: false, // ⭐ 要能被 JS 取得
+      sameSite: "lax",
+      secure: isProd,
+      // secure: false,
+      // secure: !isLocalhost,
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
@@ -98,97 +126,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-// export async function GET(req: NextRequest) {
-//   try {
-//     console.log("=== Google OAuth Callback ===");
-//     const baseUrl = getBaseUrl(req);
-//     const redirectUri = `${baseUrl}/api/auth/login`;
-
-//     const { searchParams } = new URL(req.url);
-//     const code = searchParams.get("code");
-//     console.log("code:", code);
-
-//     if (!code) {
-//       console.log("→ No code, redirect to Google");
-
-//       const authURL = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-//       authURL.searchParams.set("client_id", GOOGLE_CLIENT_ID);
-//       authURL.searchParams.set("redirect_uri", redirectUri);
-//       authURL.searchParams.set("response_type", "code");
-//       authURL.searchParams.set("scope", "openid email profile");
-
-//       return NextResponse.redirect(authURL.toString());
-//     }
-
-//     // STEP 2：用 code 換 token
-//     console.log("→ Fetching Google token...");
-//     const tokenRes = await axios.post("https://oauth2.googleapis.com/token", {
-//       client_id: GOOGLE_CLIENT_ID,
-//       client_secret: GOOGLE_CLIENT_SECRET,
-//       code,
-//       grant_type: "authorization_code",
-//       redirect_uri: redirectUri,
-//     });
-
-//     console.log("tokenRes:", tokenRes.data);
-
-//     const { id_token, access_token } = tokenRes.data;
-//     console.log("id_token:", !!id_token, "access_token:", !!access_token);
-
-//     // STEP 3：取得 userinfo
-//     console.log("→ Fetching Google UserInfo...");
-//     const userInfoRes = await axios.get(
-//       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
-//       { headers: { Authorization: `Bearer ${id_token}` } }
-//     );
-
-//     console.log("userinfo:", userInfoRes.data);
-//     const user = userInfoRes.data;
-
-//     // STEP 4：寫入 GAS
-//     console.log("→ Writing to GAS...");
-//     const gasRes = await axios.post(GAS_URL, {
-//       action: "registerOrLoginGoogle",
-//       user,
-//     });
-
-//     console.log("gasRes:", gasRes.data);
-
-//     // STEP 5：設定 cookie
-//     console.log("→ Setting cookie...");
-//     const response = NextResponse.redirect(`${baseUrl}/dashboard`);
-
-//     response.cookies.set("cyc_session", JSON.stringify(user), {
-//       httpOnly: true,
-//       sameSite: "lax",
-//       maxAge: 60 * 60 * 24 * 7,
-//       path: "/",
-//     });
-
-//     console.log("→ Login DONE. Redirect...");
-//     return response;
-//   } catch (err: unknown) {
-//     // 這裡不再用 any，改用 axios.isAxiosError 做 type guard
-//     let details: unknown = "Unknown error";
-
-//     if (axios.isAxiosError(err)) {
-//       const axiosError = err as AxiosError;
-//       details = axiosError.response?.data || axiosError.message;
-//       console.error("🔥 OAuth ERROR (Axios):", details);
-//     } else if (err instanceof Error) {
-//       details = err.message;
-//       console.error("🔥 OAuth ERROR (Error):", err.message);
-//     } else {
-//       console.error("🔥 OAuth ERROR (Unknown):", err);
-//     }
-
-//     return NextResponse.json(
-//       {
-//         error: "OAuth Login Failed",
-//         details,
-//       },
-//       { status: 500 }
-//     );
-//   }
-// }

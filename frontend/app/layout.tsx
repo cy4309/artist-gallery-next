@@ -8,6 +8,9 @@ import {
 import "./globals.css";
 // import Providers from "@/stores/Providers";
 import { ThemeProvider } from "next-themes";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { UserProvider } from "@/hooks/useUser";
 
 const delaGothic = Dela_Gothic_One({
   subsets: ["latin"],
@@ -52,11 +55,17 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem={true}
         >
-          {/* <Providers> */}
-          <div className="w-full min-h-dvh flex flex-col justify-center items-center">
-            <main className="w-full h-full">{children}</main>
-          </div>
-          {/* </Providers> */}
+          <UserProvider>
+            {/* <Providers> */}
+            <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center">
+              <Header />
+              <main className="w-full flex flex-col grow justify-center items-center">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            {/* </Providers> */}
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

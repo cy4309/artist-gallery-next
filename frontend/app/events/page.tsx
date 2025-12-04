@@ -8,6 +8,7 @@ import Carousel from "@/components/Carousel";
 import BaseButton from "@/components/BaseButton";
 
 export interface OrgData {
+  actId: number;
   cityName: string;
   actName: string;
   startTime: string;

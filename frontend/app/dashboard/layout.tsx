@@ -1,5 +1,5 @@
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+// import Header from "@/components/Header";
+// import Footer from "@/components/Footer";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
@@ -14,13 +14,11 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <div className="p-4 w-full min-h-dvh flex flex-col">
-        <Header />
-        <main className="w-full flex flex-col grow justify-center items-center">
-          {children}
-        </main>
-        <Footer />
-      </div>
+      {/* <div className="p-4 w-full min-h-dvh flex flex-col">
+        <Header /> */}
+      <main className="w-full h-full">{children}</main>
+      {/* <Footer />
+      </div> */}
     </>
   );
 }

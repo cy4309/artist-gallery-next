@@ -12,7 +12,7 @@ import a321 from "@/assets/images/tattoo-arms/3-2-1.png";
 import a421 from "@/assets/images/tattoo-arms/4-2-1.png";
 import a521 from "@/assets/images/tattoo-arms/5-2-1.png";
 import a621 from "@/assets/images/tattoo-arms/6-2-1.png";
-import useGSAP from "@/hooks/gsap";
+import useGSAP from "@/hooks/useGsap";
 
 const afterImages = [`${a2}`, `${a3}`, `${a4}`, `${a5}`, `${a6}`];
 const labelImages = [`${a221}`, `${a321}`, `${a421}`, `${a521}`, `${a621}`];

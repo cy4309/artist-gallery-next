@@ -54,7 +54,7 @@ export default function Nav() {
           <h1
             className="text-2xl md:text-3xl cursor-pointer font-dela"
             onClick={() => {
-              router.push("/dashboard");
+              router.push("/");
               setIsOpen(false);
             }}
           >
@@ -114,7 +114,7 @@ export default function Nav() {
             <BaseButton
               label="Events"
               onClick={() => {
-                router.push("/dashboard/events");
+                router.push("/events");
                 setIsOpen(false);
               }}
               className="w-full hover:rotate-180"
@@ -124,7 +124,7 @@ export default function Nav() {
             <BaseButton
               label="Special Columns"
               onClick={() => {
-                router.push("/dashboard/interviews");
+                router.push("/interviews");
                 setIsOpen(false);
               }}
               className="w-full hover:rotate-180"
@@ -134,7 +134,7 @@ export default function Nav() {
             <BaseButton
               label="About Us"
               onClick={() => {
-                router.push("/dashboard/about");
+                router.push("/about");
                 setIsOpen(false);
               }}
               className="w-full hover:rotate-180"
