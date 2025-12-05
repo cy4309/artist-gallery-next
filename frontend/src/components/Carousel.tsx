@@ -206,7 +206,8 @@ const Carousel = ({
 
           return (
             <motion.div
-              key={index}
+              // key={index}
+              key={`${item.actId}-${index}`} // ✅ 用 actId + index 當 key
               className={`relative shrink-0 flex flex-col ${
                 round
                   ? "items-center justify-center text-center bg-[#060606]"

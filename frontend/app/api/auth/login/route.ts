@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
       authURL.searchParams.set("redirect_uri", redirectUri);
       authURL.searchParams.set("response_type", "code");
       authURL.searchParams.set("scope", "openid email profile");
+      authURL.searchParams.set("prompt", "select_account"); // ⭐ 強制每次都選帳號
 
       return NextResponse.redirect(authURL.toString());
     }

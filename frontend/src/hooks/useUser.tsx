@@ -75,6 +75,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { listFavorites } from "@/services/favoriteService";
 
 interface User {
   id: string;
@@ -96,6 +97,8 @@ interface UserContextType {
   loadUser: () => Promise<User | null>;
   loadUserFromCookie: () => User | null;
   openLoginModal: (opts?: { afterLoginAction?: AfterLoginAction }) => void;
+  favorites: string[]; // ⭐ 全域收藏列表
+  reloadFavorites: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -103,6 +106,7 @@ const UserContext = createContext<UserContextType | null>(null);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   /**************************************************
    * 1) Server-side 檢查登入狀態 (/api/auth/me)
@@ -113,6 +117,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       setUser(data.user || null);
+      if (data.user) {
+        await reloadFavorites(data.user.id);
+      }
       setLoading(false);
 
       return data.user || null;
@@ -161,6 +168,25 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/api/auth/login";
   }
 
+  async function reloadFavorites(userId?: string) {
+    try {
+      const uid = userId || user?.id;
+      if (!uid) return;
+
+      const res = await listFavorites(uid);
+
+      if (!res || !Array.isArray(res.favorites)) {
+        setFavorites([]);
+        return;
+      }
+
+      setFavorites(res.favorites.map((f: any) => f.eventId));
+    } catch (err) {
+      console.error("reloadFavorites error:", err);
+      setFavorites([]);
+    }
+  }
+
   /**************************************************
    * 初始化讀 user（server-side session）
    **************************************************/
@@ -172,6 +198,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     <UserContext.Provider
       value={{
         user,
+        favorites,
+        reloadFavorites,
         loading,
         loadUser,
         loadUserFromCookie, // ⭐ 新增回傳

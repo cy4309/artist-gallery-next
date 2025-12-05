@@ -6,29 +6,18 @@ import { useUser } from "@/hooks/useUser";
 import { HeartFilled, HeartOutlined } from "@ant-design/icons";
 
 export default function FavoriteButton({ eventId }: { eventId: string }) {
-  const { user, loading: userLoading, openLoginModal } = useUser();
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  // 初次載入檢查是否已收藏
-  useEffect(() => {
-    async function load() {
-      if (userLoading) return; // ⭐ 避免 user 尚未 load 就判斷錯
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const res = await checkFavorite(user.id, eventId);
-      setIsFavorite(res.isFavorite);
-      setLoading(false);
-    }
-
-    load();
-  }, [user, eventId]);
+  const {
+    user,
+    loading: userLoading,
+    openLoginModal,
+    favorites,
+    reloadFavorites,
+  } = useUser();
+  const [pending, setPending] = useState(false);
+  const isFavorite = user ? favorites.includes(eventId) : false;
 
   async function handleClick() {
-    if (userLoading) return; // ⭐ 等 user load 完才可以按
+    if (userLoading) return;
 
     if (!user) {
       openLoginModal({
@@ -41,8 +30,13 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
       return;
     }
 
-    const newState = await toggleFavorite(user.id, eventId);
-    setIsFavorite(newState);
+    setPending(true);
+    try {
+      await toggleFavorite(user.id, eventId);
+      await reloadFavorites(); // ⭐ 更新全域 favorites 狀態
+    } finally {
+      setPending(false);
+    }
 
     // ---- Optimistic Update ----
     // const previous = isFavorite;
@@ -70,7 +64,7 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
   return (
     <button
       onClick={handleClick}
-      disabled={loading || userLoading}
+      disabled={userLoading || pending}
       className={`px-3 py-2 rounded-lg transition-all ${
         isFavorite
           ? "bg-red-500 text-white shadow-lg"

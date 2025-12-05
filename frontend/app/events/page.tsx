@@ -110,6 +110,7 @@ export default function EventsPage() {
               </div>
 
               <Carousel
+                key={clickedId} // ⭐ 城市一變 → Carousel 整個 remount
                 autoplay={false}
                 autoplayDelay={3000}
                 baseWidth={300}

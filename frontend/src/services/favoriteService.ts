@@ -33,6 +33,7 @@ export async function listFavorites(userId: string) {
   const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
     method: "POST",
     // headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     body: JSON.stringify({
       action: "listFavorites",
       userId,
@@ -40,5 +41,7 @@ export async function listFavorites(userId: string) {
   });
 
   const data = await res.json();
-  return data.favorites; // [{ eventId, name }]
+  // console.log("⭐ listFavorites GAS 回傳：", data);
+  // return data.favorites; // [{ eventId, name }]
+  return data;
 }
