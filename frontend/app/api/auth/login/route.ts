@@ -8,12 +8,22 @@ import axios from "axios";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
+const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 
 // ⭐ 智能判斷 Base URL，用 host 自動變 localhost:3000 或 vercel domain
+// function getBaseUrl(req: NextRequest) {
+//   const host = req.headers.get("host")!;
+//   const protocol = host.includes("localhost") ? "http" : "https";
+//   return `${protocol}://${host}`;
+// }
 function getBaseUrl(req: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NEXT_PUBLIC_BASE_URL;
+  }
+
+  // dev
   const host = req.headers.get("host")!;
-  const protocol = host.includes("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
+  return `http://${host}`;
 }
 
 export async function GET(req: NextRequest) {
