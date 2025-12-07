@@ -16,27 +16,46 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
   const [pending, setPending] = useState(false);
   const isFavorite = user ? favorites.includes(eventId) : false;
 
-  async function handleClick() {
-    if (userLoading) return;
+  // async function handleClick() {
+  //   if (userLoading) return;
 
+  //   if (!user) {
+  //     openLoginModal({
+  //       afterLoginAction: {
+  //         type: "favorite",
+  //         eventId,
+  //       },
+  //     });
+  //     return;
+  //   }
+
+  //   setPending(true);
+  //   try {
+  //     await toggleFavorite(user.id, eventId);
+  //     await reloadFavorites(); // ⭐ 更新全域 favorites 狀態
+  //   } finally {
+  //     setPending(false);
+  //   }
+
+  async function handleClick() {
+    if (userLoading || pending) return;
+
+    // ⭐ 未登入 → 必須跳 /auth
     if (!user) {
       openLoginModal({
         afterLoginAction: {
           type: "favorite",
           eventId,
-          returnTo: typeof window !== "undefined" ? window.location.href : "/",
         },
       });
       return;
     }
 
+    // ⭐ 已登入 → 切換收藏
     setPending(true);
-    try {
-      await toggleFavorite(user.id, eventId);
-      await reloadFavorites(); // ⭐ 更新全域 favorites 狀態
-    } finally {
-      setPending(false);
-    }
+    await toggleFavorite(user.id, eventId);
+    await reloadFavorites();
+    setPending(false);
 
     // ---- Optimistic Update ----
     // const previous = isFavorite;
@@ -53,13 +72,13 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
   }
 
   // 如果 UserProvider 還在載入 → 不要跑 FavoriteButton 邏輯
-  if (userLoading) {
-    return (
-      <button className="px-3 py-2 opacity-50 cursor-wait bg-gray-300 rounded-lg">
-        <HeartOutlined className="text-xl" />
-      </button>
-    );
-  }
+  // if (userLoading) {
+  //   return (
+  //     <button className="px-3 py-2 opacity-50 cursor-wait bg-gray-300 rounded-lg">
+  //       <HeartOutlined className="text-xl" />
+  //     </button>
+  //   );
+  // }
 
   return (
     <button

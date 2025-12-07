@@ -98,7 +98,7 @@ interface UserContextType {
   loadUserFromCookie: () => User | null;
   openLoginModal: (opts?: { afterLoginAction?: AfterLoginAction }) => void;
   favorites: string[]; // ⭐ 全域收藏列表
-  reloadFavorites: () => Promise<void>;
+  reloadFavorites: (userId?: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -165,7 +165,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    window.location.href = "/api/auth/login";
+    window.location.href = "/auth";
   }
 
   async function reloadFavorites(userId?: string) {

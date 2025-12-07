@@ -67,11 +67,12 @@ export default function AuthCallbackPage() {
           await toggleFavorite(user.id, action.eventId);
         }
 
-        const returnTo = action.returnTo || "/";
+        // const returnTo = action.returnTo || "/";
 
         localStorage.removeItem("afterLoginAction");
 
-        router.push(returnTo);
+        // router.push(returnTo);
+        router.push("/favorites");
         return;
       }
 
