@@ -99,6 +99,7 @@ interface UserContextType {
   openLoginModal: (opts?: { afterLoginAction?: AfterLoginAction }) => void;
   favorites: string[]; // ⭐ 全域收藏列表
   reloadFavorites: (userId?: string) => Promise<void>;
+  logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -187,6 +188,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function logout() {
+    setUser(null);
+    setFavorites([]); // 如果你有 favorites
+  }
+
   /**************************************************
    * 初始化讀 user（server-side session）
    **************************************************/
@@ -204,6 +210,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         loadUser,
         loadUserFromCookie, // ⭐ 新增回傳
         openLoginModal,
+        logout,
       }}
     >
       {children}

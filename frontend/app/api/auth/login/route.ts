@@ -9,15 +9,13 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
+const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
 
-// ⭐ 智能判斷 Base URL，用 host 自動變 localhost:3000 或 vercel domain
 function getBaseUrl(req: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProd) {
     return NEXT_PUBLIC_BASE_URL;
   }
-  // dev
-  const host = req.headers.get("host")!;
-  return `http://${host}`;
+  return `http://localhost:3000`; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
 }
 
 export async function GET(req: NextRequest) {
@@ -25,7 +23,6 @@ export async function GET(req: NextRequest) {
     console.log("=== Google OAuth Callback ===");
     const baseUrl = getBaseUrl(req);
     const redirectUri = `${baseUrl}/api/auth/login`;
-
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
 
@@ -98,16 +95,11 @@ export async function GET(req: NextRequest) {
 
     console.log("➡ Setting cookie cyc_session:", finalUser);
 
-    const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
-    // const isLocalhost = req.headers.get("host")?.includes("localhost");
-
     // Secure session cookie
     response.cookies.set("cyc_session", JSON.stringify(finalUser), {
       httpOnly: true, // JavaScript 無法讀取 cookie
       sameSite: "lax",
       secure: isProd,
-      // secure: false,
-      // secure: !isLocalhost,
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
@@ -117,8 +109,6 @@ export async function GET(req: NextRequest) {
       httpOnly: false, // ⭐ 要能被 JS 取得
       sameSite: "lax",
       secure: isProd,
-      // secure: false,
-      // secure: !isLocalhost,
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });

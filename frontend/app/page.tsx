@@ -27,6 +27,7 @@ export default function Home() {
           fill={false}
           width={1920}
           height={1080}
+          priority // <Image> 預設會 lazy-load（延遲載入），但hero第一屏大圖不應該lazy
         />
 
         <h1 className="absolute border-b-2 text-2xl md:text-3xl text-white font-dela">

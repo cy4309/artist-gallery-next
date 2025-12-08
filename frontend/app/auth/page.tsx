@@ -5,6 +5,7 @@ import BaseButton from "@/components/BaseButton";
 // import BaseButtonNormal from "@/components/BaseButtonNormal";
 import Image from "next/image";
 import { GoogleOutlined } from "@ant-design/icons";
+import Link from "next/link";
 
 export default function AuthPage() {
   const [isWebView, setIsWebView] = useState(false);
@@ -36,7 +37,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="w-full h-full flex justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-black dark:to-slate-900 px-4">
+    <div className="p-4 w-full h-full flex justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-black dark:to-slate-900">
       <div
         className="
           w-full max-w-md
@@ -48,7 +49,7 @@ export default function AuthPage() {
         "
       >
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4">
           <Image
             src="/images/cyc-logo.png"
             width={64}
@@ -56,12 +57,32 @@ export default function AuthPage() {
             alt="CYC Studio logo"
             className="opacity-90"
           />
-          <h1 className="text-2xl md:text-3xl font-dela tracking-wide text-primary dark:text-white">
+          <h1 className="text-2xl md:text-3xl font-dela tracking-wide">
             CYC Studio
           </h1>
-          <p className="text-slate-600 dark:text-slate-300 text-center text-sm">
+
+          {/* <p className="text-slate-600 dark:text-slate-300 text-center text-sm">
             Discover stories, events, and inspirations — powered by Google
             login.
+          </p> */}
+          <h2 className="text-lg md:text-xl text-slate-600 dark:text-slate-300 text-center font-dela tracking-wide">
+            Discover Taiwan’s cultural stories. Build your own inspiration map.
+          </h2>
+
+          <p className="text-slate-600 dark:text-slate-300 opacity-75 text-sm leading-6 mt-3">
+            Sign in to:
+            <br />⭐ Save your favorite events
+            <br />
+            📅 Add events to Google Calendar
+            {/* <br />
+            📌 Track your cultural journey
+            <br />
+            🔑 Enjoy secure and password-free access with Google Login
+            <br /> */}
+            <span className="text-xs text-slate-600 dark:text-slate-300 block mt-3 opacity-75">
+              * CYC STUDIO only uses your basic Google profile (name, email &
+              avatar).
+            </span>
           </p>
         </div>
 
@@ -81,8 +102,19 @@ export default function AuthPage() {
         {/* Footer Text */}
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center leading-6">
           By signing in, you agree to our{" "}
-          <span className="underline cursor-pointer">Terms</span> and{" "}
-          <span className="underline cursor-pointer">Privacy Policy</span>.
+          <Link
+            href="/privacy"
+            className="underline cursor-pointer hover:opacity-70"
+          >
+            Privacy Policy
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/terms"
+            className="underline cursor-pointer hover:opacity-70"
+          >
+            Terms of Use
+          </Link>
         </p>
       </div>
     </div>

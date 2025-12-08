@@ -1,25 +1,60 @@
 "use client";
 
-import { useState } from "react";
-import { SunOutlined, AlignLeftOutlined } from "@ant-design/icons";
+import { useState, ReactNode } from "react";
+import {
+  SunOutlined,
+  AlignLeftOutlined,
+  PoweroffOutlined,
+} from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
 // import BaseButtonNormal from "@/components/BaseButtonNormal";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
-import Image from "next/image";
+// import Image from "next/image";
 import { useTheme } from "next-themes";
+
+interface NavItemProps {
+  label?: string;
+  icon?: ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}
+
+function NavItem({ label, icon, onClick, danger }: NavItemProps) {
+  return (
+    <BaseButton
+      onClick={onClick}
+      className={`
+        w-full flex items-center justify-center
+        px-3 py-2 rounded-xl
+        bg-white/5 hover:bg-white/10
+        text-sm hover:rotate-180
+        ${danger ? "text-red-400 hover:text-red-300" : "text-white"}
+      `}
+    >
+      <span>{label}</span>
+      {icon && <span className="text-base">{icon}</span>}
+    </BaseButton>
+  );
+}
 
 export default function Nav() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, loading } = useUser();
+  const { user, loading, logout } = useUser();
   const { theme, setTheme } = useTheme();
+
+  /** 封裝導航跳轉 + 關閉 Drawer */
+  const go = (path: string) => {
+    router.push(path);
+    setIsOpen(false);
+  };
 
   /** 🔥 登出 */
   const handleLogout = async () => {
+    logout(); // ← ⭐ 清掉前端 user 狀態
     await fetch("/api/auth/logout", { method: "POST" });
-    router.refresh();
     router.push("/auth");
   };
 
@@ -68,79 +103,47 @@ export default function Nav() {
           </button>
         </div>
 
-        <ul className="p-4 w-full md:w-1/4 flex flex-col justify-center items-center gap-8">
-          {/* Google Login / Profile */}
-          <li className="w-full flex flex-col items-center gap-4">
-            {loading ? (
-              <div className="text-center text-gray-400">Checking...</div>
-            ) : (
-              user && (
-                <>
-                  <div className="flex flex-col items-center">
-                    <div className="relative w-16 h-16">
-                      <Image
-                        src={user.picture}
-                        alt="avatar"
-                        className="rounded-full border object-cover"
-                        fill
-                        sizes="48px"
-                      />
-                    </div>
-                    <p className="mt-2 font-bold">{user.name}</p>
-                  </div>
-
-                  <BaseButton
-                    label="Logout"
-                    onClick={handleLogout}
-                    className="w-full hover:rotate-180"
-                  ></BaseButton>
-                </>
-              )
-            )}
-          </li>
-
-          {/* Dark Mode */}
-          <li className="w-full">
-            <BaseButton
-              className="w-full hover:rotate-180"
-              onClick={handleToggleDarkMode}
-            >
-              <SunOutlined />
-            </BaseButton>
-          </li>
-
-          {/* Navigation Links */}
-          <li className="w-full">
-            <BaseButton
-              label="Events"
-              onClick={() => {
-                router.push("/events");
-                setIsOpen(false);
-              }}
-              className="w-full hover:rotate-180"
+        <div className="flex items-center gap-4">
+          {user && (
+            <img
+              src={user.picture}
+              alt="picture"
+              className="w-12 h-12 rounded-full border object-cover"
             />
-          </li>
-          <li className="w-full">
-            <BaseButton
-              label="Special Columns"
-              onClick={() => {
-                router.push("/interviews");
-                setIsOpen(false);
-              }}
-              className="w-full hover:rotate-180"
+          )}
+
+          {user && (
+            <div className="flex flex-col">
+              <span className="font-semibold">{user.name}</span>
+              <span className="text-xs opacity-70">{user.email}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 w-2/3 md:w-1/3 flex flex-col gap-6 border-b border-white/20">
+          <NavItem label="Events" onClick={() => go("/events")} />
+          {user && (
+            <NavItem label="Favorites" onClick={() => go("/favorites")} />
+          )}
+          <NavItem label="Special Columns" onClick={() => go("/interviews")} />
+          <NavItem label="About Us" onClick={() => go("/about")} />
+        </div>
+
+        <div className="p-4 w-2/3 md:w-1/3 flex flex-col gap-4">
+          <NavItem
+            // label="Dark Mode"
+            icon={<SunOutlined />}
+            onClick={handleToggleDarkMode}
+          />
+          {user && (
+            <NavItem
+              // label="Logout"
+              icon={<PoweroffOutlined />}
+              onClick={handleLogout}
+              danger
             />
-          </li>
-          <li className="w-full">
-            <BaseButton
-              label="About Us"
-              onClick={() => {
-                router.push("/about");
-                setIsOpen(false);
-              }}
-              className="w-full hover:rotate-180"
-            />
-          </li>
-        </ul>
+          )}
+        </div>
       </div>
     </nav>
   );
