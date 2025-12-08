@@ -56,7 +56,20 @@ export default function ProfileSectionLuke() {
         style={{ y: y2 }}
         className="w-full max-w-3xl flex items-center justify-center"
       >
-        <Card className="p-4 w-full bg-white/10 backdrop-blur-md rounded-lg shadow-lg border-4 border-primary dark:border-primaryGray">
+        <Card
+          className="
+            w-full
+            relative
+            !bg-transparent 
+            !p-4
+            !text-inherit
+            rounded-xl 
+            shadow-xl 
+            border-4 border-primary dark:border-primaryGray 
+            backdrop-blur-md 
+            overflow-hidden
+          "
+        >
           <div className="w-full max-w-[300px] mx-auto">
             <p className="w-full text-4xl sm:text-6xl text-center font-dela leading-relaxed">
               Luke

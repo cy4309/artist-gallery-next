@@ -90,7 +90,7 @@ export default function EventsPage() {
               </BaseButton>
             )}
 
-            <section className="mt-4 scale-125">
+            <section className="mt-8 scale-125">
               <MapTw onHover={handleMapHover} onClick={handleMapClick} />
             </section>
           </div>

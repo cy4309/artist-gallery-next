@@ -130,22 +130,49 @@ const Carousel = ({
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     if (isSingle) return; // 🔥 單筆不能拖
 
-    const offset = info.offset.x;
+    const offsetX = info.offset.x;
+    const offsetY = info.offset.y;
+    const MIN_HORIZONTAL_DRAG = 30;
+
+    // 👉 加上「水平位移必須大於垂直位移」的條件
+    if (
+      Math.abs(offsetX) < Math.abs(offsetY) ||
+      Math.abs(offsetX) < MIN_HORIZONTAL_DRAG
+    ) {
+      return;
+    }
+
     const velocity = info.velocity.x;
 
-    if (offset < -DRAG_BUFFER || velocity < -VELOCITY_THRESHOLD) {
+    if (offsetX < -DRAG_BUFFER || velocity < -VELOCITY_THRESHOLD) {
       if (loop && currentIndex === items.length - 1) {
         setCurrentIndex(currentIndex + 1); // go to clone
       } else {
         setCurrentIndex((prev) => Math.min(prev + 1, carouselItems.length - 1));
       }
-    } else if (offset > DRAG_BUFFER || velocity > VELOCITY_THRESHOLD) {
+    } else if (offsetX > DRAG_BUFFER || velocity > VELOCITY_THRESHOLD) {
       if (loop && currentIndex === 0) {
         setCurrentIndex(items.length - 1);
       } else {
         setCurrentIndex((prev) => Math.max(prev - 1, 0));
       }
     }
+    // const offset = info.offset.x;
+    // const velocity = info.velocity.x;
+
+    // if (offset < -DRAG_BUFFER || velocity < -VELOCITY_THRESHOLD) {
+    //   if (loop && currentIndex === items.length - 1) {
+    //     setCurrentIndex(currentIndex + 1); // go to clone
+    //   } else {
+    //     setCurrentIndex((prev) => Math.min(prev + 1, carouselItems.length - 1));
+    //   }
+    // } else if (offset > DRAG_BUFFER || velocity > VELOCITY_THRESHOLD) {
+    //   if (loop && currentIndex === 0) {
+    //     setCurrentIndex(items.length - 1);
+    //   } else {
+    //     setCurrentIndex((prev) => Math.max(prev - 1, 0));
+    //   }
+    // }
   };
 
   const dragProps = isSingle
@@ -162,7 +189,7 @@ const Carousel = ({
   return (
     <div
       ref={containerRef}
-      className={`p-4 relative overflow-hidden ${
+      className={`p-3 relative overflow-hidden ${
         round
           ? "rounded-full border border-white"
           : "rounded-3xl border-4 shadow-lg border-primary dark:border-primaryGray"
