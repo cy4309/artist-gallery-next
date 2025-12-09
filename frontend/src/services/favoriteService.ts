@@ -1,7 +1,6 @@
 export async function toggleFavorite(userId: string, eventId: string) {
   const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
     method: "POST",
-    // headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "toggleFavorite",
       userId,
@@ -17,7 +16,6 @@ export async function toggleFavorite(userId: string, eventId: string) {
 export async function checkFavorite(userId: string, eventId: string) {
   const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
     method: "POST",
-    // headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "checkFavorite",
       userId,
@@ -32,7 +30,6 @@ export async function checkFavorite(userId: string, eventId: string) {
 export async function listFavorites(userId: string) {
   const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
     method: "POST",
-    // headers: { "Content-Type": "application/json" },
     cache: "no-store",
     body: JSON.stringify({
       action: "listFavorites",
@@ -41,7 +38,5 @@ export async function listFavorites(userId: string) {
   });
 
   const data = await res.json();
-  // console.log("⭐ listFavorites GAS 回傳：", data);
-  // return data.favorites; // [{ eventId, name }]
   return data;
 }

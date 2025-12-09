@@ -61,17 +61,18 @@ export default function ProfileSectionBoan() {
         <Card
           // className="p-4 w-full bg-white/10 backdrop-blur-md rounded-lg shadow-lg border-4 border-primary dark:border-primaryGray"
           className="
-            w-full
-            relative
-            !bg-transparent 
-            !p-4
-            !text-inherit
+            w-full 
+            relative 
+            !p-4 
+            !backdrop-blur-md
+            !text-inherit 
             rounded-xl 
             shadow-xl 
             border-4 border-primary dark:border-primaryGray 
-            backdrop-blur-md 
             overflow-hidden
+            bg-white/90 dark:bg-primary/90
           "
+          // bg-tranparent
         >
           <div className="w-full max-w-[300px] mx-auto">
             <p className="w-full text-4xl sm:text-6xl text-center font-dela leading-relaxed">

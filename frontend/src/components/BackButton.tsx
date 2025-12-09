@@ -22,7 +22,7 @@ export default function BackButton() {
   return (
     <button
       onClick={handleBack}
-      className={`cursor-pointer transition-transform duration-300 flex justify-center items-center border border-blue-500 rounded-md border-l-0 border-r-0 p-2 mb-6 hover:rotate-180`}
+      className={`cursor-pointer transition-transform duration-300 flex justify-center items-center border border-primaryBlue rounded-md border-l-0 border-r-0 p-2 mb-6 hover:rotate-180`}
       // className="
       //   mb-6 px-4 py-2
       //   flex items-center gap-2

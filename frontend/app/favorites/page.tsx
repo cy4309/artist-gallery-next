@@ -6,6 +6,7 @@ import type { CarouselItem } from "@/components/Carousel";
 import { getOrgData } from "@/services/orgDataService";
 import FavoriteButton from "@/components/FavoriteButton";
 import { Card, Row, Col, Typography, Empty } from "antd";
+import LoadingIndicator from "@/components/LoadingIndicator";
 
 export interface OrgData {
   actId: number;
@@ -59,7 +60,7 @@ export default function FavoritesPage() {
     setLoadingEvents(false);
   }, [orgData, favorites]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <LoadingIndicator />;
   if (!user) return <div>請先登入</div>;
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -106,7 +107,7 @@ export default function FavoritesPage() {
               <a
                 href={item.website}
                 target="_blank"
-                className="text-blue-500 dark:text-blue-300 text-sm"
+                className="text-primaryBlue dark:text-blue-300 text-sm"
               >
                 查看活動官網 →
               </a>

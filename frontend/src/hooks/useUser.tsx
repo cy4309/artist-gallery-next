@@ -1,81 +1,7 @@
-// "use client";
-
-// import { createContext, useContext, useEffect, useState } from "react";
-
-// interface User {
-//   id: string;
-//   email: string;
-//   name: string;
-//   picture: string;
-// }
-
-// interface AfterLoginAction {
-//   type: "favorite" | "calendar";
-//   eventId?: string;
-//   eventName?: string;
-// }
-
-// interface UserContextType {
-//   user: User | null;
-//   loading: boolean;
-//   loadUser: () => Promise<User | null>;
-//   openLoginModal: (opts?: { afterLoginAction?: AfterLoginAction }) => void;
-// }
-
-// const UserContext = createContext<UserContextType | null>(null);
-
-// export function UserProvider({ children }: { children: React.ReactNode }) {
-//   const [user, setUser] = useState<User | null>(null);
-//   const [loading, setLoading] = useState(true); // ⭐ 避免無限登入
-
-//   async function loadUser(): Promise<User | null> {
-//     try {
-//       const res = await fetch("/api/auth/me", { cache: "no-store" });
-//       const data = await res.json();
-
-//       setUser(data.user || null);
-//       setLoading(false);
-//       return data.user || null;
-//     } catch (err) {
-//       console.error("Failed to load user:", err);
-//       setUser(null);
-//       setLoading(false);
-//       return null;
-//     }
-//   }
-
-//   function openLoginModal(options?: { afterLoginAction?: AfterLoginAction }) {
-//     if (options?.afterLoginAction) {
-//       localStorage.setItem(
-//         "afterLoginAction",
-//         JSON.stringify(options.afterLoginAction)
-//       );
-//     }
-
-//     window.location.href = "/api/auth/login";
-//   }
-
-//   useEffect(() => {
-//     loadUser();
-//   }, []);
-
-//   return (
-//     <UserContext.Provider value={{ user, loading, loadUser, openLoginModal }}>
-//       {children}
-//     </UserContext.Provider>
-//   );
-// }
-
-// export function useUser() {
-//   const ctx = useContext(UserContext);
-//   if (!ctx) throw new Error("useUser must be used inside <UserProvider>");
-//   return ctx;
-// }
-
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { listFavorites } from "@/services/favoriteService";
+import { listFavorites, toggleFavorite } from "@/services/favoriteService";
 
 interface User {
   id: string;
@@ -100,6 +26,8 @@ interface UserContextType {
   favorites: string[]; // ⭐ 全域收藏列表
   reloadFavorites: (userId?: string) => Promise<void>;
   logout: () => void;
+  toggleFavoriteOptimistic: (eventId: string) => void;
+  toggleFavoriteWithSync: (userId: string, eventId: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -110,11 +38,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
 
   /**************************************************
-   * 1) Server-side 檢查登入狀態 (/api/auth/me)
+   * 1) Server-side 檢查登入狀態 (/api/auth/check-cyc-cookies)
    **************************************************/
   async function loadUser(): Promise<User | null> {
     try {
-      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      const res = await fetch("/api/auth/check-cyc-cookies", {
+        cache: "no-store",
+      });
       const data = await res.json();
 
       setUser(data.user || null);
@@ -193,6 +123,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setFavorites([]); // 如果你有 favorites
   }
 
+  function toggleFavoriteOptimistic(eventId: string) {
+    setFavorites((prev) => {
+      if (prev.includes(eventId)) {
+        return prev.filter((id) => id !== eventId);
+      } else {
+        return [...prev, eventId];
+      }
+    });
+  }
+
+  async function toggleFavoriteWithSync(userId: string, eventId: string) {
+    // 1) 樂觀更新 UI
+    toggleFavoriteOptimistic(eventId);
+
+    try {
+      await toggleFavorite(userId, eventId); // ★ 你的 API 呼叫
+      await reloadFavorites(); // ★ 讓前後一致
+    } catch (err) {
+      console.error("toggleFavorite failed, rolling back");
+      // 2) API 失敗 → rollback
+      toggleFavoriteOptimistic(eventId);
+    }
+  }
+
   /**************************************************
    * 初始化讀 user（server-side session）
    **************************************************/
@@ -211,6 +165,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         loadUserFromCookie, // ⭐ 新增回傳
         openLoginModal,
         logout,
+        toggleFavoriteOptimistic,
+        toggleFavoriteWithSync,
       }}
     >
       {children}

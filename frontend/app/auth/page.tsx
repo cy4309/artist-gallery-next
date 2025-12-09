@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import BaseButton from "@/components/BaseButton";
-// import BaseButtonNormal from "@/components/BaseButtonNormal";
 import Image from "next/image";
 import { GoogleOutlined } from "@ant-design/icons";
 import Link from "next/link";
@@ -28,7 +27,7 @@ export default function AuthPage() {
 
         <a
           href={`${window.location.href}?openExternalBrowser=1`}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-primaryBlue text-white px-4 py-2 rounded"
         >
           在瀏覽器開啟
         </a>

@@ -60,7 +60,6 @@ export default function ProfileSectionLemon() {
           className="
             w-full
             relative
-            !bg-transparent 
             !p-4
             !text-inherit
             rounded-xl 
@@ -68,6 +67,7 @@ export default function ProfileSectionLemon() {
             border-4 border-primary dark:border-primaryGray 
             backdrop-blur-md 
             overflow-hidden
+            bg-white/90 dark:bg-primary/90
           "
         >
           <div className="w-full max-w-[300px] mx-auto">

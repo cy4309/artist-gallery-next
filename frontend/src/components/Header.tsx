@@ -7,7 +7,6 @@ import {
   PoweroffOutlined,
 } from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
-// import BaseButtonNormal from "@/components/BaseButtonNormal";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
@@ -42,7 +41,7 @@ function NavItem({ label, icon, onClick, danger }: NavItemProps) {
 export default function Nav() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, loading, logout } = useUser();
+  const { user, logout } = useUser();
   const { theme, setTheme } = useTheme();
 
   /** 封裝導航跳轉 + 關閉 Drawer */
@@ -81,7 +80,7 @@ export default function Nav() {
 
       {/* Drawer / Side Menu */}
       <div
-        className={`fixed z-50 top-0 right-0 w-full bg-gray-900/80 transition-all duration-500 overflow-hidden flex flex-col items-center text-white ${
+        className={`fixed z-50 top-0 right-0 w-full bg-gray-900/80 transition-all duration-500 overflow-hidden flex flex-col items-center text-white dark:text-primaryBlue ${
           isOpen ? "h-screen" : "h-0"
         }`}
       >
