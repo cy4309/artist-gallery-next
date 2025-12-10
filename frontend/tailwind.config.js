@@ -7,7 +7,7 @@ module.exports = {
       colors: {
         primary: "#000",
         primaryGray: "#d1d5db", // gray-300
-        primaryBlue: "#3b82f6", // blue-500
+        primaryBlue: "#3b82f6", // blue-500, 原本#171C61
       },
     },
   },
