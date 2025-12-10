@@ -20,7 +20,7 @@ export default function About() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 1 }}
       >
-        CYC Studio is an independent digital project dedicated to bringing
+        CYC Zine is an independent digital project dedicated to bringing
         visibility to Taiwan’s cultural landscape — from exhibitions and
         performances to community-driven experiences.
         <br />

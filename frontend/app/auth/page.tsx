@@ -53,11 +53,11 @@ export default function AuthPage() {
             src="/images/cyc-logo.png"
             width={64}
             height={64}
-            alt="CYC Studio logo"
+            alt="CYC logo"
             className="opacity-90"
           />
           <h1 className="text-2xl md:text-3xl font-dela tracking-wide">
-            CYC Studio
+            CYC Zine
           </h1>
 
           {/* <p className="text-slate-600 dark:text-slate-300 text-center text-sm">
@@ -79,7 +79,7 @@ export default function AuthPage() {
             🔑 Enjoy secure and password-free access with Google Login
             <br /> */}
             <span className="text-xs text-slate-600 dark:text-slate-300 block mt-3 opacity-75">
-              * CYC STUDIO only uses your basic Google profile (name, email &
+              * CYC Zine only uses your basic Google profile (name, email &
               avatar).
             </span>
           </p>

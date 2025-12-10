@@ -4,7 +4,7 @@ const Footer = () => {
   return (
     <>
       <footer className="mt-4 z-50 w-full flex justify-center items-center font-nunito text-center text-xs text-primaryGray dark:text-primaryGray/40">
-        <p>© 2022 CYC Studio</p>
+        <p>© 2022 CYC Zine</p>
         <Link href="/privacy" className="cursor-pointer hover:opacity-70">
           | Privacy Policy
         </Link>

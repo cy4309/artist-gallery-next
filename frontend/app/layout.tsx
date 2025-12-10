@@ -36,7 +36,7 @@ const caveat = Caveat_Brush({
 });
 
 export const metadata: Metadata = {
-  title: "CYC Studio",
+  title: "CYC Zine",
   description: "Discover Activities & Events",
 };
 

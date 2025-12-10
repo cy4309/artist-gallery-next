@@ -1,4 +1,4 @@
-# CYC Studio – Google OAuth + Next.js App Router
+# CYC Zine – Google OAuth + Next.js App Router
 
 這個專案是以 Next.js 15 App Router 開發，並整合：
 ✔ Google OAuth 2.0 Login

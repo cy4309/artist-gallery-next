@@ -65,8 +65,11 @@ export default function Nav() {
 
   return (
     <nav className="z-50 w-full flex justify-between items-center">
-      <Link href="/" className="text-2xl md:text-3xl font-dela">
-        <h1>CYC STUDIO</h1>
+      <Link href="/">
+        {/* <h1 className="text-2xl md:text-3xl font-dela">CYC ZINE</h1> */}
+        <h1 className="text-2xl md:text-3xl font-dela">
+          CYC <span className="tracking-[0.1em] -ml-1">ZINE</span>
+        </h1>
       </Link>
 
       <div className="flex justify-end items-center fixed right-4">
@@ -92,7 +95,7 @@ export default function Nav() {
               setIsOpen(false);
             }}
           >
-            CYC STUDIO
+            CYC <span className="tracking-[0.1em] -ml-1">ZINE</span>
           </h1>
           <button
             onClick={() => setIsOpen(false)}

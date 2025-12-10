@@ -29,14 +29,14 @@ export default function PrivacyPage() {
         httpOnly session cookies Used for secure authentication between browser
         and server. • Non-HTTP-only public cookie (cyc_user) Used so the
         front-end can show your profile and favorites. No tracking, advertising,
-        or analytics cookies are used. 5. Third-Party Services CYC Studio
+        or analytics cookies are used. 5. Third-Party Services CYC Zine
         interacts with: Google OAuth (for login) Ministry of Culture Open Data
         API (event data) We are not responsible for policies or accuracy of
         external content. 6. Data Retention We keep your data as long as your
         account exists. You may request data deletion anytime by contacting us
         at: 📧 cy4309@gmail.com 7. Your Rights You may: Request to delete all
         your account data Request correction of incorrect profile information
-        Stop using the Service anytime 8. Children’s Privacy CYC Studio does not
+        Stop using the Service anytime 8. Children’s Privacy CYC Zine does not
         target children under 13 and does not knowingly collect data from
         minors. 9. Changes to This Policy We may update this Privacy Policy. We
         will revise the “Last updated” date accordingly. 10. Contact For
