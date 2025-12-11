@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic"; // 強制這支 route 每次請求都「
 export const runtime = "nodejs"; // 這支 route 要跑在 Node.js Runtime，而不是 Edge Runtime。
 
 import { NextResponse, NextRequest } from "next/server";
-// import axios, { AxiosError } from "axios";
 import axios from "axios";
+import { setUserCookies } from "@/utils/setUserCookies";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -11,23 +11,19 @@ const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
 
-function getBaseUrl(req: NextRequest) {
-  if (isProd) {
-    return NEXT_PUBLIC_BASE_URL;
-  }
-  return `http://localhost:3000`; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
+function getBaseUrl() {
+  return isProd ? NEXT_PUBLIC_BASE_URL : "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
 }
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("=== Google OAuth Callback ===");
-    const baseUrl = getBaseUrl(req);
+    const baseUrl = getBaseUrl();
     const redirectUri = `${baseUrl}/api/auth/login`;
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
 
+    // STEP 1 — Redirect to Google login
     if (!code) {
-      // redirect to Google
       const authURL = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       authURL.searchParams.set("client_id", GOOGLE_CLIENT_ID);
       authURL.searchParams.set("redirect_uri", redirectUri);
@@ -38,7 +34,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(authURL.toString());
     }
 
-    // STEP 2 — Exchange token
+    // STEP 2 — Exchange code for token
     const tokenRes = await axios.post("https://oauth2.googleapis.com/token", {
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
@@ -49,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     const { id_token, access_token } = tokenRes.data;
 
-    // STEP 3 — UserInfo
+    // STEP 3 — Fetch Google user info
     const userInfoRes = await axios.get(
       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
       { headers: { Authorization: `Bearer ${id_token}` } }
@@ -57,63 +53,38 @@ export async function GET(req: NextRequest) {
 
     const googleUser = userInfoRes.data;
 
-    console.log("=== GOOGLE USER INFO ===");
-    console.log(googleUser);
+    // Normalize user format
+    const normalizedUser = {
+      id: `google_${googleUser.id}`,
+      name: googleUser.name,
+      email: googleUser.email,
+      picture: googleUser.picture,
+      provider: "google",
+    };
 
-    // STEP 4 — Ask GAS: does user exist?
-    const checkUser = await axios.post(NEXT_PUBLIC_GAS_URL, {
+    // STEP 4 — Sync to GAS (check or create)
+    const checkRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
       action: "checkUser",
       email: googleUser.email,
     });
 
-    console.log("=== GAS checkUser result ===");
-    console.log(JSON.stringify(checkUser.data, null, 2));
-
-    let finalUser = googleUser;
-
-    if (!checkUser.data.exists) {
-      // First register
+    if (!checkRes.data.exists) {
       await axios.post(NEXT_PUBLIC_GAS_URL, {
         action: "createUser",
-        user: googleUser,
+        user: normalizedUser,
       });
     } else {
-      // Already exists → GAS version wins
-      finalUser = checkUser.data.user;
-
-      // optional: update name/photo every login
       await axios.post(NEXT_PUBLIC_GAS_URL, {
         action: "updateUser",
-        user: googleUser,
+        user: normalizedUser,
       });
     }
 
-    // STEP 5 — Cookie
-    const response = NextResponse.redirect(`${baseUrl}/auth/callback`, {
-      status: 302, // ⭐ 必加
-    });
+    // STEP 5 — Set cookies
+    const res = NextResponse.redirect(`${baseUrl}/auth/callback`);
+    setUserCookies(res, normalizedUser);
 
-    console.log("➡ Setting cookie cyc_session:", finalUser);
-
-    // Secure session cookie
-    response.cookies.set("cyc_session", JSON.stringify(finalUser), {
-      httpOnly: true, // JavaScript 無法讀取 cookie
-      sameSite: "lax",
-      secure: isProd,
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
-
-    // Public user cookie (給前端讀取)
-    response.cookies.set("cyc_user", JSON.stringify(finalUser), {
-      httpOnly: false, // ⭐ 要能被 JS 取得
-      sameSite: "lax",
-      secure: isProd,
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
-
-    return response;
+    return res;
   } catch (err: any) {
     return NextResponse.json(
       { error: err.response?.data || err.message },

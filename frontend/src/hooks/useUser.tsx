@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { listFavorites, toggleFavorite } from "@/services/favoriteService";
+import { useLiffProfile } from "@/components/LiffProvider";
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
   name: string;
   picture: string;
 }
@@ -36,6 +37,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const lineProfile = useLiffProfile(); // ⭐⭐ 來自 LIFF 的 LINE Profile（若不是從 LINE 開啟則為 null）
 
   /**************************************************
    * 1) Server-side 檢查登入狀態 (/api/auth/check-cyc-cookies)
@@ -124,13 +126,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   function toggleFavoriteOptimistic(eventId: string) {
-    setFavorites((prev) => {
-      if (prev.includes(eventId)) {
-        return prev.filter((id) => id !== eventId);
-      } else {
-        return [...prev, eventId];
-      }
-    });
+    setFavorites((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
+        : [...prev, eventId]
+    );
   }
 
   async function toggleFavoriteWithSync(userId: string, eventId: string) {
@@ -146,6 +146,41 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       toggleFavoriteOptimistic(eventId);
     }
   }
+
+  /**************************************************
+   * ⭐⭐ 核心：若有 LIFF Profile → 自動 LINE Login 登入後端
+   **************************************************/
+  useEffect(() => {
+    async function loginWithLine() {
+      if (!lineProfile) return; // ⭐ TS 知道之後不是 null
+
+      const { userId, displayName, pictureUrl } = lineProfile;
+
+      try {
+        const res = await fetch("/api/auth/login-line", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lineUserId: userId,
+            name: displayName,
+            picture: pictureUrl,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+          reloadFavorites(data.user.id);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error("LINE login failed:", err);
+      }
+    }
+
+    loginWithLine();
+  }, [lineProfile]);
 
   /**************************************************
    * 初始化讀 user（server-side session）
