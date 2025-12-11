@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import liff from "@line/liff";
 import type { LiffProfile } from "@/types/enum";
+import { useRouter } from "next/navigation";
 
 interface LiffContextType {
   profile: LiffProfile | null;
@@ -20,32 +21,47 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // -----------------------------
+  const router = useRouter();
+
+  // ------------------------------------------------------
   // ① 初始化 LIFF
-  // -----------------------------
+  // ------------------------------------------------------
   useEffect(() => {
     async function initLiff() {
       try {
         await liff.init({
           liffId: process.env.NEXT_PUBLIC_LIFF_ID!,
-          withLoginOnExternalBrowser: false,
+          withLoginOnExternalBrowser: true,
         });
 
         const insideLine = liff.isInClient();
         setIsInClient(insideLine);
 
-        // A. 在 LINE App 裡的情況
+        const currentPath = window.location.pathname; // for deep link
+        console.log("[LIFF] Loaded path =", currentPath);
+
+        // ⭐ Deep link routing：如果不是 root，就導過去
+        if (currentPath !== "/") {
+          router.replace(currentPath);
+        }
+
+        // -------------------------------------------------
+        // A) 在 LINE App 裡
+        // -------------------------------------------------
         if (insideLine) {
           if (!liff.isLoggedIn()) {
-            console.log("[LIFF] In LINE client, not logged in → login");
-            liff.login({
-              redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth`,
-            });
+            console.log("[LIFF] In client → login()");
+            liff.login(); // 必須導回 liff URL，不可自定義
             return;
           }
+        }
 
+        // -------------------------------------------------
+        // B) 外部瀏覽器（rich menu 開啟 / Web login）
+        // -------------------------------------------------
+        if (liff.isLoggedIn()) {
           const pf = await liff.getProfile();
-          console.log("[LIFF] In client, profile:", pf);
+          console.log("[LIFF] Profile loaded:", pf);
 
           setProfile({
             userId: pf.userId,
@@ -53,27 +69,11 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             pictureUrl: pf.pictureUrl ?? null,
           });
         } else {
-          // B. 在「瀏覽器」裡的情況（包括 /auth 回跳）
-          console.log("[LIFF] Running in external browser");
-
-          // 若已經登入（從 LINE Login 回跳）→ 直接取 profile
-          if (liff.isLoggedIn()) {
-            const pf = await liff.getProfile();
-            console.log("[LIFF] Browser, logged in, profile:", pf);
-
-            setProfile({
-              userId: pf.userId,
-              displayName: pf.displayName,
-              pictureUrl: pf.pictureUrl ?? null,
-            });
-          } else {
-            // 沒登入就靜靜等使用者按 Sign in with LINE
-            console.log("[LIFF] Browser, not logged in yet");
-          }
+          console.log("[LIFF] External browser not logged in");
         }
-      } catch (e: any) {
-        console.error("LIFF 初始化錯誤:", e);
-        setError(e?.message ?? "LIFF init failed");
+      } catch (err: any) {
+        console.error("LIFF init error:", err);
+        setError(err?.message ?? "LIFF init failed");
       } finally {
         setLoading(false);
       }
@@ -82,13 +82,13 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     initLiff();
   }, []);
 
-  // -----------------------------
-  // ② Profile → 同步到後端，寫 cyc_user cookie
-  // -----------------------------
+  // ------------------------------------------------------
+  // ② Profile → 同步 GAS + 設置 cookie
+  // ------------------------------------------------------
   useEffect(() => {
     if (!profile) return;
 
-    async function syncToBackend() {
+    async function syncBackend() {
       try {
         const res = await fetch("/api/auth/login-line", {
           method: "POST",
@@ -97,31 +97,38 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         });
 
         const data = await res.json();
-        console.log("[LINE Login Backend]", data);
+        console.log("[LINE Backend Sync Result]", data);
+
+        // ⭐ Backend 完成後再導回 returnTo
+        const returnTo =
+          localStorage.getItem("returnTo") ?? window.location.pathname ?? "/";
+        localStorage.removeItem("returnTo");
+
+        router.replace(returnTo);
       } catch (err) {
-        console.error("[LINE backend sync FAILED]", err);
+        console.error("[LINE sync FAILED]", err);
       }
     }
 
-    syncToBackend();
+    syncBackend();
   }, [profile]);
 
-  // -----------------------------
-  // ③ 外部瀏覽器用的 LINE Login 按鈕
-  // -----------------------------
+  // ------------------------------------------------------
+  // ③ 外部瀏覽器登入用的方法
+  // ------------------------------------------------------
   function loginWithLine() {
     if (typeof window === "undefined") return;
 
-    // 記錄 returnTo（包含 query）
     localStorage.setItem(
       "returnTo",
       window.location.pathname + window.location.search
     );
 
-    console.log("[LIFF] Manual login triggered");
+    console.log("[LIFF] Manual login");
 
+    // ⭐ Web Login：必須用 liff.login()，但 redirectUri 必須指向 LIFF URL
     liff.login({
-      redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth`,
+      redirectUri: window.location.origin, // LIFF 會自動補上 liffId
     });
   }
 
