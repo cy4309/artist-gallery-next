@@ -8,6 +8,7 @@ import { useLiff } from "@/components/LiffProvider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle, faLine } from "@fortawesome/free-brands-svg-icons";
 import { useRouter } from "next/navigation";
+import { showSwal } from "@/utils/notification";
 
 export default function AuthPage() {
   const [isWebView, setIsWebView] = useState(false);
@@ -53,6 +54,14 @@ export default function AuthPage() {
 
   // ③ Google Login 按鈕行為
   function loginWithGoogle() {
+    if (isWebView) {
+      showSwal({
+        isSuccess: false,
+        title: "無法在 App 內登入 Google，請點右上角『在外部瀏覽器開啟』",
+      });
+      return;
+    }
+
     localStorage.setItem(
       "returnTo",
       window.location.pathname + window.location.search
@@ -73,23 +82,23 @@ export default function AuthPage() {
   }
 
   // ⑤ 在 App 內（WebView）限制 Google，並提示外部開啟
-  if (isWebView) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <p className="text-lg font-bold mb-4">無法在應用程式內登入 Google</p>
-        <p className="text-sm text-gray-600 mb-6">
-          請點選右上角「在外部瀏覽器開啟」後再登入。
-        </p>
+  // if (isWebView) {
+  //   return (
+  //     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+  //       <p className="text-lg font-bold mb-4">無法在應用程式內登入 Google</p>
+  //       <p className="text-sm text-gray-600 mb-6">
+  //         請點選右上角「在外部瀏覽器開啟」後再登入。
+  //       </p>
 
-        <a
-          href={`${window.location.href}?openExternalBrowser=1`}
-          className="bg-primaryBlue text-white px-4 py-2 rounded"
-        >
-          在瀏覽器開啟
-        </a>
-      </div>
-    );
-  }
+  //       <a
+  //         href={`${window.location.href}?openExternalBrowser=1`}
+  //         className="bg-primaryBlue text-white px-4 py-2 rounded"
+  //       >
+  //         在瀏覽器開啟
+  //       </a>
+  //     </div>
+  //   );
+  // }
 
   // ⑥ 正常登入畫面（你原本的 UI）
   return (
