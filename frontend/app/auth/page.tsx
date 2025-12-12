@@ -8,69 +8,97 @@ import { useLiff } from "@/components/LiffProvider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle, faLine } from "@fortawesome/free-brands-svg-icons";
 import { useRouter } from "next/navigation";
-import { showSwal } from "@/utils/notification";
+// import { showSwal } from "@/utils/notification";
 
 export default function AuthPage() {
-  const [isWebView, setIsWebView] = useState(false);
+  // const [isWebView, setIsWebView] = useState(false);
   const [processingCallback, setProcessingCallback] = useState(false);
   const { loginWithLine } = useLiff();
   const router = useRouter();
 
-  // ① 回跳處理（LINE / Google 共用）
+  // --------------------------------------------------------
+  // ② 掛載：如果剛從外部瀏覽器回來（openExternalBrowser=1）
+  //    而且 pendingGoogleLogin = 1 → 自動開啟 Google OAuth
+  // --------------------------------------------------------
   useEffect(() => {
-    async function handleLoginCallback() {
-      const params = new URLSearchParams(window.location.search);
-      const hasCode = params.has("code"); // LINE / Google 都會有 code
+    const params = new URLSearchParams(window.location.search);
+    const open = params.get("openExternalBrowser");
+    const pendingGoogle = localStorage.getItem("pendingGoogleLogin") === "1";
 
-      if (!hasCode) {
-        console.log("[Auth] No code in URL → normal login page");
-        return;
-      }
+    if (open === "1" && pendingGoogle) {
+      console.log("[Auth] Auto continue Google flow after external browser.");
 
-      console.log("[Auth] Detected login callback");
+      // 清除 pending flag（避免回圈）
+      localStorage.removeItem("pendingGoogleLogin");
+
+      // 清掉 query
+      params.delete("openExternalBrowser");
+      const cleanUrl =
+        window.location.pathname +
+        (params.toString() ? `?${params.toString()}` : "");
+      window.history.replaceState({}, "", cleanUrl);
+
+      // 轉到 Google OAuth
+      window.location.href = "/api/auth/login";
+    }
+  }, []);
+
+  // --------------------------------------------------------
+  // ③ 判斷 callback 是 Google 還是 LINE
+  // --------------------------------------------------------
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hasCode = params.has("code");
+
+    if (!hasCode) {
+      // 完全不是 callback
+      return;
+    }
+
+    const pendingGoogle = localStorage.getItem("pendingGoogleLogin") === "1";
+
+    // ① 這是真正的 Google callback（因為 pendingGoogleLogin 是你按 Google 觸發的）
+    if (pendingGoogle) {
+      console.log("[Auth] Handling Google callback.");
+
+      localStorage.removeItem("pendingGoogleLogin");
       setProcessingCallback(true);
-
-      // 此時：
-      // - LINE 流程：LiffProvider 會自己去 call /api/auth/login-line 寫 cookie
-      // - Google 流程：你的 /api/auth/login 已經設定好 redirect & cookie
-      // 這裡只負責 redirect 回原頁面即可
 
       const returnTo = localStorage.getItem("returnTo") ?? "/";
       localStorage.removeItem("returnTo");
 
       router.replace(returnTo);
+      return;
     }
 
-    handleLoginCallback();
+    // ② 其他狀況：必定是 LINE Login callback（由 LiffProvider 處理 cookie）
+    console.log("[Auth] Detected LINE callback. Ignore here.");
+    return;
   }, [router]);
 
   // ③ Google Login 按鈕行為
   function loginWithGoogle() {
-    const url = window.location.href.toLowerCase();
-
     // 若在 LINE/FB/IG WebView → 自動開外部瀏覽器
     const ua = navigator.userAgent.toLowerCase();
     const isWebView =
       ua.includes("line") || ua.includes("fb") || ua.includes("instagram");
 
+    // 標記使用者是「真的」按了 Google Login
+    localStorage.setItem("pendingGoogleLogin", "1");
+    // 保留 returnTo
+    localStorage.setItem(
+      "returnTo",
+      window.location.pathname + window.location.search
+    );
+
     // Google Login cannot work inside WebView → open external browser
     if (isWebView) {
-      // 保留 returnTo
-      localStorage.setItem(
-        "returnTo",
-        window.location.pathname + window.location.search
-      );
-
       // ⭐ 自動開啟外部瀏覽器（LINE 允許）
       window.location.href = `${window.location.href}?openExternalBrowser=1`;
       return;
     }
 
     // 👉 外部瀏覽器 → 正常流程
-    localStorage.setItem(
-      "returnTo",
-      window.location.pathname + window.location.search
-    );
     window.location.href = "/api/auth/login";
   }
 
@@ -85,25 +113,6 @@ export default function AuthPage() {
       </div>
     );
   }
-
-  // ⑤ 在 App 內（WebView）限制 Google，並提示外部開啟
-  // if (isWebView) {
-  //   return (
-  //     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-  //       <p className="text-lg font-bold mb-4">無法在應用程式內登入 Google</p>
-  //       <p className="text-sm text-gray-600 mb-6">
-  //         請點選右上角「在外部瀏覽器開啟」後再登入。
-  //       </p>
-
-  //       <a
-  //         href={`${window.location.href}?openExternalBrowser=1`}
-  //         className="bg-primaryBlue text-white px-4 py-2 rounded"
-  //       >
-  //         在瀏覽器開啟
-  //       </a>
-  //     </div>
-  //   );
-  // }
 
   // ⑥ 正常登入畫面（你原本的 UI）
   return (
