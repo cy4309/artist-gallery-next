@@ -44,24 +44,29 @@ export default function AuthPage() {
     handleLoginCallback();
   }, [router]);
 
-  // ② 偵測 WebView（LINE / IG / FB 內建瀏覽器）
-  useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes("line") || ua.includes("fb") || ua.includes("instagram")) {
-      setIsWebView(true);
-    }
-  }, []);
-
   // ③ Google Login 按鈕行為
   function loginWithGoogle() {
+    const url = window.location.href.toLowerCase();
+
+    // 若在 LINE/FB/IG WebView → 自動開外部瀏覽器
+    const ua = navigator.userAgent.toLowerCase();
+    const isWebView =
+      ua.includes("line") || ua.includes("fb") || ua.includes("instagram");
+
+    // Google Login cannot work inside WebView → open external browser
     if (isWebView) {
-      showSwal({
-        isSuccess: false,
-        title: "無法在 App 內登入 Google，請點右上角『在外部瀏覽器開啟』",
-      });
+      // 保留 returnTo
+      localStorage.setItem(
+        "returnTo",
+        window.location.pathname + window.location.search
+      );
+
+      // ⭐ 自動開啟外部瀏覽器（LINE 允許）
+      window.location.href = `${window.location.href}?openExternalBrowser=1`;
       return;
     }
 
+    // 👉 外部瀏覽器 → 正常流程
     localStorage.setItem(
       "returnTo",
       window.location.pathname + window.location.search

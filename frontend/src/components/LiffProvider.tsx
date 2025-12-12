@@ -46,18 +46,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         }
 
         // -------------------------------------------------
-        // A) 在 LINE App 裡
-        // -------------------------------------------------
-        if (insideLine) {
-          if (!liff.isLoggedIn()) {
-            console.log("[LIFF] In client → login()");
-            liff.login(); // 必須導回 liff URL，不可自定義
-            return;
-          }
-        }
-
-        // -------------------------------------------------
-        // B) 外部瀏覽器（rich menu 開啟 / Web login）
+        // 外部瀏覽器（rich menu 開啟 / Web login）
         // -------------------------------------------------
         if (liff.isLoggedIn()) {
           const pf = await liff.getProfile();
@@ -69,7 +58,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             pictureUrl: pf.pictureUrl ?? null,
           });
         } else {
-          console.log("[LIFF] External browser not logged in");
+          console.log("[LIFF] Not logged in, waiting user action");
         }
       } catch (err: any) {
         console.error("LIFF init error:", err);
@@ -127,9 +116,10 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     console.log("[LIFF] Manual login");
 
     // ⭐ Web Login：必須用 liff.login()，但 redirectUri 必須指向 LIFF URL
-    liff.login({
-      redirectUri: window.location.origin, // LIFF 會自動補上 liffId
-    });
+    // liff.login({
+    //   // redirectUri: window.location.origin, // LIFF 會自動補上 liffId
+    //   redirectUri: "https://cyc-zine.vercel.app/auth",
+    // });
   }
 
   return (
