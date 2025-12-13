@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
+import { InitUser } from "@/types/enum";
 
 const LINE_LOGIN_CHANNEL_ID = process.env.LINE_LOGIN_CHANNEL_ID!;
 const LINE_LOGIN_CHANNEL_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET!;
@@ -111,13 +112,13 @@ export async function GET(req: NextRequest) {
     // STEP 4 — 正規化 User 物件
     // =====================================================
     const lineUserId = payload.sub; // 推播等用途要用這個
-    const normalizedUser = {
-      id: `line_${lineUserId}`, // 你的 USERS.id 主鍵（跟之前設計一致）
-      email: payload.email ?? "", // LINE 通常沒有 email，先留空字串
+    const normalizedUser: InitUser = {
+      id: `line_${lineUserId}`, // 系統主鍵
+      provider: "line",
+      lineUserId, // ⭐ 真正推播用 ID
+      email: payload.email ?? "",
       name: payload.name ?? "LINE User",
       picture: payload.picture ?? "",
-      provider: "line" as const,
-      lineUserId, // 若未來要寫進 GAS，可再加欄位
     };
 
     // =====================================================

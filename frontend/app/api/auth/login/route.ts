@@ -4,6 +4,7 @@ export const runtime = "nodejs"; // 這支 route 要跑在 Node.js Runtime，而
 import { NextResponse, NextRequest } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
+import { InitUser } from "@/types/enum";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -54,35 +55,47 @@ export async function GET(req: NextRequest) {
     const googleUser = userInfoRes.data;
 
     // Normalize user format
-    const normalizedUser = {
-      id: `google_${googleUser.id}`,
-      name: googleUser.name,
+    const normalizedUser: InitUser = {
+      id: `google_${googleUser.id}`, // ⭐ 統一前綴
+      provider: "google" as const,
+      lineUserId: "", // ⭐ Google 一定是空字串
       email: googleUser.email,
+      name: googleUser.name,
       picture: googleUser.picture,
-      provider: "google",
     };
 
     // STEP 4 — Sync to GAS (check or create)
+    // 1️⃣ 檢查 Google user（用 email）
     const checkRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-      action: "checkUser",
-      email: googleUser.email,
+      action: "checkGoogleUser",
+      email: normalizedUser.email,
     });
 
+    let finalUser = normalizedUser;
+
     if (!checkRes.data.exists) {
-      await axios.post(NEXT_PUBLIC_GAS_URL, {
-        action: "createUser",
+      const createRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
+        action: "createGoogleUser",
         user: normalizedUser,
       });
+
+      if (createRes.data?.user) {
+        finalUser = createRes.data.user;
+      }
     } else {
-      await axios.post(NEXT_PUBLIC_GAS_URL, {
-        action: "updateUser",
+      const updateRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
+        action: "updateGoogleUser",
         user: normalizedUser,
       });
+
+      if (updateRes.data?.user) {
+        finalUser = updateRes.data.user;
+      }
     }
 
     // STEP 5 — Set cookies
     const res = NextResponse.redirect(`${baseUrl}/auth/callback`);
-    setUserCookies(res, normalizedUser);
+    setUserCookies(res, finalUser);
 
     return res;
   } catch (err: any) {
