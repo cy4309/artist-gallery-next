@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import BaseButton from "@/components/BaseButton";
 import Image from "next/image";
 import Link from "next/link";
-import { useLiff } from "@/components/LiffProvider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle, faLine } from "@fortawesome/free-brands-svg-icons";
 import { useRouter } from "next/navigation";
@@ -170,7 +169,6 @@ export default function AuthPage() {
 // import BaseButton from "@/components/BaseButton";
 // import Image from "next/image";
 // import Link from "next/link";
-// import { useLiff } from "@/components/LiffProvider";
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // import { faGoogle, faLine } from "@fortawesome/free-brands-svg-icons";
 // import { useRouter } from "next/navigation";
@@ -179,7 +177,6 @@ export default function AuthPage() {
 // export default function AuthPage() {
 //   // const [isWebView, setIsWebView] = useState(false);
 //   const [processingCallback, setProcessingCallback] = useState(false);
-//   const { loginWithLine } = useLiff();
 //   const router = useRouter();
 
 //   // --------------------------------------------------------

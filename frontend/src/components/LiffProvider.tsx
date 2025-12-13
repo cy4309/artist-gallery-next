@@ -21,7 +21,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
       try {
         await liff.init({
           liffId: process.env.NEXT_PUBLIC_LIFF_ID!,
-          withLoginOnExternalBrowser: true,
+          // withLoginOnExternalBrowser: true,
         });
 
         setIsInClient(liff.isInClient());
