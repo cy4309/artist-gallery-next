@@ -22,7 +22,7 @@ export interface OrgData {
 
 export default function FavoritesPage() {
   const { Title, Text, Paragraph } = Typography;
-  const { favorites, user, loading } = useUser();
+  const { favorites, user, loading, reloadFavorites } = useUser();
   const [eventList, setEventList] = useState<CarouselItem[]>([]);
   const [orgData, setOrgData] = useState<OrgData[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -59,6 +59,11 @@ export default function FavoritesPage() {
     setEventList(matched);
     setLoadingEvents(false);
   }, [orgData, favorites]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    reloadFavorites(user.id);
+  }, [user?.id]);
 
   if (loading) return <LoadingIndicator />;
   if (!user) return <div>請先登入</div>;

@@ -22,6 +22,7 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
         afterLoginAction: {
           type: "favorite",
           eventId,
+          returnTo: window.location.pathname + window.location.search,
         },
       });
       return;

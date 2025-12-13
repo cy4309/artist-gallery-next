@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
-import { toggleFavorite } from "@/services/favoriteService";
+import { ensureFavorite } from "@/services/favoriteService";
 import LoadingIndicator from "@/components/LoadingIndicator";
 
 export default function AuthCallbackPage() {
@@ -27,14 +27,13 @@ export default function AuthCallbackPage() {
         const action = JSON.parse(pending);
 
         if (action.type === "favorite") {
-          await toggleFavorite(user.id, action.eventId);
+          await ensureFavorite(user.id, action.eventId);
         }
 
-        const returnTo = action.returnTo || "/";
         localStorage.removeItem("afterLoginAction");
-
+        // const returnTo = action.returnTo || "/";
         // router.push("/favorites");
-        router.replace(returnTo);
+        router.replace(action.returnTo || "/favorites");
         return;
       }
 
