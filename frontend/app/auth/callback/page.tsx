@@ -23,7 +23,6 @@ export default function AuthCallbackPage() {
       }
 
       const pending = localStorage.getItem("afterLoginAction");
-
       if (pending) {
         const action = JSON.parse(pending);
 
@@ -31,16 +30,20 @@ export default function AuthCallbackPage() {
           await toggleFavorite(user.id, action.eventId);
         }
 
-        // const returnTo = action.returnTo || "/";
-
+        const returnTo = action.returnTo || "/";
         localStorage.removeItem("afterLoginAction");
 
-        // router.push(returnTo);
-        router.push("/favorites");
+        // router.push("/favorites");
+        router.replace(returnTo);
         return;
       }
 
-      router.replace("/");
+      // router.replace("/");
+      // ⭐ 沒有 pending action → 用 URL returnTo
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo") || "/";
+
+      router.replace(returnTo);
     }
 
     run();

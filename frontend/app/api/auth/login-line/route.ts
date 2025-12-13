@@ -152,9 +152,10 @@ export async function GET(req: NextRequest) {
     // =====================================================
     // STEP 6 — 寫 Cookie + Redirect 回原頁面
     // =====================================================
-    const redirectResponse = NextResponse.redirect(`${baseUrl}${returnTo}`, {
-      status: 302,
-    });
+    const redirectResponse = NextResponse.redirect(
+      `${baseUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
+      { status: 302 }
+    );
 
     setUserCookies(redirectResponse, finalUser);
 

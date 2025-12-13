@@ -27,7 +27,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         setIsInClient(liff.isInClient());
 
         // 這邊只做一些 debug / deep link 解析就好
-        console.log("[LIFF] initialized, inClient =", liff.isInClient());
+        // console.log("[LIFF] initialized, inClient =", liff.isInClient());
 
         // 例如：如果你的 LIFF URL 是 /events，Next.js 本身就會接到 /events，
         // 這裡通常不需要再多做 redirect。
