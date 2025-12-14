@@ -24,7 +24,7 @@ export default function Home() {
         <Image
           className="my-4 block md:hidden w-full h-[80vh] object-cover relative"
           // src="/images/home-banner.png"
-          src="/images/qingshan-king-festival-4.jpg"
+          src="/images/qingshan-king-festival-1.jpg"
           alt="Video Cover"
           fill={false}
           width={1920}
