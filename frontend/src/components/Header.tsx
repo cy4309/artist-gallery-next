@@ -67,7 +67,7 @@ export default function Nav() {
     <nav className="z-50 w-full flex justify-between items-center">
       <Link href="/">
         {/* <h1 className="text-2xl md:text-3xl font-dela">CYC ZINE</h1> */}
-        <h1 className="text-3xl font-dela">
+        <h1 className="text-2xl md:text-3xl font-dela">
           CYC <span className="tracking-[0.15em] -ml-1">ZINE</span>
         </h1>
       </Link>
@@ -89,7 +89,7 @@ export default function Nav() {
       >
         <div className="p-4 w-full flex justify-between items-center">
           <h1
-            className="text-3xl cursor-pointer font-dela"
+            className="text-2xl md:text-3xl cursor-pointer font-dela"
             onClick={() => {
               router.push("/");
               setIsOpen(false);
