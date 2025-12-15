@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import {
   SunOutlined,
   AlignLeftOutlined,
@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 // import Image from "next/image";
 import { useTheme } from "next-themes";
+import LoadingIndicator from "./LoadingIndicator";
 
 interface NavItemProps {
   label?: string;
@@ -41,8 +42,14 @@ function NavItem({ label, icon, onClick, danger }: NavItemProps) {
 export default function Nav() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useUser();
+  const { user, logout, loadUser, loading } = useUser();
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    if (isOpen && !user) {
+      loadUser();
+    }
+  }, [isOpen, user, loadUser]);
 
   /** 封裝導航跳轉 + 關閉 Drawer */
   const go = (path: string) => {
@@ -63,6 +70,9 @@ export default function Nav() {
     setIsOpen(false);
   };
 
+  {
+    isOpen && loading && <LoadingIndicator />;
+  }
   return (
     <nav className="z-50 w-full flex justify-between items-center">
       <Link href="/">

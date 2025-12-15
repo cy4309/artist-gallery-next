@@ -26,7 +26,7 @@ export default function FavoritesPage() {
   const { Title, Text, Paragraph } = Typography;
   const router = useRouter();
 
-  const { user, favorites, loading, reloadFavorites } = useUser();
+  const { user, favorites, loading, reloadFavorites, loadUser } = useUser();
   const { isInClient, ready: liffReady } = useLiff();
 
   const [eventList, setEventList] = useState<CarouselItem[]>([]);
@@ -53,6 +53,13 @@ export default function FavoritesPage() {
       router.replace("/auth");
     }
   }, [liffReady, loading, isInClient, user, router]);
+
+  /**************************************************
+   * 初始化讀 user（server-side session）
+   **************************************************/
+  useEffect(() => {
+    loadUser();
+  }, []);
 
   // --------------------------------------------------
   // 1️⃣ 抓文化部活動列表
@@ -127,6 +134,8 @@ export default function FavoritesPage() {
               cover={
                 <div className="relative">
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src={`https://cloud.culture.tw/${item.imageUrl}`}
                     alt={item.actName}
                     className="h-52 w-full object-cover"

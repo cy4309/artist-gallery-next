@@ -261,6 +261,8 @@ const Carousel = ({
                 <li className="text-sm">{item.address}</li>
 
                 <img
+                  loading="lazy"
+                  decoding="async"
                   src={orgWebsiteUrl + item.imageUrl}
                   alt="No Image found for the selected event."
                   className="w-full"

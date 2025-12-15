@@ -9,9 +9,11 @@ export default function ProfileSectionWenChia() {
   const iframeAutoMutedPlay = `?autoplay=1&mute=1`;
 
   return (
-    <>
+    <div>
       <motion.div className="w-full max-w-[480px] mx-auto">
         <motion.img
+          loading="lazy"
+          decoding="async"
           src="/images/hero/hero-1024-1024-96dpi/wen-chia.png"
           alt="Wen Chia portrait"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -71,6 +73,6 @@ export default function ProfileSectionWenChia() {
           className="w-full h-[40vh]"
         ></iframe>
       </section>
-    </>
+    </div>
   );
 }

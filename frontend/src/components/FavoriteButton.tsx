@@ -7,6 +7,7 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
   const {
     user,
     loading: userLoading,
+    loadUser,
     openLoginModal,
     favorites,
     toggleFavoriteWithSync,
@@ -16,20 +17,25 @@ export default function FavoriteButton({ eventId }: { eventId: string }) {
   async function handleClick() {
     if (userLoading) return;
 
+    let currentUser = user; // 用「區域變數」鎖定登入後的 user
+
     // ⭐ 未登入 → 必須跳 /auth
-    if (!user) {
-      openLoginModal({
-        afterLoginAction: {
-          type: "favorite",
-          eventId,
-          returnTo: window.location.pathname + window.location.search,
-        },
-      });
-      return;
+    if (!currentUser) {
+      currentUser = await loadUser();
+      if (!currentUser) {
+        openLoginModal({
+          afterLoginAction: {
+            type: "favorite",
+            eventId,
+            returnTo: window.location.pathname + window.location.search,
+          },
+        });
+        return;
+      }
     }
 
     // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
-    await toggleFavoriteWithSync(user.id, eventId);
+    await toggleFavoriteWithSync(currentUser.id, eventId);
   }
 
   return (

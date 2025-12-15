@@ -35,14 +35,20 @@ const UserContext = createContext<UserContextType | null>(null);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   // const lineProfile = useLiffProfile(); // ⭐⭐ 來自 LIFF 的 LINE Profile（若不是從 LINE 開啟則為 null）
+  const [initialized, setInitialized] = useState(false);
 
   /**************************************************
    * 1) Server-side 檢查登入狀態 (/api/auth/check-cyc-cookies)
    **************************************************/
   async function loadUser(): Promise<User | null> {
+    // ⭐ 已經跑過就不要再跑
+    if (initialized) return user;
+    setInitialized(true);
+    setLoading(true);
+
     try {
       const res = await fetch("/api/auth/check-cyc-cookies", {
         cache: "no-store",
@@ -59,8 +65,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error("Failed to load user:", err);
       setUser(null);
-      setLoading(false);
       return null;
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -185,9 +192,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /**************************************************
    * 初始化讀 user（server-side session）
    **************************************************/
-  useEffect(() => {
-    loadUser();
-  }, []);
+  // useEffect(() => {
+  //   loadUser();
+  // }, []);
 
   return (
     <UserContext.Provider
