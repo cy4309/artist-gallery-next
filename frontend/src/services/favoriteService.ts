@@ -38,18 +38,6 @@ export async function ensureFavorite(userId: string, eventId: string) {
   });
 }
 
-// export async function ensureFavorite(userId: string, eventId: string) {
-//   const isFavorite = await checkFavorite(userId, eventId);
-
-//   if (isFavorite) {
-//     // 已收藏 → 什麼都不做
-//     return true;
-//   }
-
-//   // 尚未收藏 → 加上
-//   return await toggleFavorite(userId, eventId);
-// }
-
 export async function listFavorites(userId: string) {
   const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
     method: "POST",
