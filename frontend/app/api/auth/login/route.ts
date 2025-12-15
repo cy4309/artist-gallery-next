@@ -12,8 +12,15 @@ const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
 
+// function getBaseUrl() {
+//   return isProd ? NEXT_PUBLIC_BASE_URL : "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
+// }
+
 function getBaseUrl() {
-  return isProd ? NEXT_PUBLIC_BASE_URL : "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
+  if (isProd) return NEXT_PUBLIC_BASE_URL;
+  // 開發用
+  return "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
+  // return "https://8449774aab3c.ngrok-free.app";
 }
 
 export async function GET(req: NextRequest) {

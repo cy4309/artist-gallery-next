@@ -1,12 +1,20 @@
-type PushTextMessageParams = {
+type FavoriteFlexParams = {
   lineUserId: string;
-  text: string;
+  title: string;
+  imageUrl?: string;
+  dateText?: string;
+  locationText?: string;
+  eventUrl?: string;
 };
 
-export async function pushLineTextMessage({
+export async function pushFavoriteFlexMessage({
   lineUserId,
-  text,
-}: PushTextMessageParams) {
+  title,
+  imageUrl,
+  dateText,
+  locationText,
+  eventUrl,
+}: FavoriteFlexParams) {
   const res = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
@@ -17,16 +25,81 @@ export async function pushLineTextMessage({
       to: lineUserId,
       messages: [
         {
-          type: "text",
-          text,
+          type: "flex",
+          altText: `已加入收藏：${title}`,
+          contents: {
+            type: "bubble",
+            hero: imageUrl
+              ? {
+                  type: "image",
+                  url: imageUrl,
+                  size: "full",
+                  aspectRatio: "20:13",
+                  aspectMode: "cover",
+                }
+              : undefined,
+            body: {
+              type: "box",
+              layout: "vertical",
+              spacing: "sm",
+              contents: [
+                {
+                  type: "text",
+                  text: title,
+                  wrap: true,
+                  weight: "bold",
+                  size: "md",
+                },
+                ...(dateText
+                  ? [
+                      {
+                        type: "text",
+                        text: `🗓 ${dateText}`,
+                        size: "sm",
+                        color: "#666666",
+                        wrap: true,
+                      },
+                    ]
+                  : []),
+                ...(locationText
+                  ? [
+                      {
+                        type: "text",
+                        text: `📍 ${locationText}`,
+                        size: "sm",
+                        color: "#666666",
+                        wrap: true,
+                      },
+                    ]
+                  : []),
+              ],
+            },
+            footer: eventUrl
+              ? {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "button",
+                      style: "primary",
+                      action: {
+                        type: "uri",
+                        label: "查看活動",
+                        uri: eventUrl,
+                      },
+                    },
+                  ],
+                }
+              : undefined,
+          },
         },
       ],
     }),
   });
 
   if (!res.ok) {
-    const errorText = await res.text();
-    console.error("[LINE Messaging] push error:", errorText);
-    throw new Error("LINE push message failed");
+    const err = await res.text();
+    console.error("[LINE Flex] push error:", err);
+    throw new Error("Failed to push LINE Flex message");
   }
 }

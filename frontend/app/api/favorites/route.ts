@@ -1,20 +1,38 @@
 import { toggleFavorite } from "@/services/favoriteService";
-import { pushLineTextMessage } from "@/services/line/messaging";
+import { pushFavoriteFlexMessage } from "@/services/line/messaging";
 
 export async function POST(req: Request) {
   try {
-    const { userId, lineUserId, eventId, eventTitle } = await req.json();
+    const {
+      userId,
+      lineUserId,
+      eventId,
+      eventTitle,
+      imageUrl,
+      dateText,
+      locationText,
+      eventUrl,
+    } = await req.json();
 
-    await toggleFavorite(userId, eventId);
+    const isFavorite = await toggleFavorite(userId, eventId);
 
-    if (lineUserId) {
-      await pushLineTextMessage({
+    if (isFavorite && lineUserId) {
+      console.log("[favorites api] pushing LINE message");
+
+      await pushFavoriteFlexMessage({
         lineUserId,
-        text: `❤️ 已加入收藏\n${eventTitle}`,
+        title: eventTitle,
+        imageUrl,
+        dateText,
+        locationText,
+        eventUrl,
       });
     }
 
-    return Response.json({ success: true });
+    return Response.json({
+      success: true,
+      isFavorite,
+    });
   } catch (err) {
     console.error("[favorites api]", err);
     return Response.json({ success: false }, { status: 500 });

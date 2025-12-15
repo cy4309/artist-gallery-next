@@ -251,7 +251,17 @@ const Carousel = ({
               <ul className="p-4 flex flex-col justify-center items-center gap-2 text-white">
                 {/* ⭐ 收藏按鈕（使用 actId 作 eventId） */}
                 <div className="w-full flex justify-end items-center mb-4 text-sm">
-                  <FavoriteButton eventId={String(item.actId)} />
+                  {/* <FavoriteButton eventId={String(item.actId)} /> */}
+                  <FavoriteButton
+                    eventId={String(item.actId)}
+                    eventTitle={item.actName}
+                    imageUrl={orgWebsiteUrl + item.imageUrl}
+                    dateText={`${item.startTime.split(",")[0]} - ${
+                      item.endTime.split(",")[0]
+                    }`}
+                    locationText={item.address}
+                    eventUrl={item.website}
+                  />
                 </div>
 
                 <li className="font-black text-lg">{item.actName}</li>

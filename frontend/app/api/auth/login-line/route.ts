@@ -12,7 +12,8 @@ const isProd = process.env.NODE_ENV === "production";
 function getBaseUrl(req: NextRequest) {
   if (isProd) return NEXT_PUBLIC_BASE_URL;
   // 開發用
-  return "http://localhost:3000";
+  // return "http://localhost:3000";
+  return "https://cf73acf4000d.ngrok-free.app"; // line login callback, liff endpoint要一起改
 }
 
 export async function GET(req: NextRequest) {
