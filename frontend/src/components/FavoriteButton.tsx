@@ -5,7 +5,7 @@ import { HeartFilled, HeartOutlined } from "@ant-design/icons";
 
 export interface FavoriteButtonProps {
   eventId: string;
-  eventTitle: string;
+  eventTitle?: string;
   imageUrl?: string;
   dateText?: string;
   locationText?: string;
