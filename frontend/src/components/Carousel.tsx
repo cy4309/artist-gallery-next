@@ -43,7 +43,7 @@ const Carousel = ({
   pauseOnHover = false,
   round = false,
 }: CarouselProps) => {
-  const orgWebsiteUrl = "http://cloud.culture.tw"; //文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://
+  const orgWebsiteUrl = "https://cloud.culture.tw"; //line只接受https，即使org有些圖片是http
   const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
 
   const [dynamicWidth, setDynamicWidth] = useState(baseWidth);

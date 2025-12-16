@@ -5,8 +5,8 @@ export async function POST(req: Request) {
   try {
     const {
       userId,
-      lineUserId,
       eventId,
+      lineUserId,
       eventTitle,
       imageUrl,
       dateText,
