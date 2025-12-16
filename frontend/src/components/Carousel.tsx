@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import BaseButton from "@/components/BaseButton";
 import FavoriteButton from "@/components/FavoriteButton";
+import { getCultureImageUrl } from "@/utils/imageProxy";
 
 export interface CarouselItem {
   actId: number;
@@ -42,8 +43,7 @@ const Carousel = ({
   pauseOnHover = false,
   round = false,
 }: CarouselProps) => {
-  const orgWebsiteUrl = "http://cloud.culture.tw/"; //文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://
-
+  const orgWebsiteUrl = "http://cloud.culture.tw"; //文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://
   const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
 
   const [dynamicWidth, setDynamicWidth] = useState(baseWidth);
@@ -256,6 +256,7 @@ const Carousel = ({
                     eventId={String(item.actId)}
                     eventTitle={item.actName}
                     imageUrl={orgWebsiteUrl + item.imageUrl}
+                    // imageUrl={getCultureImageUrl(item.imageUrl)}
                     dateText={`${item.startTime.split(",")[0]} - ${
                       item.endTime.split(",")[0]
                     }`}
@@ -273,10 +274,10 @@ const Carousel = ({
                 <img
                   loading="lazy"
                   decoding="async"
-                  src={orgWebsiteUrl + item.imageUrl}
-                  alt={item.actName || "活動圖片"}
                   className="w-full"
                   draggable={false}
+                  src={getCultureImageUrl(item.imageUrl)}
+                  alt={item.actName || "活動圖片"}
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
                       "/images/placeholder.jpg";
