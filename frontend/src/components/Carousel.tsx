@@ -42,7 +42,7 @@ const Carousel = ({
   pauseOnHover = false,
   round = false,
 }: CarouselProps) => {
-  const orgWebsiteUrl = "https://cloud.culture.tw/";
+  const orgWebsiteUrl = "http://cloud.culture.tw/"; //文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://
 
   const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
 
@@ -274,9 +274,13 @@ const Carousel = ({
                   loading="lazy"
                   decoding="async"
                   src={orgWebsiteUrl + item.imageUrl}
-                  alt="No Image found for the selected event."
+                  alt={item.actName || "活動圖片"}
                   className="w-full"
                   draggable={false}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      "/images/placeholder.jpg";
+                  }}
                 />
 
                 <li className="text-sm">{item.description}</li>
