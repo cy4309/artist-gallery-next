@@ -105,3 +105,17 @@ export async function pushFavoriteFlexMessage({
     throw new Error("Failed to push LINE Flex message");
   }
 }
+
+export async function replyTextMessage(replyToken: string, text: string) {
+  await fetch("https://api.line.me/v2/bot/message/reply", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+    },
+    body: JSON.stringify({
+      replyToken,
+      messages: [{ type: "text", text }],
+    }),
+  });
+}
