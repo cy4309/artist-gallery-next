@@ -20,6 +20,14 @@ interface AfterLoginAction {
   returnTo?: string;
 }
 
+interface FavoriteExtraPayload {
+  eventTitle?: string;
+  imageUrl?: string;
+  dateText?: string;
+  locationText?: string;
+  eventUrl?: string;
+}
+
 interface UserContextType {
   user: User | null;
   loading: boolean;
@@ -30,7 +38,11 @@ interface UserContextType {
   reloadFavorites: (userId?: string) => Promise<void>;
   logout: () => void;
   toggleFavoriteOptimistic: (eventId: string) => void;
-  toggleFavoriteWithSync: (userId: string, eventId: string) => Promise<void>;
+  toggleFavoriteWithSync: (
+    userId: string,
+    eventId: string,
+    extra?: FavoriteExtraPayload
+  ) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -142,16 +154,47 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  async function toggleFavoriteWithSync(userId: string, eventId: string) {
-    // 1) 樂觀更新 UI
+  async function toggleFavoriteWithSync(
+    userId: string,
+    eventId: string,
+    extra?: {
+      eventTitle?: string;
+      imageUrl?: string;
+      dateText?: string;
+      locationText?: string;
+      eventUrl?: string;
+    }
+  ) {
+    // ⭐ 1️⃣ 樂觀更新 UI（立刻）
     toggleFavoriteOptimistic(eventId);
 
     try {
-      await toggleFavorite(userId, eventId); // ★ 你的 API 呼叫
-      await reloadFavorites(); // ★ 讓前後一致
+      // await toggleFavorite(userId, eventId); // ★ 你的 API 呼叫
+      // await reloadFavorites(); // ★ 讓前後一致
+
+      // ⭐ 2️⃣ 改成打 Server API（唯一 toggle）
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          lineUserId: user?.lineUserId,
+          eventId,
+          ...extra, // Flex Message 用
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error("toggleFavorite failed");
+      }
+
+      // ⭐ 3️⃣ 用 Server 為準，校正一次
+      await reloadFavorites(userId);
     } catch (err) {
       console.error("toggleFavorite failed, rolling back");
-      // 2) API 失敗 → rollback
+      // ⭐ 4️⃣ rollback（Server 失敗才會走到這）
       toggleFavoriteOptimistic(eventId);
     }
   }

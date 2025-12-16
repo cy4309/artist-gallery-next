@@ -26,8 +26,7 @@ export default function FavoriteButton({
     loadUser,
     openLoginModal,
     favorites,
-    // toggleFavoriteWithSync,
-    reloadFavorites,
+    toggleFavoriteWithSync,
   } = useUser();
   const isFavorite = user ? favorites.includes(eventId) : false;
 
@@ -52,33 +51,13 @@ export default function FavoriteButton({
     }
 
     // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
-    // await toggleFavoriteWithSync(currentUser.id, eventId);
-
-    // ⭐ 唯一的 toggle 行為：打 Server API
-    const res = await fetch("/api/favorites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: currentUser.id,
-        lineUserId: currentUser.lineUserId,
-        eventId,
-        eventTitle,
-        imageUrl,
-        dateText,
-        locationText,
-        eventUrl,
-      }),
+    await toggleFavoriteWithSync(currentUser.id, eventId, {
+      eventTitle,
+      imageUrl,
+      dateText,
+      locationText,
+      eventUrl,
     });
-
-    const data = await res.json();
-
-    if (!data.success) {
-      console.error("toggle favorite failed");
-      return;
-    }
-
-    // ⭐ 用 Server 結果同步前端狀態（關鍵）
-    await reloadFavorites(currentUser.id);
   }
 
   return (
