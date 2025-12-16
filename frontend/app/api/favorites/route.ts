@@ -14,14 +14,6 @@ export async function POST(req: Request) {
       eventUrl,
     } = await req.json();
 
-    const baseUrl = process.env.PUBLIC_BASE_URL;
-    const orgBaseUrl = "http://cloud.culture.tw";
-    const flexImageUrl = imageUrl
-      ? `${baseUrl}/api/image-proxy?url=${encodeURIComponent(
-          `${orgBaseUrl}${imageUrl}`
-        )}`
-      : undefined;
-
     const isFavorite = await toggleFavorite(userId, eventId);
 
     if (isFavorite && lineUserId) {
@@ -30,7 +22,7 @@ export async function POST(req: Request) {
       await pushFavoriteFlexMessage({
         lineUserId,
         title: eventTitle,
-        imageUrl: flexImageUrl,
+        imageUrl,
         dateText,
         locationText,
         eventUrl,

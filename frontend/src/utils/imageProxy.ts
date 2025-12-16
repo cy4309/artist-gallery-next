@@ -1,7 +1,7 @@
 /**
  * 文化部圖片（cloud.culture.tw）專用 proxy
  * 保證回傳 https-safe 的圖片 URL
- * 文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://
+ * 文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://，這支供前端使用
  */
 export function getCultureImageUrl(path?: string) {
   if (!path) return "/images/placeholder.jpg";
