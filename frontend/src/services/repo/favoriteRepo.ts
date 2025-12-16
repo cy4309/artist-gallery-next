@@ -1,5 +1,9 @@
+//* repo =「跟資料來源說話」，特徵只做 CRUD，「唯一可以跟資料來源說話的地方」
+
+const GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
+
 export async function toggleFavorite(userId: string, eventId: string) {
-  const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
+  const res = await fetch(GAS_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "toggleFavorite",
@@ -10,11 +14,12 @@ export async function toggleFavorite(userId: string, eventId: string) {
 
   const data = await res.json();
   if (!data.success) throw new Error("Failed to toggle favorite");
-  return data.isFavorite; // true / false
+
+  return data.isFavorite as boolean;
 }
 
 export async function checkFavorite(userId: string, eventId: string) {
-  const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
+  const res = await fetch(GAS_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "checkFavorite",
@@ -24,11 +29,11 @@ export async function checkFavorite(userId: string, eventId: string) {
   });
 
   const data = await res.json();
-  return data.isFavorite;
+  return data.isFavorite as boolean;
 }
 
 export async function ensureFavorite(userId: string, eventId: string) {
-  return fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
+  return fetch(GAS_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "ensureFavorite",
@@ -39,7 +44,7 @@ export async function ensureFavorite(userId: string, eventId: string) {
 }
 
 export async function listFavorites(userId: string) {
-  const res = await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
+  const res = await fetch(GAS_URL, {
     method: "POST",
     cache: "no-store",
     body: JSON.stringify({
@@ -48,6 +53,5 @@ export async function listFavorites(userId: string) {
     }),
   });
 
-  const data = await res.json();
-  return data;
+  return res.json();
 }

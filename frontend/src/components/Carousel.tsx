@@ -43,7 +43,6 @@ const Carousel = ({
   pauseOnHover = false,
   round = false,
 }: CarouselProps) => {
-  // const orgWebsiteUrl = "https://cloud.culture.tw"; //line只接受https，即使org有些圖片是http
   const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
 
   const [dynamicWidth, setDynamicWidth] = useState(baseWidth);
@@ -255,7 +254,6 @@ const Carousel = ({
                   <FavoriteButton
                     eventId={String(item.actId)}
                     eventTitle={item.actName}
-                    // imageUrl={orgWebsiteUrl + item.imageUrl}
                     imageUrl={
                       process.env.NEXT_PUBLIC_BASE_URL +
                       getCultureImageUrl(item.imageUrl)

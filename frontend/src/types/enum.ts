@@ -14,3 +14,11 @@ export interface InitUser {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface FavoriteExtraPayload {
+  eventTitle?: string; // UI optional, server will fallback
+  imageUrl?: string;
+  dateText?: string;
+  locationText?: string;
+  eventUrl?: string;
+}

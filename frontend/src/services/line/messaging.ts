@@ -1,3 +1,5 @@
+//* 第三方服務（server only）
+
 type FavoriteFlexParams = {
   lineUserId: string;
   title: string;

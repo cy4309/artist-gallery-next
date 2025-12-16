@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
-import { ensureFavorite } from "@/services/favoriteService";
+import { ensureFavorite } from "@/services/repo/favoriteRepo";
 import LoadingIndicator from "@/components/LoadingIndicator";
 
 export default function AuthCallbackPage() {

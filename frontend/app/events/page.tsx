@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CloseCircleOutlined } from "@ant-design/icons";
-import { getOrgData } from "@/services/orgDataService";
+import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
 import Carousel from "@/components/Carousel";
 import BaseButton from "@/components/BaseButton";

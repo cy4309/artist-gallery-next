@@ -5,7 +5,7 @@ import { useLiff } from "@/components/LiffProvider";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { CarouselItem } from "@/components/Carousel";
-import { getOrgData } from "@/services/orgDataService";
+import { getOrgData } from "@/services/client/orgDataClient";
 import FavoriteButton from "@/components/FavoriteButton";
 import { Card, Row, Col, Typography, Empty } from "antd";
 import LoadingIndicator from "@/components/LoadingIndicator";

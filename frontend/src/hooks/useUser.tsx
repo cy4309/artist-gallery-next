@@ -1,8 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { listFavorites, toggleFavorite } from "@/services/favoriteService";
+import { listFavorites } from "@/services/repo/favoriteRepo";
 // import { useLiffProfile } from "@/components/LiffProvider";
+import { FavoriteExtraPayload } from "@/types/enum";
+import { fetchCurrentUser } from "@/services/client/authClient";
+import { toggleFavoriteClient } from "@/services/client/favoriteClient";
 
 interface User {
   id: string;
@@ -18,14 +21,6 @@ interface AfterLoginAction {
   eventId?: string;
   eventName?: string;
   returnTo?: string;
-}
-
-interface FavoriteExtraPayload {
-  eventTitle?: string;
-  imageUrl?: string;
-  dateText?: string;
-  locationText?: string;
-  eventUrl?: string;
 }
 
 interface UserContextType {
@@ -60,16 +55,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   async function loadUser(): Promise<User | null> {
     // ⭐ 已經跑過就不要再跑
     if (initialized) return user;
+
     setInitialized(true);
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/check-cyc-cookies", {
-        cache: "no-store",
-      });
-      const data = await res.json();
-
+      const data = await fetchCurrentUser();
       setUser(data.user || null);
+
       if (data.user) {
         await reloadFavorites(data.user.id);
       }
@@ -157,13 +150,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   async function toggleFavoriteWithSync(
     userId: string,
     eventId: string,
-    extra?: {
-      eventTitle?: string;
-      imageUrl?: string;
-      dateText?: string;
-      locationText?: string;
-      eventUrl?: string;
-    }
+    extra?: FavoriteExtraPayload
   ) {
     // ⭐ 1️⃣ 樂觀更新 UI（立刻）
     toggleFavoriteOptimistic(eventId);
@@ -173,18 +160,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       // await reloadFavorites(); // ★ 讓前後一致
 
       // ⭐ 2️⃣ 改成打 Server API（唯一 toggle）
-      const res = await fetch("/api/favorites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          lineUserId: user?.lineUserId,
-          eventId,
-          ...extra, // Flex Message 用
-        }),
+      const data = await toggleFavoriteClient({
+        userId,
+        lineUserId: user?.lineUserId,
+        eventId,
+        ...extra,
       });
-
-      const data = await res.json();
 
       if (!data.success) {
         throw new Error("toggleFavorite failed");
