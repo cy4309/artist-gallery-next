@@ -19,7 +19,7 @@ export interface ToggleFavoritePayload extends FavoriteExtraPayload {
 export interface ToggleFavoriteRepoParams {
   userId: string;
   eventId: string;
-  eventTitle: string; // ✅ repo 層一定要
+  eventTitle?: string; // ✅ repo 層一定要
   eventStartDate?: string;
   eventEndDate?: string;
   eventLocation?: string;

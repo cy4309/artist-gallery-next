@@ -22,11 +22,7 @@ export async function toggleFavoriteAndNotify(
     imageUrl,
   } = payload;
 
-  // ❗ repo 層一定要 eventTitle，這裡防呆
-  if (!eventTitle) {
-    throw new Error("eventTitle is required for toggleFavorite");
-  }
-
+  // ⭐ 只把 repo 真正需要的東西丟下去
   const repoParams: ToggleFavoriteRepoParams = {
     userId,
     eventId,
@@ -39,12 +35,11 @@ export async function toggleFavoriteAndNotify(
 
   const isFavorite = await toggleFavorite(repoParams);
 
-  const canNotify = isFavorite && lineUserId && eventTitle;
-
-  if (canNotify) {
+  // ⭐ 只有「新增收藏」才需要完整資料、才推播
+  if (isFavorite && lineUserId && eventTitle) {
     try {
       await pushFavoriteFlexMessage({
-        title: eventTitle, // TS 現在知道一定是 string
+        title: eventTitle,
         eventStartDate,
         eventEndDate,
         eventLocation,
@@ -53,7 +48,7 @@ export async function toggleFavoriteAndNotify(
         imageUrl,
       });
     } catch (err) {
-      // ⭐ 非致命錯誤：不要影響收藏成功
+      // 非致命錯誤，不影響收藏成功
       console.error("[LINE notify failed]", err);
     }
   }
