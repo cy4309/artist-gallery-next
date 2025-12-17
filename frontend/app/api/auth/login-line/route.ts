@@ -14,7 +14,7 @@ function getBaseUrl() {
   // 開發用
   // return "http://localhost:3000";
   return "https://f21ff5445295.ngrok-free.app";
-  // 測試要改: 上面這行, env也要記得切換dev
+  // 測試要改: 上面這行
   // 測試要改: login channel: line login callback, liff endpoint要一起改
   // 測試要改: messaging api: Webhook URL
 }

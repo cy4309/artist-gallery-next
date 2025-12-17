@@ -9,6 +9,13 @@ interface LiffContextType {
   error: string | null;
 }
 
+function getLiffId() {
+  if (process.env.NODE_ENV === "production") {
+    return process.env.NEXT_PUBLIC_LIFF_ID_PROD!;
+  }
+  return process.env.NEXT_PUBLIC_LIFF_ID_DEV!;
+}
+
 export const LiffContext = createContext<LiffContextType | null>(null);
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
@@ -20,7 +27,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     async function initLiff() {
       try {
         await liff.init({
-          liffId: process.env.NEXT_PUBLIC_LIFF_ID!,
+          liffId: getLiffId(),
           // withLoginOnExternalBrowser: true,
         });
 
