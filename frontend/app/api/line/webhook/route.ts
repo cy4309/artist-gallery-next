@@ -1,6 +1,8 @@
 //* 1.驗證 signature
 //* 2.把 events 丟給 router
 
+export const runtime = "nodejs"; // 沒有宣告 runtime，Vercel 可能會用 Edge Runtime，而 Edge 不能用 Node 的 crypto
+
 import crypto from "crypto";
 import { handleLineEvents } from "@/services/line/webhook";
 
@@ -27,5 +29,5 @@ export async function POST(req: Request) {
 
   await handleLineEvents(payload.events);
 
-  return Response.json({ success: true });
+  return new Response("OK", { status: 200 });
 }
