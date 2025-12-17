@@ -12,7 +12,6 @@ import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 // import Image from "next/image";
 import { useTheme } from "next-themes";
-import LoadingIndicator from "./LoadingIndicator";
 
 interface NavItemProps {
   label?: string;
@@ -70,9 +69,6 @@ export default function Nav() {
     setIsOpen(false);
   };
 
-  {
-    isOpen && loading && <LoadingIndicator />;
-  }
   return (
     <nav className="z-50 w-full flex justify-between items-center">
       <Link href="/">

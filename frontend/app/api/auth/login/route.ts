@@ -4,7 +4,7 @@ export const runtime = "nodejs"; // 這支 route 要跑在 Node.js Runtime，而
 import { NextResponse, NextRequest } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
-import { InitUser } from "@/types/enum";
+import { UserInitPayload } from "@/types/user";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -12,15 +12,8 @@ const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
 
-// function getBaseUrl() {
-//   return isProd ? NEXT_PUBLIC_BASE_URL : "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
-// }
-
 function getBaseUrl() {
-  if (isProd) return NEXT_PUBLIC_BASE_URL;
-  // 開發用
-  return "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
-  // return "https://8449774aab3c.ngrok-free.app";
+  return isProd ? NEXT_PUBLIC_BASE_URL : "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
 }
 
 export async function GET(req: NextRequest) {
@@ -62,7 +55,7 @@ export async function GET(req: NextRequest) {
     const googleUser = userInfoRes.data;
 
     // Normalize user format
-    const normalizedUser: InitUser = {
+    const normalizedUser: UserInitPayload = {
       id: `google_${googleUser.id}`, // ⭐ 統一前綴
       provider: "google" as const,
       lineUserId: "", // ⭐ Google 一定是空字串

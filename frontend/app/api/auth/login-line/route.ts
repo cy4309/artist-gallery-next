@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
-import { InitUser } from "@/types/enum";
+import { UserInitPayload } from "@/types/user";
 
 const LINE_LOGIN_CHANNEL_ID = process.env.LINE_LOGIN_CHANNEL_ID!;
 const LINE_LOGIN_CHANNEL_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET!;
@@ -13,7 +13,10 @@ function getBaseUrl(req: NextRequest) {
   if (isProd) return NEXT_PUBLIC_BASE_URL;
   // 開發用
   // return "http://localhost:3000";
-  return "https://601d80bbf666.ngrok-free.app"; // line login callback, liff endpoint要一起改, env也要記得切換dev
+  return "https://f21ff5445295.ngrok-free.app";
+  // 測試要改: 上面這行, env也要記得切換dev
+  // 測試要改: login channel: line login callback, liff endpoint要一起改
+  // 測試要改: messaging api: Webhook URL
 }
 
 export async function GET(req: NextRequest) {
@@ -113,7 +116,7 @@ export async function GET(req: NextRequest) {
     // STEP 4 — 正規化 User 物件
     // =====================================================
     const lineUserId = payload.sub; // 推播等用途要用這個
-    const normalizedUser: InitUser = {
+    const normalizedUser: UserInitPayload = {
       id: `line_${lineUserId}`, // 系統主鍵
       provider: "line",
       lineUserId, // ⭐ 真正推播用 ID

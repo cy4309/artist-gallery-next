@@ -1,22 +1,32 @@
 //* 第三方服務（server only）
 
 type FavoriteFlexParams = {
-  lineUserId: string;
   title: string;
-  imageUrl?: string;
-  dateText?: string;
-  locationText?: string;
+  eventStartDate?: string;
+  eventEndDate?: string;
+  eventLocation?: string;
   eventUrl?: string;
+  lineUserId: string;
+  imageUrl?: string;
 };
 
 export async function pushFavoriteFlexMessage({
-  lineUserId,
   title,
-  imageUrl,
-  dateText,
-  locationText,
+  eventStartDate,
+  eventEndDate,
+  eventLocation,
   eventUrl,
+  lineUserId,
+  imageUrl,
 }: FavoriteFlexParams) {
+  // ⭐ 組合日期顯示文字
+  const dateText =
+    eventStartDate && eventEndDate
+      ? `${eventStartDate} - ${eventEndDate}`
+      : eventStartDate
+      ? eventStartDate
+      : undefined;
+
   const res = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
@@ -63,11 +73,11 @@ export async function pushFavoriteFlexMessage({
                       },
                     ]
                   : []),
-                ...(locationText
+                ...(eventLocation
                   ? [
                       {
                         type: "text",
-                        text: `📍 ${locationText}`,
+                        text: `📍 ${eventLocation}`,
                         size: "sm",
                         color: "#666666",
                         wrap: true,

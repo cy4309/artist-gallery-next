@@ -254,15 +254,14 @@ const Carousel = ({
                   <FavoriteButton
                     eventId={String(item.actId)}
                     eventTitle={item.actName}
+                    eventStartDate={item.startTime.split(",")[0]}
+                    eventEndDate={item.endTime.split(",")[0]}
+                    eventLocation={item.address}
+                    eventUrl={item.website}
                     imageUrl={
                       process.env.NEXT_PUBLIC_BASE_URL +
                       getCultureImageUrl(item.imageUrl)
                     } //line只吃https
-                    dateText={`${item.startTime.split(",")[0]} - ${
-                      item.endTime.split(",")[0]
-                    }`}
-                    locationText={item.address}
-                    eventUrl={item.website}
                   />
                 </div>
 
@@ -281,7 +280,7 @@ const Carousel = ({
                   alt={item.actName || "活動圖片"}
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
-                      "/images/placeholder.jpg";
+                      "/images/placeholder-no-image.png";
                   }}
                 />
 

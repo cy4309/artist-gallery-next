@@ -62,7 +62,7 @@ export function useLiff() {
 
 // import { createContext, useContext, useEffect, useState } from "react";
 // import liff from "@line/liff";
-// import type { LiffProfile } from "@/types/enum";
+// import type { LiffProfile } from "@/types/line";
 // import { useRouter } from "next/navigation";
 
 // interface LiffContextType {

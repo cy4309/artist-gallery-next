@@ -6,23 +6,12 @@ import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
 import Carousel from "@/components/Carousel";
 import BaseButton from "@/components/BaseButton";
-
-export interface OrgData {
-  actId: number;
-  cityName: string;
-  actName: string;
-  startTime: string;
-  endTime: string;
-  address: string;
-  imageUrl: string;
-  description: string;
-  website: string;
-}
+import { OrgEvent } from "@/types/event";
 
 export default function EventsPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [clickedId, setClickedId] = useState<string | null>(null);
-  const [orgData, setOrgData] = useState<OrgData[]>([]);
+  const [orgData, setOrgData] = useState<OrgEvent[]>([]);
   const [isMapClicked, setIsMapClicked] = useState(false);
 
   // 依照 orgData + clickedId 動態算出當前城市對應活動
@@ -37,8 +26,8 @@ export default function EventsPage() {
       try {
         const response = await getOrgData();
         // 若 getOrgData 沒有型別，可以這樣註記：
-        // const response = (await getOrgData()) as OrgData[];
-        setOrgData(response as OrgData[]);
+        // const response = (await getOrgData()) as OrgEvent[];
+        setOrgData(response as OrgEvent[]);
       } catch (error) {
         console.error("Failed to fetch org data:", error);
       }

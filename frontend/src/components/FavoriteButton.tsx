@@ -6,19 +6,21 @@ import { HeartFilled, HeartOutlined } from "@ant-design/icons";
 export interface FavoriteButtonProps {
   eventId: string;
   eventTitle?: string;
-  imageUrl?: string;
-  dateText?: string;
-  locationText?: string;
+  eventStartDate?: string;
+  eventEndDate?: string;
+  eventLocation?: string;
   eventUrl?: string;
+  imageUrl?: string;
 }
 
 export default function FavoriteButton({
   eventId,
   eventTitle,
-  imageUrl,
-  dateText,
-  locationText,
+  eventStartDate,
+  eventEndDate,
+  eventLocation,
   eventUrl,
+  imageUrl,
 }: FavoriteButtonProps) {
   const {
     user,
@@ -53,10 +55,11 @@ export default function FavoriteButton({
     // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
     await toggleFavoriteWithSync(currentUser.id, eventId, {
       eventTitle,
-      imageUrl,
-      dateText,
-      locationText,
+      eventStartDate,
+      eventEndDate,
+      eventLocation,
       eventUrl,
+      imageUrl,
     });
   }
 

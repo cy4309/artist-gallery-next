@@ -3,18 +3,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { listFavorites } from "@/services/repo/favoriteRepo";
 // import { useLiffProfile } from "@/components/LiffProvider";
-import { FavoriteExtraPayload } from "@/types/enum";
+import { FavoriteExtraPayload } from "@/types/favorite";
+import { User } from "@/types/user";
 import { fetchCurrentUser } from "@/services/client/authClient";
 import { toggleFavoriteClient } from "@/services/client/favoriteClient";
-
-interface User {
-  id: string;
-  email?: string;
-  name: string;
-  picture: string;
-  lineUserId?: string;
-  provider?: string;
-}
 
 interface AfterLoginAction {
   type: "favorite" | "calendar";
