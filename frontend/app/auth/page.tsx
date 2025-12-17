@@ -121,7 +121,7 @@ export default function AuthPage() {
           className="w-full text-white bg-[#00C300] hover:bg-[#00a800]"
           onClick={loginWithLine}
         >
-          <FontAwesomeIcon icon={faLine} className="text-xl" />
+          <FontAwesomeIcon icon={faLine} className="text-xl w-5 h-5 shrink-0" />
           <span className="font-medium ml-4">Sign in with LINE</span>
         </BaseButton>
 
@@ -130,7 +130,10 @@ export default function AuthPage() {
           className="w-full text-white bg-[#4285F4] hover:bg-[#3367D6]"
           onClick={loginWithGoogle}
         >
-          <FontAwesomeIcon icon={faGoogle} className="text-xl" />
+          <FontAwesomeIcon
+            icon={faGoogle}
+            className="text-xl w-5 h-5 shrink-0"
+          />
           <span className="font-medium ml-4">Sign in with Google</span>
         </BaseButton>
 

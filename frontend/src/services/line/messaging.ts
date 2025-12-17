@@ -10,6 +10,42 @@ type FavoriteFlexParams = {
   imageUrl?: string;
 };
 
+// 有 replyToken → 用 replyXXX
+export async function replyTextMessage(replyToken: string, text: string) {
+  await fetch("https://api.line.me/v2/bot/message/reply", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+    },
+    body: JSON.stringify({
+      replyToken,
+      messages: [{ type: "text", text }],
+    }),
+  });
+}
+
+// 沒有 replyToken → 用 pushXXX
+export async function pushTextMessage(lineUserId: string, text: string) {
+  const res = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+    },
+    body: JSON.stringify({
+      to: lineUserId,
+      messages: [{ type: "text", text }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("[LINE push text error]", err);
+    throw new Error("Failed to push LINE text message");
+  }
+}
+
 export async function pushFavoriteFlexMessage({
   title,
   eventStartDate,
@@ -114,18 +150,4 @@ export async function pushFavoriteFlexMessage({
     console.error("[LINE Flex] push error:", err);
     throw new Error("Failed to push LINE Flex message");
   }
-}
-
-export async function replyTextMessage(replyToken: string, text: string) {
-  await fetch("https://api.line.me/v2/bot/message/reply", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
-    },
-    body: JSON.stringify({
-      replyToken,
-      messages: [{ type: "text", text }],
-    }),
-  });
 }

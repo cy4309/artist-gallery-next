@@ -9,7 +9,7 @@ const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production";
 
-function getBaseUrl(req: NextRequest) {
+function getBaseUrl() {
   if (isProd) return NEXT_PUBLIC_BASE_URL;
   // 開發用
   // return "http://localhost:3000";
@@ -21,7 +21,7 @@ function getBaseUrl(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const baseUrl = getBaseUrl(req);
+    const baseUrl = getBaseUrl();
     const url = new URL(req.url);
     const searchParams = url.searchParams;
     const code = searchParams.get("code");
