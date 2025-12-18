@@ -6,21 +6,25 @@ import { handlePostbackEvent } from "./postback";
 
 export async function handleLineEvents(events: any[] = []) {
   for (const event of events) {
-    switch (event.type) {
-      case "message":
-        await handleMessageEvent(event);
-        break;
+    try {
+      switch (event.type) {
+        case "message":
+          await handleMessageEvent(event);
+          break;
 
-      case "follow":
-        await handleFollowEvent(event);
-        break;
+        case "follow":
+          await handleFollowEvent(event);
+          break;
 
-      case "postback":
-        await handlePostbackEvent(event);
-        break;
+        case "postback":
+          await handlePostbackEvent(event);
+          break;
 
-      default:
-        console.log("[LINE] Unhandled event:", event.type);
+        default:
+          console.log("[LINE] Unhandled event:", event.type);
+      }
+    } catch (err) {
+      console.error("[LINE event error]", event.type, err);
     }
   }
 }

@@ -4,6 +4,7 @@ import { replyTextMessage } from "@/services/line/messaging";
 
 export async function handleMessageEvent(event: any) {
   if (event.message?.type !== "text") return;
+  if (!event.replyToken) return;
 
   const text = event.message.text.trim();
   const replyToken = event.replyToken;
