@@ -1,10 +1,8 @@
 // 加好友，這裡用 push，不是 reply，因為 follow event 沒有 replyToken
-
 import { pushTextMessage } from "@/services/line/messaging";
 
 export async function handleFollowEvent(event: any) {
   const lineUserId = event.source?.userId;
-
   if (!lineUserId) return;
 
   console.log("[LINE follow]", lineUserId);

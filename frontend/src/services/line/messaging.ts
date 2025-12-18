@@ -10,6 +10,8 @@ type FavoriteFlexParams = {
   imageUrl?: string;
 };
 
+const ENABLE_LINE_PUSH = false; // 開著這個會扣每月200的免費push額度，先關起來
+
 // 有 replyToken → 用 replyXXX
 export async function replyTextMessage(replyToken: string, text: string) {
   await fetch("https://api.line.me/v2/bot/message/reply", {
@@ -27,6 +29,8 @@ export async function replyTextMessage(replyToken: string, text: string) {
 
 // 沒有 replyToken → 用 pushXXX
 export async function pushTextMessage(lineUserId: string, text: string) {
+  if (!ENABLE_LINE_PUSH) return;
+
   const res = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
@@ -55,6 +59,8 @@ export async function pushFavoriteFlexMessage({
   lineUserId,
   imageUrl,
 }: FavoriteFlexParams) {
+  if (!ENABLE_LINE_PUSH) return;
+
   // ⭐ 組合日期顯示文字
   const dateText =
     eventStartDate && eventEndDate

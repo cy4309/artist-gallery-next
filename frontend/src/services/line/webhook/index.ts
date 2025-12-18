@@ -8,15 +8,15 @@ export async function handleLineEvents(events: any[] = []) {
   for (const event of events) {
     try {
       switch (event.type) {
-        case "message":
+        case "message": // reply
           await handleMessageEvent(event);
           break;
 
-        case "follow":
+        case "follow": // push
           await handleFollowEvent(event);
           break;
 
-        case "postback":
+        case "postback": // reply
           await handlePostbackEvent(event);
           break;
 
