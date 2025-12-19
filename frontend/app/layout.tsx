@@ -6,12 +6,10 @@ import {
   Caveat_Brush,
 } from "next/font/google";
 import "./globals.css";
-// import Providers from "@/stores/Providers";
 import { ThemeProvider } from "next-themes";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { LiffProvider } from "@/components/LiffProvider";
-import { UserProvider } from "@/hooks/useUser";
+import ClientRoot from "@/components/ClientRoot"; // layout是ssr，裡面要接component需包一層client才可以
 
 const delaGothic = Dela_Gothic_One({
   subsets: ["latin"],
@@ -56,19 +54,15 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem={true}
         >
-          {/* <Providers> */}
-          <LiffProvider>
-            <UserProvider>
-              <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center">
-                <Header />
-                <main className="w-full flex flex-col grow justify-center items-center">
-                  {children}
-                </main>
-                <Footer />
-              </div>
-            </UserProvider>
-          </LiffProvider>
-          {/* </Providers> */}
+          <ClientRoot>
+            <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center">
+              <Header />
+              <main className="w-full flex flex-col grow justify-center items-center">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </ClientRoot>
         </ThemeProvider>
       </body>
     </html>
