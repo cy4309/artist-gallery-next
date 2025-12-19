@@ -31,6 +31,7 @@ export async function toggleFavoriteAndNotify(
     eventEndDate,
     eventLocation,
     eventUrl,
+    imageUrl,
   };
 
   const isFavorite = await toggleFavorite(repoParams);

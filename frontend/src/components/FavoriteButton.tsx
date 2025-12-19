@@ -11,6 +11,7 @@ export interface FavoriteButtonProps {
   eventLocation?: string;
   eventUrl?: string;
   imageUrl?: string;
+  onUnfavorite?: () => void; // ⭐ 用於 /favorites 立即移除卡片
 }
 
 export default function FavoriteButton({
@@ -21,6 +22,7 @@ export default function FavoriteButton({
   eventLocation,
   eventUrl,
   imageUrl,
+  onUnfavorite,
 }: FavoriteButtonProps) {
   const {
     user,
@@ -52,6 +54,9 @@ export default function FavoriteButton({
       }
     }
 
+    // ⭐ 記住點擊前狀態（關鍵）
+    const wasFavorited = isFavorite;
+
     // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
     await toggleFavoriteWithSync(currentUser.id, eventId, {
       eventTitle,
@@ -61,6 +66,11 @@ export default function FavoriteButton({
       eventUrl,
       imageUrl,
     });
+
+    // ⭐ 只在「取消收藏」時，通知父層立刻移除卡片
+    if (wasFavorited) {
+      onUnfavorite?.();
+    }
   }
 
   return (

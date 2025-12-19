@@ -1,12 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { listFavorites } from "@/services/repo/favoriteRepo";
+// import { listFavorites } from "@/services/repo/favoriteRepo";
 // import { useLiffProfile } from "@/components/LiffProvider";
 import { FavoriteExtraPayload } from "@/types/favorite";
 import { User } from "@/types/user";
 import { fetchCurrentUser } from "@/services/client/authClient";
-import { toggleFavoriteClient } from "@/services/client/favoriteClient";
+import {
+  toggleFavoriteClient,
+  fetchFavoriteList,
+} from "@/services/client/favoriteClient";
 
 interface AfterLoginAction {
   type: "favorite" | "calendar";
@@ -109,22 +112,34 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   async function reloadFavorites(userId?: string) {
     try {
-      const uid = userId || user?.id;
-      if (!uid) return;
-
-      const res = await listFavorites(uid);
-
-      if (!res || !Array.isArray(res.favorites)) {
-        setFavorites([]);
-        return;
-      }
-
-      setFavorites(res.favorites.map((f: any) => f.eventId));
+      if (!userId && !user?.id) return;
+      const { favorites } = await fetchFavoriteList();
+      // ⭐ 只取 ids，給愛心用
+      setFavorites(favorites.map((f) => String(f.eventId)));
     } catch (err) {
       console.error("reloadFavorites error:", err);
       setFavorites([]);
     }
   }
+
+  // async function reloadFavorites(userId?: string) {
+  //   try {
+  //     const uid = userId || user?.id;
+  //     if (!uid) return;
+
+  //     const res = await listFavorites(uid);
+
+  //     if (!res || !Array.isArray(res.favorites)) {
+  //       setFavorites([]);
+  //       return;
+  //     }
+
+  //     setFavorites(res.favorites.map((f: any) => f.eventId));
+  //   } catch (err) {
+  //     console.error("reloadFavorites error:", err);
+  //     setFavorites([]);
+  //   }
+  // }
 
   function logout() {
     setUser(null);

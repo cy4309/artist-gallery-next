@@ -24,6 +24,7 @@ export interface ToggleFavoriteRepoParams {
   eventEndDate?: string;
   eventLocation?: string;
   eventUrl?: string;
+  imageUrl?: string;
 }
 
 // 收藏紀錄
@@ -35,6 +36,7 @@ export interface FavoriteRecord {
   eventEndDate?: string;
   eventLocation?: string;
   eventUrl?: string;
+  imageUrl?: string;
   createdAt?: string;
 }
 
