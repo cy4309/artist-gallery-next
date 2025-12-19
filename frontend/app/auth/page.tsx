@@ -83,7 +83,7 @@ export default function AuthPage() {
           bg-white/90 dark:bg-white/5 backdrop-blur-xl
           border border-white/20 dark:border-white/10
           shadow-xl rounded-2xl 
-          p-8 md:p-10
+          p-4 md:p-8
           flex flex-col items-center gap-8
         "
       >
@@ -106,12 +106,12 @@ export default function AuthPage() {
 
           <p className="text-slate-600 dark:text-slate-300 opacity-75 text-sm leading-6 mt-3">
             Sign in to:
-            <br />⭐ Save your favorite events
+            <br />⭐ Save and manage your favorite events
             <br />
-            📅 Add events to Google Calendar
+            🧭 Quickly return to events you care about
             <span className="text-xs text-slate-600 dark:text-slate-300 block mt-3 opacity-75">
               * CYC Zine only uses your basic Google profile (name, email &
-              avatar).
+              avatar) for sign-in.
             </span>
           </p>
         </div>

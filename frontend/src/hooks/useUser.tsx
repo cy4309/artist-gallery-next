@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-// import { listFavorites } from "@/services/repo/favoriteRepo";
 // import { useLiffProfile } from "@/components/LiffProvider";
 import { FavoriteExtraPayload } from "@/types/favorite";
 import { User } from "@/types/user";
@@ -122,25 +121,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // async function reloadFavorites(userId?: string) {
-  //   try {
-  //     const uid = userId || user?.id;
-  //     if (!uid) return;
-
-  //     const res = await listFavorites(uid);
-
-  //     if (!res || !Array.isArray(res.favorites)) {
-  //       setFavorites([]);
-  //       return;
-  //     }
-
-  //     setFavorites(res.favorites.map((f: any) => f.eventId));
-  //   } catch (err) {
-  //     console.error("reloadFavorites error:", err);
-  //     setFavorites([]);
-  //   }
-  // }
-
   function logout() {
     setUser(null);
     setFavorites([]); // 如果你有 favorites
@@ -179,7 +159,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       // ⭐ 3️⃣ 用 Server 為準，校正一次
-      await reloadFavorites(userId);
+      // await reloadFavorites(userId);
     } catch (err) {
       console.error("toggleFavorite failed, rolling back");
       // ⭐ 4️⃣ rollback（Server 失敗才會走到這）

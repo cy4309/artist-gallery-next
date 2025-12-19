@@ -8,14 +8,22 @@ import FavoriteButton from "@/components/FavoriteButton";
 import { Card, Row, Col, Typography, Empty, Tag } from "antd";
 import { fetchFavoriteList } from "@/services/client/favoriteClient";
 import type { FavoriteRecord } from "@/types/favorite";
+import LoadingIndicator from "@/components/LoadingIndicator";
 
 const { Title, Text } = Typography;
 
 /** 是否已結束（安全版） */
 function isEnded(endDate?: string) {
   if (!endDate) return false;
+
+  // 沒有年份的日期（Dec 28 / Jun 30）→ 一律視為未結束
+  if (!/\d{4}/.test(endDate)) {
+    return false;
+  }
+
   const d = new Date(endDate);
   if (isNaN(d.getTime())) return false;
+
   return d < new Date();
 }
 
@@ -23,7 +31,6 @@ export default function FavoritesPage() {
   const router = useRouter();
   const { user, loading, loadUser } = useUser();
   const { isInClient, ready: liffReady } = useLiff();
-
   const [favorites, setFavorites] = useState<FavoriteRecord[]>([]);
   const [fetching, setFetching] = useState(false);
 
@@ -90,12 +97,10 @@ export default function FavoritesPage() {
   }, [user?.id]);
 
   if (!user) return null;
-
+  if (fetching) return <LoadingIndicator />;
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      {!fetching && favorites.length === 0 && (
-        <Empty description="沒有收藏項目" />
-      )}
+      {favorites.length === 0 && <Empty description="沒有收藏項目" />}
 
       <Row gutter={[24, 24]}>
         {favorites.map((item) => {

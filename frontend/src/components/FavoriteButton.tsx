@@ -54,8 +54,11 @@ export default function FavoriteButton({
       }
     }
 
-    // ⭐ 記住點擊前狀態（關鍵）
-    const wasFavorited = isFavorite;
+    const wasFavorite = favorites.includes(eventId);
+    // ⭐ 立刻更新列表 UI（只影響 /favorites）
+    if (wasFavorite) {
+      onUnfavorite?.();
+    }
 
     // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
     await toggleFavoriteWithSync(currentUser.id, eventId, {
@@ -66,11 +69,6 @@ export default function FavoriteButton({
       eventUrl,
       imageUrl,
     });
-
-    // ⭐ 只在「取消收藏」時，通知父層立刻移除卡片
-    if (wasFavorited) {
-      onUnfavorite?.();
-    }
   }
 
   return (
