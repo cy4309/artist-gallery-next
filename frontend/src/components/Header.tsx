@@ -16,6 +16,7 @@ import { useUser } from "@/hooks/useUser";
 // import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { logoutClient } from "@/services/client/authClient";
 
 interface NavItemProps {
   label?: string;
@@ -62,11 +63,16 @@ export default function Nav() {
   };
 
   /** 🔥 登出 */
+  // const handleLogout = async () => {
+  //   logout(); // ← ⭐ 清掉前端 user 狀態
+  //   await fetch("/api/auth/logout", { method: "POST" });
+  //   router.push("/auth");
+  //   setIsOpen(false);
+  // };
   const handleLogout = async () => {
-    logout(); // ← ⭐ 清掉前端 user 狀態
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/auth");
+    await logoutClient();
     setIsOpen(false);
+    router.push("/auth");
   };
 
   /** 🌙 Dark Mode */
