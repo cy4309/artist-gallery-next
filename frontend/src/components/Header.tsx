@@ -63,15 +63,10 @@ export default function Nav() {
   /** 🔥 登出 */
   const handleLogout = async () => {
     logout(); // ← ⭐ 清掉前端 user 狀態
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch (err) {
-      console.error("Logout API failed", err);
-      // 可選：rollback or ignore
-    } finally {
-      setIsOpen(false);
-      router.push("/auth");
-    }
+    await fetch("/api/auth/logout", { method: "POST" });
+    setIsOpen(false);
+    router.refresh(); // ⭐ 強制同步 server 狀態
+    router.push("/auth");
   };
 
   /** 🌙 Dark Mode */
