@@ -5,6 +5,7 @@ import {
   // Noto_Sans_TC,
   Caveat_Brush,
 } from "next/font/google";
+// import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Header from "@/components/Header";
@@ -16,6 +17,13 @@ const delaGothic = Dela_Gothic_One({
   weight: "400",
   variable: "--font-dela-gothic",
 });
+
+// export const delaGothic = localFont({
+//   src: "/fonts/DelaGothicOne-Regular.ttf",
+//   weight: "400",
+//   variable: "--font-dela-gothic",
+//   display: "swap",
+// });
 
 const nunito = Nunito({
   subsets: ["latin"],

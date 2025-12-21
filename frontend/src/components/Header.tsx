@@ -66,6 +66,7 @@ export default function Nav() {
     logout(); // ← ⭐ 清掉前端 user 狀態
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/auth");
+    setIsOpen(false);
   };
 
   /** 🌙 Dark Mode */
