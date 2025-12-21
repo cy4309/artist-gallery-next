@@ -8,7 +8,6 @@ import {
   AlignLeftOutlined,
   PoweroffOutlined,
 } from "@ant-design/icons";
-import { faEarthAmericas } from "@fortawesome/free-solid-svg-icons";
 import BaseButton from "@/components/BaseButton";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -16,7 +15,6 @@ import { useUser } from "@/hooks/useUser";
 // import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useLocale } from "@/locales/contexts/LocaleContext";
-import { logoutClient } from "@/services/client/authClient";
 
 interface NavItemProps {
   label?: string;
@@ -63,16 +61,17 @@ export default function Nav() {
   };
 
   /** 🔥 登出 */
-  // const handleLogout = async () => {
-  //   logout(); // ← ⭐ 清掉前端 user 狀態
-  //   await fetch("/api/auth/logout", { method: "POST" });
-  //   router.push("/auth");
-  //   setIsOpen(false);
-  // };
   const handleLogout = async () => {
-    await logoutClient();
-    setIsOpen(false);
-    router.push("/auth");
+    logout(); // ← ⭐ 清掉前端 user 狀態
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout API failed", err);
+      // 可選：rollback or ignore
+    } finally {
+      setIsOpen(false);
+      router.push("/auth");
+    }
   };
 
   /** 🌙 Dark Mode */
