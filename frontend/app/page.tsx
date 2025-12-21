@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 // import dynamic from "next/dynamic";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 // const P5Canvas = dynamic(() => import("@/components/P5Canvas"), {
 //   ssr: false,
 // });
 
 export default function Home() {
+  const { t } = useLocale();
   return (
     <>
       <div className="w-full h-full flex justify-center items-center relative">
@@ -33,7 +35,7 @@ export default function Home() {
         />
 
         <h1 className="absolute border-b-2 text-2xl md:text-3xl text-white font-dela">
-          Unearth Stories.
+          {t.home.title}
         </h1>
       </div>
 

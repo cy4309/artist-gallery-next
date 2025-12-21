@@ -1,9 +1,19 @@
 "use client";
 
 // import BaseButton from "@/components/BaseButton";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function About() {
+  const { t } = useLocale();
+  // const [mounted, setMounted] = useState(false);
+
+  // useEffect(() => {
+  //   setMounted(true);
+  // }, []);
+
+  // if (!mounted) return null;
   return (
     <div className="flex flex-col justify-center items-center text-center gap-8">
       <motion.h1
@@ -12,9 +22,29 @@ export default function About() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
       >
-        Exploring Culture, One Story at a Time.
+        {t.about.title}
       </motion.h1>
-      <motion.p
+      <motion.div
+        className="text-sm max-w-md flex flex-col gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 1 }}
+      >
+        {t.about.body.map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        ))}
+
+        <p>
+          📬 {t.about.contact}：
+          <a
+            href="mailto:cy4309@gmail.com"
+            className="underline hover:opacity-70 ml-1"
+          >
+            cy4309@gmail.com
+          </a>
+        </p>
+      </motion.div>
+      {/* <motion.p
         className="text-sm max-w-md"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -40,7 +70,7 @@ export default function About() {
         >
           cy4309@gmail.com
         </a>
-      </motion.p>
+      </motion.p> */}
     </div>
   );
 }

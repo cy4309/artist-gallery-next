@@ -8,11 +8,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle, faLine } from "@fortawesome/free-brands-svg-icons";
 import { useRouter } from "next/navigation";
 // import { showSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function AuthPage() {
   // const [isWebView, setIsWebView] = useState(false);
   const [processingCallback, setProcessingCallback] = useState(false);
   const router = useRouter();
+  const { t } = useLocale();
 
   // ① 處理 Google Login 回調（/auth?code=...）
   useEffect(() => {
@@ -59,10 +61,8 @@ export default function AuthPage() {
   if (processingCallback) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <p className="text-lg font-bold mb-3">Signing you in...</p>
-        <p className="text-sm text-gray-600">
-          Please wait while we complete your login.
-        </p>
+        <p className="text-lg font-bold mb-3">{t.auth.processing.title}</p>
+        <p className="text-sm text-gray-600">{t.auth.processing.description}</p>
       </div>
     );
   }
@@ -97,21 +97,21 @@ export default function AuthPage() {
             className="opacity-90"
           />
           <h1 className="text-2xl md:text-3xl font-dela tracking-wide">
-            CYC Zine
+            {t.auth.title}
           </h1>
 
           <h2 className="text-lg md:text-xl text-slate-600 dark:text-slate-300 text-center font-dela tracking-wide">
-            Discover Taiwan’s cultural stories. Build your own inspiration map.
+            {t.auth.subtitle}
           </h2>
 
           <p className="text-slate-600 dark:text-slate-300 opacity-75 text-sm leading-6 mt-3">
-            Sign in to:
-            <br />⭐ Save and manage your favorite events
+            {t.auth.intro.title}
             <br />
-            🧭 Quickly return to events you care about
+            {t.auth.intro.item1}
+            <br />
+            {t.auth.intro.item2}
             <span className="text-xs text-slate-600 dark:text-slate-300 block mt-3 opacity-75">
-              * CYC Zine only uses your basic Google profile (name, email &
-              avatar) for sign-in.
+              {t.auth.intro.note}
             </span>
           </p>
         </div>
@@ -146,19 +146,19 @@ export default function AuthPage() {
 
         {/* Footer Text */}
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center leading-6">
-          By signing in, you agree to our{" "}
+          {t.auth.footer.prefix}{" "}
           <Link
             href="/privacy"
             className="underline cursor-pointer hover:opacity-70"
           >
-            Privacy Policy
+            {t.auth.footer.privacy}
           </Link>{" "}
-          and{" "}
+          {t.auth.footer.and}{" "}
           <Link
             href="/terms"
             className="underline cursor-pointer hover:opacity-70"
           >
-            Terms of Use
+            {t.auth.footer.terms}
           </Link>
         </p>
       </div>

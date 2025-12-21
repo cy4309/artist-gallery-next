@@ -1,4 +1,6 @@
+"use client";
 import { motion } from "framer-motion";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 const container = {
   hidden: { opacity: 0 },
@@ -24,6 +26,7 @@ const item = {
 };
 
 export default function Hero() {
+  const { t } = useLocale();
   return (
     <header className="min-h-[100dvh] flex flex-col justify-center items-center text-center px-6">
       <motion.div
@@ -36,13 +39,11 @@ export default function Hero() {
           variants={item}
           className="text-4xl md:text-6xl mb-4 font-dela"
         >
-          The Underground Squad.
+          {t.hero.title}
         </motion.h1>
 
         <motion.p variants={item} className="text-lg max-w-md">
-          Alongside major events, we spotlight Taiwan’s underground
-          scenes—music, skateboarding, tattoo, graffiti—kept alive by creators
-          shaping a more diverse culture.
+          {t.hero.description}
         </motion.p>
       </motion.div>
     </header>

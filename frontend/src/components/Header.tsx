@@ -2,16 +2,20 @@
 
 import { useState, ReactNode, useEffect } from "react";
 import {
+  GlobalOutlined,
   SunOutlined,
+  MoonOutlined,
   AlignLeftOutlined,
   PoweroffOutlined,
 } from "@ant-design/icons";
+import { faEarthAmericas } from "@fortawesome/free-solid-svg-icons";
 import BaseButton from "@/components/BaseButton";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 // import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 interface NavItemProps {
   label?: string;
@@ -32,8 +36,8 @@ function NavItem({ label, icon, onClick, danger }: NavItemProps) {
         ${danger ? "text-red-400 hover:text-red-300" : "text-white"}
       `}
     >
-      <span>{label}</span>
       {icon && <span className="text-base">{icon}</span>}
+      <span className="ml-2">{label}</span>
     </BaseButton>
   );
 }
@@ -43,6 +47,7 @@ export default function Nav() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout, loadUser, loading } = useUser();
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale, t } = useLocale();
 
   useEffect(() => {
     if (isOpen && !user) {
@@ -66,6 +71,12 @@ export default function Nav() {
   /** 🌙 Dark Mode */
   const handleToggleDarkMode = () => {
     setTheme(theme === "dark" ? "light" : "dark");
+    setIsOpen(false);
+  };
+
+  /** toggle Locale */
+  const handleLocale = () => {
+    setLocale(locale === "zh" ? "en" : "zh");
     setIsOpen(false);
   };
 
@@ -129,23 +140,36 @@ export default function Nav() {
         </div>
 
         <div className="p-4 w-2/3 md:w-1/3 flex flex-col gap-6 border-b border-white/20">
-          <NavItem label="Events" onClick={() => go("/events")} />
+          <NavItem label={t.header.events} onClick={() => go("/events")} />
           {user && (
-            <NavItem label="Favorites" onClick={() => go("/favorites")} />
+            <NavItem
+              label={t.header.favorites}
+              onClick={() => go("/favorites")}
+            />
           )}
-          <NavItem label="Special Columns" onClick={() => go("/interviews")} />
-          <NavItem label="About Us" onClick={() => go("/about")} />
+          <NavItem
+            label={t.header.interviews}
+            onClick={() => go("/interviews")}
+          />
+          <NavItem label={t.header.about} onClick={() => go("/about")} />
         </div>
 
         <div className="p-4 w-2/3 md:w-1/3 flex flex-col gap-4">
           <NavItem
-            // label="Dark Mode"
-            icon={<SunOutlined />}
+            icon={<GlobalOutlined />}
+            label={locale === "zh" ? t.header.switchToEn : t.header.switchToZh}
+            onClick={handleLocale}
+          />
+          <NavItem
+            label={
+              theme === "dark" ? t.header.switchToLight : t.header.switchToDark
+            }
+            icon={theme === "dark" ? <SunOutlined /> : <MoonOutlined />}
             onClick={handleToggleDarkMode}
           />
           {user && (
             <NavItem
-              // label="Logout"
+              label={t.header.logout}
               icon={<PoweroffOutlined />}
               onClick={handleLogout}
               danger
