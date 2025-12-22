@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 import { ensureFavorite } from "@/services/repo/favoriteRepo";
+import { event } from "@/helpers/ga";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -16,10 +17,18 @@ export default function AuthCallbackPage() {
       executed.current = true;
 
       const user = loadUserFromCookie();
+      // console.log(user);
       if (!user) {
         router.push("/auth");
         return;
       }
+
+      // ✅ ⭐ 登入成功 → 送 GA（只送一次）
+      event({
+        action: "login",
+        category: "auth",
+        label: user.provider, // "google" | "line"
+      });
 
       const pending = localStorage.getItem("afterLoginAction");
       if (pending) {

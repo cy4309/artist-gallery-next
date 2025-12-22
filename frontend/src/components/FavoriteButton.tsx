@@ -2,6 +2,7 @@
 
 import { useUser } from "@/hooks/useUser";
 import { HeartFilled, HeartOutlined } from "@ant-design/icons";
+import { event } from "@/helpers/ga";
 
 export interface FavoriteButtonProps {
   eventId: string;
@@ -68,6 +69,13 @@ export default function FavoriteButton({
       eventLocation,
       eventUrl,
       imageUrl,
+    });
+
+    // send to GA
+    event({
+      action: wasFavorite ? "remove_favorite" : "add_favorite",
+      category: "engagement",
+      label: eventId,
     });
   }
 
