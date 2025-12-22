@@ -4,14 +4,14 @@ import type {
   ListFavoritesResponse,
 } from "@/types/favorite";
 
-const GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
+const GAS_URL = process.env.GAS_URL!;
 
 export async function toggleFavorite(
   params: ToggleFavoriteRepoParams
 ): Promise<boolean> {
   const res = await fetch(GAS_URL, {
     method: "POST",
-    // headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "toggleFavorite",
       ...params,
@@ -36,7 +36,7 @@ export async function checkFavorite(
 ): Promise<boolean> {
   const res = await fetch(GAS_URL, {
     method: "POST",
-    // headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "checkFavorite",
       userId,
@@ -58,7 +58,7 @@ export async function ensureFavorite(
 ): Promise<void> {
   const res = await fetch(GAS_URL, {
     method: "POST",
-    // headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "ensureFavorite",
       userId,
@@ -77,7 +77,7 @@ export async function listFavorites(
   const res = await fetch(GAS_URL, {
     method: "POST",
     cache: "no-store",
-    // headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "listFavorites",
       userId,

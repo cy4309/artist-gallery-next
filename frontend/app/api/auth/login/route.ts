@@ -5,10 +5,11 @@ import { NextResponse, NextRequest } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
+import { GAS_ACTION } from "@/constants/gas";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
+const GAS_URL = process.env.GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
 
@@ -32,6 +33,9 @@ export async function GET(req: NextRequest) {
       authURL.searchParams.set("scope", "openid email profile");
       authURL.searchParams.set("prompt", "select_account"); // ⭐ 強制每次都選帳號
 
+      const state = crypto.randomUUID();
+      authURL.searchParams.set("state", state);
+
       return NextResponse.redirect(authURL.toString());
     }
 
@@ -47,9 +51,17 @@ export async function GET(req: NextRequest) {
     const { id_token, access_token } = tokenRes.data;
 
     // STEP 3 — Fetch Google user info
+    // const userInfoRes = await axios.get(
+    //   `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
+    //   { headers: { Authorization: `Bearer ${id_token}` } }
+    // );
     const userInfoRes = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
-      { headers: { Authorization: `Bearer ${id_token}` } }
+      "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
     );
 
     const googleUser = userInfoRes.data;
@@ -66,16 +78,16 @@ export async function GET(req: NextRequest) {
 
     // STEP 4 — Sync to GAS (check or create)
     // 1️⃣ 檢查 Google user（用 email）
-    const checkRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-      action: "checkGoogleUser",
+    const checkRes = await axios.post(GAS_URL, {
+      action: GAS_ACTION.CHECK_GOOGLE_USER,
       email: normalizedUser.email,
     });
 
     let finalUser = normalizedUser;
 
     if (!checkRes.data.exists) {
-      const createRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-        action: "createGoogleUser",
+      const createRes = await axios.post(GAS_URL, {
+        action: GAS_ACTION.CREATE_GOOGLE_USER,
         user: normalizedUser,
       });
 
@@ -83,8 +95,8 @@ export async function GET(req: NextRequest) {
         finalUser = createRes.data.user;
       }
     } else {
-      const updateRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-        action: "updateGoogleUser",
+      const updateRes = await axios.post(GAS_URL, {
+        action: GAS_ACTION.UPDATE_GOOGLE_USER,
         user: normalizedUser,
       });
 

@@ -1,0 +1,13 @@
+export const GAS_ACTION = {
+  // google
+  CHECK_GOOGLE_USER: "checkGoogleUser",
+  CREATE_GOOGLE_USER: "createGoogleUser",
+  UPDATE_GOOGLE_USER: "updateGoogleUser",
+  // line
+  CHECK_LINE_USER: "checkLineUser",
+  CREATE_LINE_USER: "createLineUser",
+  UPDATE_LINE_USER: "updateLineUser",
+} as const;
+
+// export type GasAction =
+//   (typeof GAS_ACTION)[keyof typeof GAS_ACTION];

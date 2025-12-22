@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
+import { GAS_ACTION } from "@/constants/gas";
 
 const LINE_LOGIN_CHANNEL_ID = process.env.LINE_LOGIN_CHANNEL_ID!;
 const LINE_LOGIN_CHANNEL_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET!;
-const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
+const GAS_URL = process.env.GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production";
 
@@ -129,24 +130,24 @@ export async function GET(req: NextRequest) {
     // STEP 5 — 與 GAS 同步（checkLineUser / createLineUser / updateLineUser）
     // =====================================================
     // 1) 先檢查是否存在
-    const checkRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-      action: "checkLineUser",
+    const checkRes = await axios.post(GAS_URL, {
+      action: GAS_ACTION.CHECK_LINE_USER,
       userId: normalizedUser.id, // 對應 GAS 裡 USERS.id（line_xxx）
     });
 
     let finalUser = normalizedUser;
 
     if (!checkRes.data.exists) {
-      const createRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-        action: "createLineUser",
+      const createRes = await axios.post(GAS_URL, {
+        action: GAS_ACTION.CREATE_LINE_USER,
         user: normalizedUser,
       });
       if (createRes.data?.user) {
         finalUser = createRes.data.user;
       }
     } else {
-      const updateRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-        action: "updateLineUser",
+      const updateRes = await axios.post(GAS_URL, {
+        action: GAS_ACTION.UPDATE_LINE_USER,
         user: normalizedUser,
       });
       if (updateRes.data?.user) {
@@ -173,72 +174,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-// import { NextResponse } from "next/server";
-// import axios from "axios";
-// import { setUserCookies } from "@/utils/setUserCookies";
-
-// const NEXT_PUBLIC_GAS_URL = process.env.NEXT_PUBLIC_GAS_URL!;
-
-// export async function POST(req: Request) {
-//   try {
-//     const body = await req.json();
-
-//     const { userId, displayName, pictureUrl } = body;
-
-//     if (!userId) {
-//       return NextResponse.json(
-//         { error: "Missing LINE userId" },
-//         { status: 400 }
-//       );
-//     }
-
-//     /** ----------------------------------------
-//      * STEP 1 — Normalize LINE User
-//      * -------------------------------------- */
-//     const normalizedUser = {
-//       id: `line_${userId}`,
-//       name: displayName,
-//       picture: pictureUrl ?? "",
-//       provider: "line",
-//     };
-
-//     /** ----------------------------------------
-//      * STEP 2 — Check if LINE user exists in GAS
-//      * -------------------------------------- */
-//     const checkRes = await axios.post(NEXT_PUBLIC_GAS_URL, {
-//       action: "checkLineUser",
-//       userId: normalizedUser.id,
-//     });
-
-//     /** ----------------------------------------
-//      * STEP 3 — Create or Update user in GAS
-//      * -------------------------------------- */
-//     if (!checkRes.data.exists) {
-//       await axios.post(NEXT_PUBLIC_GAS_URL, {
-//         action: "createLineUser",
-//         user: normalizedUser,
-//       });
-//     } else {
-//       await axios.post(NEXT_PUBLIC_GAS_URL, {
-//         action: "updateLineUser",
-//         user: normalizedUser,
-//       });
-//     }
-
-//     /** ----------------------------------------
-//      * STEP 4 — Set cookies (session + public)
-//      * -------------------------------------- */
-//     const res = NextResponse.json({
-//       user: normalizedUser,
-//       message: "LINE login success",
-//     });
-
-//     setUserCookies(res, normalizedUser);
-
-//     return res;
-//   } catch (err) {
-//     console.error("LINE login error:", err);
-//     return NextResponse.json({ error: "Internal error" }, { status: 500 });
-//   }
-// }
