@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import FavoriteButton from "@/components/FavoriteButton";
 import { Card, Row, Col, Typography, Empty, Tag } from "antd";
 import { fetchFavoriteList } from "@/services/client/favoriteClient";
-import type { FavoriteRecord } from "@/types/favorite";
+import type { FavoriteRecord } from "@/types/favorite/shared";
 import LoadingIndicator from "@/components/LoadingIndicator";
 
 const { Title, Text } = Typography;

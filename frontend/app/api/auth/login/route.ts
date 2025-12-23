@@ -5,7 +5,7 @@ import { NextResponse, NextRequest } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
-import { GAS_ACTION } from "@/constants/gas";
+import { GAS_ACTION } from "@/types/gas/actionConstants";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -38,6 +38,26 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.redirect(authURL.toString());
     }
+
+    // if (!code) {
+    //   const authURL = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    //   authURL.searchParams.set("client_id", GOOGLE_CLIENT_ID);
+    //   authURL.searchParams.set("redirect_uri", redirectUri);
+    //   authURL.searchParams.set("response_type", "code");
+    //   authURL.searchParams.set("scope", "openid email profile");
+    //   authURL.searchParams.set("prompt", "select_account");
+    //   // ⭐ 把 returnTo 放進 state
+    //   const returnTo = req.nextUrl.searchParams.get("returnTo") ?? "/";
+    //   const statePayload = {
+    //     returnTo,
+    //     ts: Date.now(),
+    //   };
+    //   const state = Buffer.from(JSON.stringify(statePayload)).toString(
+    //     "base64url"
+    //   );
+    //   authURL.searchParams.set("state", state);
+    //   return NextResponse.redirect(authURL.toString());
+    // }
 
     // STEP 2 — Exchange code for token
     const tokenRes = await axios.post("https://oauth2.googleapis.com/token", {
@@ -108,7 +128,6 @@ export async function GET(req: NextRequest) {
     // STEP 5 — Set cookies
     const res = NextResponse.redirect(`${baseUrl}/auth/callback`);
     setUserCookies(res, finalUser);
-
     return res;
   } catch (err: any) {
     return NextResponse.json(

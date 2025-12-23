@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
-import { GAS_ACTION } from "@/constants/gas";
+import { GAS_ACTION } from "@/types/gas/actionConstants";
 
 const LINE_LOGIN_CHANNEL_ID = process.env.LINE_LOGIN_CHANNEL_ID!;
 const LINE_LOGIN_CHANNEL_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET!;

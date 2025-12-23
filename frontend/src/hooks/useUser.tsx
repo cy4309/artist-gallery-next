@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 // import { useLiffProfile } from "@/components/LiffProvider";
-import { FavoriteExtraPayload } from "@/types/favorite";
+import { FavoriteExtraPayload } from "@/types/favorite/shared";
 import { User } from "@/types/user";
 import { fetchCurrentUser } from "@/services/client/authClient";
 import {
@@ -10,12 +10,31 @@ import {
   fetchFavoriteList,
 } from "@/services/client/favoriteClient";
 
-interface AfterLoginAction {
-  type: "favorite" | "calendar";
-  eventId?: string;
-  eventName?: string;
-  returnTo?: string;
-}
+// interface AfterLoginAction {
+//   type: "favorite" | "calendar";
+//   eventId?: string;
+//   eventName?: string;
+//   returnTo?: string;
+// }
+
+type AfterLoginAction =
+  | {
+      type: "favorite";
+      returnTo?: string;
+      payload: {
+        eventId: string;
+        eventTitle?: string;
+        eventStartDate?: string;
+        eventEndDate?: string;
+        eventLocation?: string;
+        eventUrl?: string;
+        imageUrl?: string;
+      };
+    }
+  | {
+      type: "calendar";
+      returnTo?: string;
+    };
 
 interface UserContextType {
   user: User | null;
@@ -23,12 +42,11 @@ interface UserContextType {
   loadUser: () => Promise<User | null>;
   loadUserFromCookie: () => User | null;
   openLoginModal: (opts?: { afterLoginAction?: AfterLoginAction }) => void;
-  favorites: string[]; // ⭐ 全域收藏列表
-  reloadFavorites: (userId?: string) => Promise<void>;
+  favorites: string[];
+  reloadFavorites: () => Promise<void>;
   logout: () => void;
   toggleFavoriteOptimistic: (eventId: string) => void;
   toggleFavoriteWithSync: (
-    userId: string,
     eventId: string,
     extra?: FavoriteExtraPayload
   ) => Promise<void>;
@@ -58,7 +76,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user || null);
 
       if (data.user) {
-        await reloadFavorites(data.user.id);
+        await reloadFavorites();
       }
       setLoading(false);
 
@@ -109,11 +127,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/auth";
   }
 
-  async function reloadFavorites(userId?: string) {
+  async function reloadFavorites() {
     try {
-      if (!userId && !user?.id) return;
       const { favorites } = await fetchFavoriteList();
-      // ⭐ 只取 ids，給愛心用
       setFavorites(favorites.map((f) => String(f.eventId)));
     } catch (err) {
       console.error("reloadFavorites error:", err);
@@ -123,7 +139,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   function logout() {
     setUser(null);
-    setFavorites([]); // 如果你有 favorites
+    setFavorites([]);
   }
 
   function toggleFavoriteOptimistic(eventId: string) {
@@ -135,7 +151,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function toggleFavoriteWithSync(
-    userId: string,
     eventId: string,
     extra?: FavoriteExtraPayload
   ) {
@@ -145,11 +160,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       // await toggleFavorite(userId, eventId); // ★ 你的 API 呼叫
       // await reloadFavorites(); // ★ 讓前後一致
-
       // ⭐ 2️⃣ 改成打 Server API（唯一 toggle）
       const data = await toggleFavoriteClient({
-        userId,
-        lineUserId: user?.lineUserId,
         eventId,
         ...extra,
       });

@@ -47,8 +47,17 @@ export default function FavoriteButton({
         openLoginModal({
           afterLoginAction: {
             type: "favorite",
-            eventId,
             returnTo: window.location.pathname + window.location.search,
+            // eventId,
+            payload: {
+              eventId,
+              eventTitle,
+              eventStartDate,
+              eventEndDate,
+              eventLocation,
+              eventUrl,
+              imageUrl,
+            },
           },
         });
         return;
@@ -62,7 +71,7 @@ export default function FavoriteButton({
     }
 
     // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
-    await toggleFavoriteWithSync(currentUser.id, eventId, {
+    await toggleFavoriteWithSync(eventId, {
       eventTitle,
       eventStartDate,
       eventEndDate,

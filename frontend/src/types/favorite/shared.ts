@@ -9,23 +9,23 @@ export interface FavoriteExtraPayload {
 }
 
 // Server 端 toggle favorite 完整 payload
-export interface ToggleFavoritePayload extends FavoriteExtraPayload {
-  userId: string;
-  eventId: string;
-  lineUserId?: string;
-}
+// export interface ToggleFavoritePayload extends FavoriteExtraPayload {
+//   userId: string;
+//   eventId: string;
+//   lineUserId?: string;
+// }
 
-// Repo 寫入 GAS 時需要的最小必要資料
-export interface ToggleFavoriteRepoParams {
-  userId: string;
-  eventId: string;
-  eventTitle?: string; // ✅ repo 層一定要
-  eventStartDate?: string;
-  eventEndDate?: string;
-  eventLocation?: string;
-  eventUrl?: string;
-  imageUrl?: string;
-}
+// // Repo 寫入 GAS 時需要的最小必要資料
+// export interface ToggleFavoriteRepoParams {
+//   userId: string;
+//   eventId: string;
+//   eventTitle?: string; // ✅ repo 層一定要
+//   eventStartDate?: string;
+//   eventEndDate?: string;
+//   eventLocation?: string;
+//   eventUrl?: string;
+//   imageUrl?: string;
+// }
 
 // 收藏紀錄
 export interface FavoriteRecord {
