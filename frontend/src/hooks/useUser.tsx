@@ -10,13 +10,6 @@ import {
   fetchFavoriteList,
 } from "@/services/client/favoriteClient";
 
-// interface AfterLoginAction {
-//   type: "favorite" | "calendar";
-//   eventId?: string;
-//   eventName?: string;
-//   returnTo?: string;
-// }
-
 type AfterLoginAction =
   | {
       type: "favorite";

@@ -15,14 +15,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // const { eventId } = await req.json();
-    // if (!eventId) {
-    //   return NextResponse.json(
-    //     { success: false, error: "Missing eventId" },
-    //     { status: 400 }
-    //   );
-    // }
-
     const body = (await req.json()) as ToggleFavoriteServerPayload;
     if (!body?.eventId) {
       return NextResponse.json(
@@ -37,7 +29,6 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         action: GAS_ACTION.ENSURE_FAVORITE,
         userId: user.id,
-        // eventId,
         ...body,
       }),
     });
@@ -61,27 +52,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-// import { NextRequest, NextResponse } from "next/server";
-
-// const GAS_URL = process.env.GAS_URL!; // ✅ server 可以用
-
-// export async function POST(req: NextRequest) {
-//   const { userId, eventId } = await req.json();
-
-//   const res = await fetch(GAS_URL, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({
-//       action: "ensureFavorite",
-//       userId,
-//       eventId,
-//     }),
-//   });
-
-//   if (!res.ok) {
-//     return NextResponse.json({ error: "GAS failed" }, { status: 500 });
-//   }
-
-//   return NextResponse.json({ success: true });
-// }

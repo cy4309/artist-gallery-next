@@ -48,7 +48,6 @@ export default function FavoriteButton({
           afterLoginAction: {
             type: "favorite",
             returnTo: window.location.pathname + window.location.search,
-            // eventId,
             payload: {
               eventId,
               eventTitle,

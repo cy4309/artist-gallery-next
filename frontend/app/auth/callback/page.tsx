@@ -40,10 +40,6 @@ export default function AuthCallbackPage() {
           router.replace(action.returnTo || "/favorites");
           return;
         }
-
-        // localStorage.removeItem("afterLoginAction");
-        // router.replace(action.returnTo || "/favorites");
-        // return;
       }
 
       // router.replace("/");

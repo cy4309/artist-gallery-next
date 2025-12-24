@@ -56,7 +56,6 @@ export async function fetchFavoriteList(): Promise<ListFavoritesResponse> {
   });
 
   if (!res.ok) throw new Error("fetchFavoriteList failed");
-  // return res.json();
   const json = await res.json();
   return json.favorites ? json : { favorites: [] };
 }

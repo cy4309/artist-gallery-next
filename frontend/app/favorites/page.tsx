@@ -9,22 +9,22 @@ import { Card, Row, Col, Typography, Empty, Tag } from "antd";
 import { fetchFavoriteList } from "@/services/client/favoriteClient";
 import type { FavoriteRecord } from "@/types/favorite/shared";
 import LoadingIndicator from "@/components/LoadingIndicator";
+import { formatDateSmart } from "@/utils/date";
 
 const { Title, Text } = Typography;
 
-/** 是否已結束（安全版） */
 function isEnded(endDate?: string) {
   if (!endDate) return false;
 
-  // 沒有年份的日期（Dec 28 / Jun 30）→ 一律視為未結束
-  if (!/\d{4}/.test(endDate)) {
-    return false;
-  }
+  const end = new Date(endDate);
+  if (Number.isNaN(end.getTime())) return false;
 
-  const d = new Date(endDate);
-  if (isNaN(d.getTime())) return false;
+  // 🔑 將結束時間視為「當天 23:59:59（台灣）」
+  const taiwanEndOfDay = new Date(
+    end.toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" }) + "T23:59:59"
+  );
 
-  return d < new Date();
+  return Date.now() > taiwanEndOfDay.getTime();
 }
 
 export default function FavoritesPage() {
@@ -143,8 +143,10 @@ export default function FavoritesPage() {
 
                 {(item.eventStartDate || item.eventEndDate) && (
                   <Text type="secondary" className="block mb-1">
-                    {item.eventStartDate}
-                    {item.eventEndDate ? ` - ${item.eventEndDate}` : ""}
+                    {formatDateSmart(item.eventStartDate)}
+                    {item.eventEndDate
+                      ? ` - ${formatDateSmart(item.eventEndDate)}`
+                      : ""}
                   </Text>
                 )}
 

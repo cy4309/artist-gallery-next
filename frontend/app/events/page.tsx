@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CloseCircleOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
 import Carousel from "@/components/Carousel";
@@ -89,12 +89,13 @@ export default function EventsPage() {
         {isMapClicked &&
           (nowData.length > 0 ? (
             <div className="flex flex-col justify-center items-center">
-              <div className="m-4 w-full flex justify-center items-center">
+              <div className="m-4 w-full flex justify-start items-center">
                 <BaseButton onClick={handleCloseList}>
-                  <CloseCircleOutlined />
-                  <h5 className="mx-4 text-center text-xl font-bold">
+                  <ArrowLeftOutlined />
+                  <span className="ml-2 text-lg font-bold">Back</span>
+                  {/* <h5 className="mx-4 text-center text-xl font-bold">
                     - {clickedId} -
-                  </h5>
+                  </h5> */}
                 </BaseButton>
               </div>
 
@@ -112,7 +113,7 @@ export default function EventsPage() {
           ) : (
             <div className="m-4 w-full flex flex-col justify-center items-center">
               <BaseButton onClick={handleCloseList}>
-                <CloseCircleOutlined />
+                <ArrowLeftOutlined />
                 <h5 className="mx-4 text-center text-xl font-bold">
                   - {clickedId} -
                 </h5>

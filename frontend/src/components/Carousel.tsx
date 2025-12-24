@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import BaseButton from "@/components/BaseButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getCultureImageUrl } from "@/utils/imageProxy";
+import { toISODateTime, formatDateSmart } from "@/utils/date";
 
 export interface CarouselItem {
   actId: number;
@@ -254,8 +255,8 @@ const Carousel = ({
                   <FavoriteButton
                     eventId={String(item.actId)}
                     eventTitle={item.actName}
-                    eventStartDate={item.startTime.split(",")[0]}
-                    eventEndDate={item.endTime.split(",")[0]}
+                    eventStartDate={toISODateTime(item.startTime)}
+                    eventEndDate={toISODateTime(item.endTime)}
                     eventLocation={item.address}
                     eventUrl={item.website}
                     imageUrl={
@@ -267,7 +268,8 @@ const Carousel = ({
 
                 <li className="font-black text-lg">{item.actName}</li>
                 <li className="text-sm">
-                  {item.startTime.split(",")[0]} - {item.endTime.split(",")[0]}
+                  {formatDateSmart(item.startTime)} -{" "}
+                  {formatDateSmart(item.endTime)}
                 </li>
                 <li className="text-sm">{item.address}</li>
 
