@@ -15,6 +15,20 @@ export const en = {
     privacy: "Privacy Policy",
     terms: "Terms of Use",
   },
+  notification: {
+    unfavoriteConfirm: {
+      title: "Remove from favorites?",
+      text: "This event will be removed from your favorites.",
+      confirm: "Remove",
+      cancel: "Keep",
+    },
+    unfavoriteSuccess: {
+      title: "Removed from favorites",
+    },
+    favoriteSuccess: {
+      title: "Added to favorites",
+    },
+  },
   auth: {
     processing: {
       title: "Signing you in...",

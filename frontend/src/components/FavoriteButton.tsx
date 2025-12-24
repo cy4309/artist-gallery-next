@@ -3,6 +3,8 @@
 import { useUser } from "@/hooks/useUser";
 import { HeartFilled, HeartOutlined } from "@ant-design/icons";
 import { event } from "@/helpers/ga";
+import { showConfirmSwal, showSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export interface FavoriteButtonProps {
   eventId: string;
@@ -25,6 +27,7 @@ export default function FavoriteButton({
   imageUrl,
   onUnfavorite,
 }: FavoriteButtonProps) {
+  const { t } = useLocale();
   const {
     user,
     loading: userLoading,
@@ -40,7 +43,7 @@ export default function FavoriteButton({
 
     let currentUser = user; // 用「區域變數」鎖定登入後的 user
 
-    // ⭐ 未登入 → 必須跳 /auth
+    // ⭐ 未登入 → 跳登入
     if (!currentUser) {
       currentUser = await loadUser();
       if (!currentUser) {
@@ -64,22 +67,69 @@ export default function FavoriteButton({
     }
 
     const wasFavorite = favorites.includes(eventId);
-    // ⭐ 立刻更新列表 UI（只影響 /favorites）
+
+    /** ------------------------------
+     * ① 取消收藏 → confirm
+     * ----------------------------- */
     if (wasFavorite) {
+      const confirmed = await showConfirmSwal({
+        title: t.notification.unfavoriteConfirm.title,
+        text: t.notification.unfavoriteConfirm.text,
+        confirmText: t.notification.unfavoriteConfirm.confirm,
+        cancelText: t.notification.unfavoriteConfirm.cancel,
+      });
+
+      if (!confirmed) return;
+
+      // /favorites 頁立即移除卡片
       onUnfavorite?.();
     }
 
-    // ⭐ 已登入 → 切換收藏，樂觀更新Optimistic UI
-    await toggleFavoriteWithSync(eventId, {
-      eventTitle,
-      eventStartDate,
-      eventEndDate,
-      eventLocation,
-      eventUrl,
-      imageUrl,
+    /** ------------------------------
+     * ② ⭐ 樂觀 UI：立刻顯示成功提示
+     * ----------------------------- */
+    showSwal({
+      isSuccess: true,
+      title: wasFavorite
+        ? t.notification.unfavoriteSuccess.title
+        : t.notification.favoriteSuccess.title,
     });
 
-    // send to GA
+    /** ------------------------------
+     * ③ 背景同步 Server（失敗才 rollback）
+     * ----------------------------- */
+    try {
+      await toggleFavoriteWithSync(eventId, {
+        eventTitle,
+        eventStartDate,
+        eventEndDate,
+        eventLocation,
+        eventUrl,
+        imageUrl,
+      });
+    } catch (err) {
+      console.error("[favorite sync failed]", err);
+
+      // ⭐ rollback UI（UserContext 裡已經有 optimistic toggle）
+      // 這裡只需要再 toggle 一次
+      await toggleFavoriteWithSync(eventId, {
+        eventTitle,
+        eventStartDate,
+        eventEndDate,
+        eventLocation,
+        eventUrl,
+        imageUrl,
+      });
+
+      // showSwal({
+      //   isSuccess: false,
+      //   title: t.notification.favoriteError.title,
+      // });
+    }
+
+    /** ------------------------------
+     * ④ GA
+     * ----------------------------- */
     event({
       action: wasFavorite ? "remove_favorite" : "add_favorite",
       category: "engagement",

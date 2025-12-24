@@ -15,6 +15,20 @@ export const zh = {
     privacy: "隱私權政策",
     terms: "使用條款",
   },
+  notification: {
+    unfavoriteConfirm: {
+      title: "確定取消收藏？",
+      text: "此活動將從你的收藏清單中移除",
+      confirm: "確定取消",
+      cancel: "保留收藏",
+    },
+    unfavoriteSuccess: {
+      title: "已取消收藏",
+    },
+    favoriteSuccess: {
+      title: "已加入收藏",
+    },
+  },
   auth: {
     processing: {
       title: "正在登入中…",

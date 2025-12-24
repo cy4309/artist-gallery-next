@@ -210,9 +210,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /**************************************************
    * 初始化讀 user（server-side session）
    **************************************************/
-  // useEffect(() => {
-  //   loadUser();
-  // }, []);
+  useEffect(() => {
+    loadUser();
+  }, []);
 
   return (
     <UserContext.Provider
