@@ -8,7 +8,7 @@ import { event } from "@/helpers/ga";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const { loadUserFromCookie } = useUser();
+  const { loadUserFromCookie, reloadFavorites } = useUser();
   const executed = useRef(false); // ⭐ 防止執行兩次
 
   useEffect(() => {
@@ -37,6 +37,7 @@ export default function AuthCallbackPage() {
 
         if (action.type === "favorite" && action.payload?.eventId) {
           await ensureFavoriteClient(action.payload);
+          await reloadFavorites(); // 主動同步一次
           router.replace(action.returnTo || "/favorites");
           return;
         }
