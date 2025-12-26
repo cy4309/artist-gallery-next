@@ -7,9 +7,11 @@ import MapTw from "@/containers/evnets/MapTw";
 import Carousel from "@/components/Carousel";
 import BaseButton from "@/components/BaseButton";
 import { OrgEvent } from "@/types/event";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function EventsPage() {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const { t } = useLocale();
+  const [hoveredId, setHoveredId] = useState<string | null>(t.events.title);
   const [clickedId, setClickedId] = useState<string | null>(null);
   const [orgData, setOrgData] = useState<OrgEvent[]>([]);
   const [isMapClicked, setIsMapClicked] = useState(false);
@@ -61,8 +63,8 @@ export default function EventsPage() {
 
   const handleCloseList = () => {
     setIsMapClicked(false);
-    // 如果你希望關閉時清掉 clickedId，可以一起做：
     setClickedId(null);
+    setHoveredId(t.events.title);
   };
 
   return (

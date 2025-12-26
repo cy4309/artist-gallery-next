@@ -16,6 +16,7 @@ export default function Home() {
         <video
           className="my-4 hidden md:block w-full object-cover relative opacity-80 saturate-50"
           src="/videos/korea-tradition-1.mp4"
+          // src="/videos/video.mp4"
           // src="/videos/qingshan-king-festival.mp4"
           autoPlay
           loop

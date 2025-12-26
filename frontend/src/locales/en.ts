@@ -53,11 +53,6 @@ export const en = {
   home: {
     title: "Unearth Stories.",
   },
-  hero: {
-    title: "The Underground Squad.",
-    description:
-      "Alongside major events, we spotlight Taiwan’s underground scenes—music, skateboarding, tattoo, graffiti—kept alive by creators shaping a more diverse culture.",
-  },
   about: {
     title: "Exploring Culture, One Story at a Time.",
     body: [
@@ -66,5 +61,14 @@ export const en = {
       "If you’re a creator, organizer, cultural worker, or someone who simply loves what we’re doing — we’d love to hear from you.",
     ],
     contact: "contact",
+  },
+  // interviews
+  hero: {
+    title: "The Underground Squad.",
+    description:
+      "Alongside major events, we spotlight Taiwan’s underground scenes—music, skateboarding, tattoo, graffiti—kept alive by creators shaping a more diverse culture.",
+  },
+  events: {
+    title: "Select a City",
   },
 };
