@@ -28,7 +28,7 @@ const item = {
 export default function Hero() {
   const { t } = useLocale();
   return (
-    <header className="min-h-[100dvh] flex flex-col justify-center items-center text-center px-6">
+    <header className="min-h-[100dvh] flex flex-col justify-center items-center text-center px-6 text-white">
       <motion.div
         variants={container}
         initial="hidden"

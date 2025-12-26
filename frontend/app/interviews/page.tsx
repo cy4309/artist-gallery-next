@@ -12,11 +12,13 @@ import ProfileSectionWenChia from "@/containers/interviews/ProfileSectionWenChia
 import ProfileSectionBoan from "@/containers/interviews/ProfileSectionBoan";
 import ProfileSectionLemon from "@/containers/interviews/ProfileSectionLemon";
 import ProfileSectionLuke from "@/containers/interviews/ProfileSectionLuke";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function Interviews() {
+  const { t } = useLocale();
   return (
     <>
-      <div className="w-full h-full my-12">
+      <div className="w-full h-full my-12 bg-[url('/images/texture-1.jpg')]">
         {/* <section>
           <img src={boanFocus} alt="" className="border" />
           <h2>Boan</h2>
@@ -32,6 +34,9 @@ export default function Interviews() {
         <ProfileSectionBoan />
         <ProfileSectionLemon />
         <ProfileSectionLuke />
+        <h5 className="my-12 text-center text-white">
+          {t.interviews.continue}
+        </h5>
       </div>
     </>
   );

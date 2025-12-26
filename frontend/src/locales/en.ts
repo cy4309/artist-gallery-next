@@ -1,3 +1,5 @@
+import Interviews from "../../app/interviews/page";
+
 export const en = {
   header: {
     events: "Events",
@@ -62,11 +64,14 @@ export const en = {
     ],
     contact: "contact",
   },
+  interviews: {
+    continue: "To be continued...",
+  },
   // interviews
   hero: {
-    title: "The Underground Squad.",
+    title: "Curated Columns.",
     description:
-      "Alongside major events, we spotlight Taiwan’s underground scenes—music, skateboarding, tattoo, graffiti—kept alive by creators shaping a more diverse culture.",
+      "We highlight voices, stories, and cultural moments across Taiwan — helping you explore, connect, and build your own inspiration map.",
   },
   events: {
     title: "Select a City",

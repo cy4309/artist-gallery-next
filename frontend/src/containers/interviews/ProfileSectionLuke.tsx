@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import Lenis from "@studio-freight/lenis";
 import BaseButton from "@/components/BaseButton";
 
-export default function ProfileSectionBoan() {
+export default function ProfileSectionLuke() {
   const sectionRef = useRef<HTMLDivElement | null>(null);
 
   const { scrollYProgress } = useScroll({
