@@ -1,0 +1,58 @@
+import { InterviewPerson } from "@/types/interview";
+
+export const interviews: InterviewPerson[] = [
+  {
+    slug: "wen-chia",
+    name: "Wen Chia",
+    // role: "Former Bassist",
+    role: "樂團貝斯手",
+    firm: "Invincible Tapir",
+    coverImage: "/images/hero/hero-1024-1024-96dpi/wen-chia.png",
+    websiteSrc:
+      "https://www.youtube.com/watch?v=EEkoPJh-CaY&ab_channel=%E5%AE%85%E7%94%B7",
+    demoSrc: "https://www.youtube.com/embed/EEkoPJh-CaY?autoplay=1&mute=1",
+    tags: ["music", "underground", "indie"],
+    // sum: "如何靠貝斯生活?",
+    // sumDetail: "貝斯生活的人貝斯生活的人貝斯生活的人",
+  },
+  {
+    slug: "boan",
+    name: "Boan",
+    // role: "Tattoo Artist",
+    role: "刺青藝術家",
+    firm: "GOODOLDDAYZ",
+    coverImage: "/images/hero/hero-1024-1024-96dpi/boan.png",
+    websiteSrc: "https://cy4309.github.io/TFD105_01CYC/MainPage.html",
+    demoSrc: "https://cy4309.github.io/TFD105_01CYC/MainPage.html",
+    tags: ["visual", "tattoo", "underground"],
+    // sum: "如何靠刺青生活?",
+    // sumDetail: "刺青生活的人刺青生活的人刺青生活的人",
+  },
+  {
+    slug: "lemon",
+    name: "Lemon",
+    // role: "Artist Manager",
+    role: "樂團經紀人",
+    firm: "Freelancer",
+    coverImage: "/images/hero/hero-1024-1024-96dpi/lemon.png",
+    websiteSrc: "https://hsuchristy.github.io/TFD105_32/index.html",
+    demoSrc: "https://www.instagram.com/p/C7eKB8UN4M5/embed",
+    tags: ["music", "artManagement", "curation", "photography"],
+    // sum: "如何靠當藝術經濟人生活?",
+    // sumDetail: "藝術經濟生活的人藝術經濟生活的人藝術經濟生活的人",
+  },
+  {
+    slug: "luke",
+    name: "Luke",
+    // role: "3D Animator",
+    role: "3D 動畫師",
+    firm: "ANYMACTION",
+    coverImage: "/images/hero/hero-1024-1024-96dpi/luke.png",
+    websiteSrc: "https://anymaction.com",
+    demoSrc:
+      "https://www.youtube.com/embed/M-xazh9Gs-8?si=chYICE9eEBXtFZah&autoplay=1&mute=1",
+    tags: ["visual", "threeDAnimation", "digitalArt"],
+    // sum: "如何靠動畫生活?",
+    // sumDetail: "動畫生活的人動畫生活的人動畫生活的人",
+  },
+];

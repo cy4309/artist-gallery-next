@@ -63,12 +63,36 @@ export const zh = {
   },
   interviews: {
     continue: "持續新增中...",
-  },
-  // interviews
-  hero: {
-    title: "專欄精選。",
-    description:
-      "這裡收錄我們精選的台灣文化人物與故事。不只是閱讀，而是一步步建立你的文化靈感地圖。",
+    hero: {
+      title: "專欄精選。",
+      description:
+        "這裡收錄我們精選的台灣文化人物與故事。不只是閱讀，而是一步步建立你的文化靈感地圖。",
+    },
+    filter: {
+      group: {
+        type: "類型",
+        culture: "文化",
+        role: "角色",
+        medium: "媒介",
+      },
+    },
+    tagMap: {
+      all: "全部",
+      // type類型
+      music: "音樂",
+      visual: "視覺",
+      // culture文化
+      underground: "地下文化",
+      indie: "獨立",
+      // role角色
+      curation: "策展",
+      artManagement: "藝文經紀",
+      // medium媒介
+      tattoo: "刺青",
+      threeDAnimation: "3D 動畫",
+      digitalArt: "數位藝術",
+      photography: "攝影",
+    },
   },
   events: {
     title: "請選擇城市",

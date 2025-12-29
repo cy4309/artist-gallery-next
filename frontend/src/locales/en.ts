@@ -66,12 +66,36 @@ export const en = {
   },
   interviews: {
     continue: "To be continued...",
-  },
-  // interviews
-  hero: {
-    title: "Curated Columns.",
-    description:
-      "We highlight voices, stories, and cultural moments across Taiwan — helping you explore, connect, and build your own inspiration map.",
+    hero: {
+      title: "Curated Columns.",
+      description:
+        "We highlight voices, stories, and cultural moments across Taiwan — helping you explore, connect, and build your own inspiration map.",
+    },
+    filter: {
+      group: {
+        type: "Type",
+        culture: "Culture",
+        role: "Role",
+        medium: "Medium",
+      },
+    },
+    tagMap: {
+      all: "All",
+      // type
+      music: "Music",
+      visual: "Visual",
+      // culture
+      underground: "Underground",
+      indie: "Indie",
+      // role
+      curation: "Curation",
+      artManagement: "Art Management",
+      // medium
+      tattoo: "Tattoo",
+      threeDAnimation: "3D Animation",
+      digitalArt: "Digital Art",
+      photography: "Photography",
+    },
   },
   events: {
     title: "Select a City",

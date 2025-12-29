@@ -28,7 +28,7 @@ const item = {
 export default function Hero() {
   const { t } = useLocale();
   return (
-    <header className="min-h-[100dvh] flex flex-col justify-center items-center text-center px-6 text-white">
+    <header className="min-h-dvh flex flex-col justify-center items-center text-center px-6 text-white">
       <motion.div
         variants={container}
         initial="hidden"
@@ -39,11 +39,11 @@ export default function Hero() {
           variants={item}
           className="text-4xl md:text-6xl mb-4 font-dela"
         >
-          {t.hero.title}
+          {t.interviews.hero.title}
         </motion.h1>
 
         <motion.p variants={item} className="text-lg max-w-md">
-          {t.hero.description}
+          {t.interviews.hero.description}
         </motion.p>
       </motion.div>
     </header>
