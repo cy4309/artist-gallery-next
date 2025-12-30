@@ -1,3 +1,5 @@
+import { Descriptions } from "antd";
+
 export const zh = {
   header: {
     events: "活動",
@@ -52,6 +54,7 @@ export const zh = {
   },
   home: {
     title: "探索文化故事。",
+    body: ["我們精選城市中的展覽、音樂與創作，", "收藏屬於你的靈感地圖。"],
   },
   about: {
     title: "從一個故事開始，探索文化。",

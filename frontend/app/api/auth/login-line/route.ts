@@ -6,10 +6,11 @@ import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
+import { upsertLineUser } from "@/services/line/upsertLineUser";
 
 const LINE_LOGIN_CHANNEL_ID = process.env.LINE_LOGIN_CHANNEL_ID!;
 const LINE_LOGIN_CHANNEL_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET!;
-const GAS_URL = process.env.GAS_URL!;
+// const GAS_URL = process.env.GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production";
 
@@ -132,31 +133,32 @@ export async function GET(req: NextRequest) {
     // =====================================================
     // STEP 5 — 與 GAS 同步（checkLineUser / createLineUser / updateLineUser）
     // =====================================================
-    // 1) 先檢查是否存在
-    const checkRes = await axios.post(GAS_URL, {
-      action: GAS_ACTION.CHECK_LINE_USER,
-      userId: normalizedUser.id, // 對應 GAS 裡 USERS.id（line_xxx）
-    });
+    const finalUser = await upsertLineUser(normalizedUser);
 
-    let finalUser = normalizedUser;
+    // const checkRes = await axios.post(GAS_URL, {
+    //   action: GAS_ACTION.CHECK_LINE_USER,
+    //   userId: normalizedUser.id, // 對應 GAS 裡 USERS.id（line_xxx）
+    // });
 
-    if (!checkRes.data.exists) {
-      const createRes = await axios.post(GAS_URL, {
-        action: GAS_ACTION.CREATE_LINE_USER,
-        user: normalizedUser,
-      });
-      if (createRes.data?.user) {
-        finalUser = createRes.data.user;
-      }
-    } else {
-      const updateRes = await axios.post(GAS_URL, {
-        action: GAS_ACTION.UPDATE_LINE_USER,
-        user: normalizedUser,
-      });
-      if (updateRes.data?.user) {
-        finalUser = updateRes.data.user;
-      }
-    }
+    // let finalUser = normalizedUser;
+
+    // if (!checkRes.data.exists) {
+    //   const createRes = await axios.post(GAS_URL, {
+    //     action: GAS_ACTION.CREATE_LINE_USER,
+    //     user: normalizedUser,
+    //   });
+    //   if (createRes.data?.user) {
+    //     finalUser = createRes.data.user;
+    //   }
+    // } else {
+    //   const updateRes = await axios.post(GAS_URL, {
+    //     action: GAS_ACTION.UPDATE_LINE_USER,
+    //     user: normalizedUser,
+    //   });
+    //   if (updateRes.data?.user) {
+    //     finalUser = updateRes.data.user;
+    //   }
+    // }
 
     // =====================================================
     // STEP 6 — 寫 Cookie + Redirect 回原頁面

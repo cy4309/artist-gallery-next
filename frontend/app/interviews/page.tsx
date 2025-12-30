@@ -22,11 +22,11 @@ export default function InterviewsPage() {
   }, [activeTag]);
 
   return (
-    <div className="w-full my-4 px-4 pb-40 space-y-24 bg-[url('/images/texture-1.jpg')] text-white">
+    <div className="w-full my-4 px-4 space-y-24 bg-[url('/images/texture-1.jpg')] text-white">
       <Hero />
       <InterviewFilter active={activeTag} onChange={setActiveTag} />
       <InterviewGrid people={filteredInterviews} />
-      <h5 className="my-12 text-center text-gray-400">
+      <h5 className="text-center py-40 text-gray-400">
         {t.interviews.continue}
       </h5>
     </div>

@@ -55,6 +55,10 @@ export const en = {
   },
   home: {
     title: "Unearth Stories.",
+    body: [
+      "Curated exhibitions, music, and creative scenes,",
+      "build your own inspiration map.",
+    ],
   },
   about: {
     title: "Exploring Culture, One Story at a Time.",
