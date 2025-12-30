@@ -20,8 +20,8 @@ function TagButton({
       className={`px-4 py-2 rounded-full text-sm transition
         ${
           active
-            ? "bg-black text-white"
-            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+            ? "bg-primary text-white"
+            : "bg-white hover:bg-primaryGray text-gray-700"
         }`}
     >
       {children}
@@ -90,7 +90,7 @@ export default function InterviewFilter({
           transition-all duration-500
           ${
             isOpen
-              ? "h-[80vh] opacity-100 pointer-events-auto"
+              ? "h-[100vh] opacity-100 pointer-events-auto"
               : "h-0 opacity-0 pointer-events-none"
           }
         `}

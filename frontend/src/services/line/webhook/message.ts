@@ -14,13 +14,12 @@ export async function handleMessageEvent(event: any) {
   if (text === "help") {
     await replyTextMessage(
       replyToken,
-      `👋 歡迎使用 CYC Zine\n\n
-        目前這裡主要提供活動與內容查詢，\n
-        你可以試試輸入以下關鍵字：\n\n
-        • 活動\n
-        • 收藏\n
-        • 專欄
-      `
+      "👋 歡迎使用 CYC Zine\n\n" +
+        "目前這裡主要提供活動與內容查詢，\n" +
+        "你可以試試輸入以下關鍵字：\n\n" +
+        "• 活動\n" +
+        "• 收藏\n" +
+        "• 專欄"
     );
     return;
   }
@@ -52,11 +51,8 @@ export async function handleMessageEvent(event: any) {
   // fallback
   await replyTextMessage(
     replyToken,
-    `
-      感謝你的訊息 🙌
-
-      工作人員會盡快回覆你，
-      或輸入「help」查看完整功能 😊
-    `
+    "感謝你的訊息 🙌\n\n" +
+      "工作人員會盡快回覆你，\n" +
+      "或輸入「help」查看完整功能 😊"
   );
 }

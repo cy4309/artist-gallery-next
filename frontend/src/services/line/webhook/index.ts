@@ -12,7 +12,7 @@ export async function handleLineEvents(events: any[] = []) {
           await handleMessageEvent(event);
           break;
 
-        case "follow": // push
+        case "follow": // line oa自動回覆歡迎訊息，這裡直接將使用者存入gas
           await handleFollowEvent(event);
           break;
 
