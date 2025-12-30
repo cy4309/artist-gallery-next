@@ -11,6 +11,7 @@ export const en = {
     switchToDark: "Dark Mode",
     switchToLight: "Light Mode",
     logout: "Logout",
+    login: "Login",
   },
   footer: {
     title: "© 2022 CYC Zine",

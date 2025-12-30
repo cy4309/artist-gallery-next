@@ -21,9 +21,10 @@ interface NavItemProps {
   icon?: ReactNode;
   onClick: () => void;
   danger?: boolean;
+  success?: boolean;
 }
 
-function NavItem({ label, icon, onClick, danger }: NavItemProps) {
+function NavItem({ label, icon, onClick, danger, success }: NavItemProps) {
   return (
     <BaseButton
       onClick={onClick}
@@ -32,7 +33,9 @@ function NavItem({ label, icon, onClick, danger }: NavItemProps) {
         px-3 py-2 rounded-xl
         bg-white/5 hover:bg-white/10
         text-sm hover:rotate-180
-        ${danger ? "text-red-400 hover:text-red-300" : "text-white"}
+        text-white
+        ${danger && "!text-red-400 hover:!text-red-300"}
+        ${success && "!text-green-400 hover:!text-green-300"}
       `}
     >
       {icon && <span className="text-base">{icon}</span>}
@@ -49,6 +52,22 @@ export default function Nav() {
   const { locale, setLocale, t } = useLocale();
 
   useEffect(() => {
+    if (!isOpen) return;
+    // ① 防止背景 scroll
+    document.body.style.overflow = "hidden";
+    // ② ESC 關閉選單
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    // ③ cleanup（非常重要）
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onEsc);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && !user) {
       loadUser();
     }
@@ -62,10 +81,18 @@ export default function Nav() {
 
   /** 🔥 登出 */
   const handleLogout = async () => {
-    logout(); // ← ⭐ 清掉前端 user 狀態
-    await fetch("/api/auth/logout", { method: "POST" });
     setIsOpen(false);
-    router.refresh(); // ⭐ 強制同步 server 狀態
+    logout(); // 清前端狀態
+
+    await fetch("/api/auth/logout", { method: "POST" }); // 清server cookie
+
+    router.push("/auth");
+    router.refresh(); // ⭐ 強制同步 server 狀態(同步 server component)
+  };
+
+  /** 🔥 登入 */
+  const handleLogin = async () => {
+    setIsOpen(false);
     router.push("/auth");
   };
 
@@ -92,8 +119,8 @@ export default function Nav() {
 
       <div className="flex justify-end items-center fixed right-4">
         <BaseButton
+          className="bg-white dark:bg-primary hover:rotate-180"
           onClick={() => setIsOpen(true)}
-          className="hover:rotate-180"
         >
           <AlignLeftOutlined />
         </BaseButton>
@@ -168,12 +195,19 @@ export default function Nav() {
             icon={theme === "dark" ? <SunOutlined /> : <MoonOutlined />}
             onClick={handleToggleDarkMode}
           />
-          {user && (
+          {user ? (
             <NavItem
               label={t.header.logout}
               icon={<PoweroffOutlined />}
               onClick={handleLogout}
               danger
+            />
+          ) : (
+            <NavItem
+              label={t.header.login}
+              icon={<PoweroffOutlined />}
+              onClick={handleLogin}
+              success
             />
           )}
         </div>

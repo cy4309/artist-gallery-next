@@ -9,6 +9,7 @@ export const zh = {
     switchToDark: "深色模式",
     switchToLight: "淺色模式",
     logout: "登出",
+    login: "登入",
   },
   footer: {
     title: "© 2022 CYC 獨立雜誌",
