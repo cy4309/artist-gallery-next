@@ -26,7 +26,7 @@ export default function InterviewDetail({
 
   return (
     <div className="w-full min-h-dvh bg-[url('/images/texture-1.jpg')]">
-      <BackButton className="w-1/3 md:w-1/6 m-4 text-white" />
+      <BackButton className="m-4 text-white" />
       {/* Hero */}
       {/* <motion.div
         layoutId={`interview-${person.slug}`}

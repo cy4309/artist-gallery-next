@@ -30,7 +30,7 @@ export default function AuthCallbackPage() {
       showSwal({
         isSuccess: true,
         title: `${t.notification.auth.login.title}`,
-        text: `${t.notification.auth.login.text}, ${user.name}`,
+        text: `${t.notification.auth.login.text} ${user.name}`,
       });
 
       // ⭐ 登入成功 → 送 GA（只送一次）

@@ -17,10 +17,10 @@ function TagButton({
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-full text-sm transition
+      className={`px-4 py-2 rounded-md text-sm transition
         ${
           active
-            ? "bg-primary text-white"
+            ? "bg-gray-500 text-white"
             : "bg-white hover:bg-primaryGray text-gray-700"
         }`}
     >
@@ -63,7 +63,7 @@ export default function InterviewFilter({
           onClick={() => setIsOpen(true)}
           className="
             px-4 py-2
-            rounded-full
+            rounded-md
             border
             text-sm
             flex items-center gap-2
@@ -96,7 +96,7 @@ export default function InterviewFilter({
       >
         {/* Handle */}
         <div className="p-4 flex justify-center">
-          <div className="w-10 h-1.5 bg-gray-400 rounded-full" />
+          <div className="w-10 h-1.5 bg-gray-400 rounded-md" />
         </div>
 
         {/* Content */}

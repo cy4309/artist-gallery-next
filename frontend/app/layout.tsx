@@ -81,7 +81,7 @@ export default function RootLayout({
           // enableSystem={true}
         >
           <ClientRoot>
-            <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center">
+            <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center gap-3">
               <Header />
               <main className="w-full flex flex-col grow justify-center items-center">
                 {children}

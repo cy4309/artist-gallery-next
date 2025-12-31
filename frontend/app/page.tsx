@@ -49,7 +49,7 @@ export default function Home() {
             {t.home.title}
           </motion.h1>
           <motion.div
-            className="text-sm md:text- text-white flex flex-col"
+            className="text-sm md:text-lg text-white flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 1 }}

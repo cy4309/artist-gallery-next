@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+// import { ArrowLeftOutlined } from "@ant-design/icons";
 import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
 import Carousel from "@/components/Carousel";
 import BaseButton from "@/components/BaseButton";
+import BackButton from "@/components/BackButton";
 import { OrgEvent } from "@/types/event";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 
@@ -92,13 +93,11 @@ export default function EventsPage() {
           (nowData.length > 0 ? (
             <div className="flex flex-col justify-center items-center">
               <div className="m-4 w-full flex justify-start items-center">
-                <BaseButton onClick={handleCloseList}>
+                <BackButton onClick={handleCloseList} />
+                {/* <BaseButton onClick={handleCloseList}>
                   <ArrowLeftOutlined />
                   <span className="ml-2 text-lg font-bold">Back</span>
-                  {/* <h5 className="mx-4 text-center text-xl font-bold">
-                    - {clickedId} -
-                  </h5> */}
-                </BaseButton>
+                </BaseButton> */}
               </div>
 
               <Carousel
@@ -114,14 +113,15 @@ export default function EventsPage() {
             </div>
           ) : (
             <div className="m-4 w-full flex flex-col justify-center items-center">
-              <BaseButton onClick={handleCloseList}>
+              <BackButton onClick={handleCloseList} />
+              {/* <BaseButton onClick={handleCloseList}>
                 <ArrowLeftOutlined />
                 <h5 className="mx-4 text-center text-xl font-bold">
                   - {clickedId} -
                 </h5>
-              </BaseButton>
+              </BaseButton> */}
               <p className="my-4 text-center">
-                No events found for the selected city.
+                No events found - {clickedId} -
               </p>
             </div>
           ))}

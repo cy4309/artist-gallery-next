@@ -112,6 +112,7 @@ export const zh = {
     title: "請選擇城市",
   },
   favorites: {
-    hint: "依收藏時間排序（新 → 舊）",
+    sortedHint: "依收藏時間排序（新 → 舊）",
+    hint: "已結束活動排在最後",
   },
 };

@@ -116,6 +116,7 @@ export const en = {
     title: "Select a City",
   },
   favorites: {
-    hint: "Sorted by saved date (Newest → Oldest)",
+    sortedHint: "Sorted by saved date (Newest → Oldest)",
+    hint: "Ended events are shown later",
   },
 };

@@ -110,7 +110,7 @@ export default function Nav() {
   };
 
   return (
-    <nav className="mb-4 z-50 w-full flex justify-between items-center">
+    <nav className="z-50 w-full flex justify-between items-center">
       <Link href="/">
         {/* <h1 className="text-2xl md:text-3xl font-dela">CYC ZINE</h1> */}
         <h1 className="text-2xl md:text-3xl font-dela">

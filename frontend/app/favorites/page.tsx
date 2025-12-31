@@ -107,13 +107,13 @@ export default function FavoritesPage() {
 
       {/* 排序提示 */}
       {favorites.length > 0 && (
-        <div className="mb-4 flex items-center justify-end text-xs text-gray-500 dark:text-gray-400">
+        <div className="mb-4 border-b border-gray-400 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-2">
             {/* <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400" /> */}
             <ClockCircleOutlined />
-            {t.favorites.hint}
+            {t.favorites.sortedHint}
           </span>
-          {/* <span className="opacity-70">已結束活動自動排在後方</span> */}
+          <span className="opacity-70">{t.favorites.hint}</span>
         </div>
       )}
 
