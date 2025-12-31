@@ -31,6 +31,16 @@ export const zh = {
     favoriteSuccess: {
       title: "已加入收藏",
     },
+    auth: {
+      login: {
+        title: "登入成功",
+        text: "歡迎回來👋",
+      },
+      logout: {
+        title: "登出成功",
+        text: "下次再見👋",
+      },
+    },
   },
   auth: {
     processing: {
@@ -100,5 +110,8 @@ export const zh = {
   },
   events: {
     title: "請選擇城市",
+  },
+  favorites: {
+    hint: "依收藏時間排序（新 → 舊）",
   },
 };

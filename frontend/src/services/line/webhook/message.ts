@@ -27,7 +27,7 @@ export async function handleMessageEvent(event: any) {
   if (text === "活動") {
     await replyTextMessage(
       replyToken,
-      "❤️ 你的收藏可以在這裡查看：\nhttps://liff.line.me/2008669370-m1lKqEaj/events"
+      "❤️ 你的活動可以在這裡查看：\nhttps://liff.line.me/2008669370-m1lKqEaj/events"
     );
     return;
   }
@@ -43,7 +43,7 @@ export async function handleMessageEvent(event: any) {
   if (text === "專欄") {
     await replyTextMessage(
       replyToken,
-      "❤️ 你的收藏可以在這裡查看：\nhttps://liff.line.me/2008669370-m1lKqEaj/interviews"
+      "❤️ 你的專欄可以在這裡查看：\nhttps://liff.line.me/2008669370-m1lKqEaj/interviews"
     );
     return;
   }

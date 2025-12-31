@@ -31,6 +31,16 @@ export const en = {
     favoriteSuccess: {
       title: "Added to favorites",
     },
+    auth: {
+      login: {
+        title: "Login successful",
+        text: "Welcome back👋",
+      },
+      logout: {
+        title: "Logged out",
+        text: "See you next time👋",
+      },
+    },
   },
   auth: {
     processing: {
@@ -104,5 +114,8 @@ export const en = {
   },
   events: {
     title: "Select a City",
+  },
+  favorites: {
+    hint: "Sorted by saved date (Newest → Oldest)",
   },
 };

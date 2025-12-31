@@ -22,7 +22,7 @@ export default function InterviewsPage() {
   }, [activeTag]);
 
   return (
-    <div className="w-full my-4 px-4 space-y-24 bg-[url('/images/texture-1.jpg')] text-white">
+    <div className="px-4 w-full space-y-24 bg-[url('/images/texture-1.jpg')] text-white">
       <Hero />
       <InterviewFilter active={activeTag} onChange={setActiveTag} />
       <InterviewGrid people={filteredInterviews} />

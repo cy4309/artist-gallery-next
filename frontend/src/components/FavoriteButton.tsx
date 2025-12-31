@@ -143,7 +143,7 @@ export default function FavoriteButton({
       disabled={userLoading}
       className={`px-3 py-2 rounded-lg transition-all ${
         isFavorite
-          ? "bg-red-500 text-white shadow-lg"
+          ? "bg-primaryRed text-white shadow-lg"
           : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
       }`}
     >

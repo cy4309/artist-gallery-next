@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 import { ensureFavoriteClient } from "@/services/client/favoriteClient";
 import { event } from "@/helpers/ga";
+import { showSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const { loadUserFromCookie, reloadFavorites } = useUser();
   const executed = useRef(false); // ⭐ 防止執行兩次
 
@@ -23,7 +26,14 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      // ✅ ⭐ 登入成功 → 送 GA（只送一次）
+      // ⭐ 登入成功跳通知
+      showSwal({
+        isSuccess: true,
+        title: `${t.notification.auth.login.title}`,
+        text: `${t.notification.auth.login.text}, ${user.name}`,
+      });
+
+      // ⭐ 登入成功 → 送 GA（只送一次）
       event({
         action: "login",
         category: "auth",

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle, faLine } from "@fortawesome/free-brands-svg-icons";
 import { useRouter } from "next/navigation";
-// import { showSwal } from "@/utils/notification";
+import { showSwal } from "@/utils/notification";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function AuthPage() {
@@ -15,6 +15,20 @@ export default function AuthPage() {
   const [processingCallback, setProcessingCallback] = useState(false);
   const router = useRouter();
   const { t } = useLocale();
+
+  // ⭐ 登出成功跳通知
+  useEffect(() => {
+    const loggedOut = sessionStorage.getItem("justLoggedOut");
+    if (loggedOut) {
+      sessionStorage.removeItem("justLoggedOut");
+
+      showSwal({
+        isSuccess: true,
+        title: `${t.notification.auth.logout.title}`,
+        text: `${t.notification.auth.logout.text}`,
+      });
+    }
+  }, []);
 
   // ① 處理 Google Login 回調（/auth?code=...）
   useEffect(() => {

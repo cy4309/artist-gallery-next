@@ -5,11 +5,13 @@ import { useLiff } from "@/components/LiffProvider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FavoriteButton from "@/components/FavoriteButton";
+import { ClockCircleOutlined } from "@ant-design/icons";
 import { Card, Row, Col, Typography, Empty, Tag } from "antd";
 import { fetchFavoriteList } from "@/services/client/favoriteClient";
 import type { FavoriteRecord } from "@/types/favorite/shared";
 import LoadingIndicator from "@/components/LoadingIndicator";
 import { formatDateSmart } from "@/utils/date";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 const { Title, Text } = Typography;
 
@@ -29,6 +31,7 @@ function isEnded(endDate?: string) {
 
 export default function FavoritesPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const { user, loading, loadUser } = useUser();
   const { isInClient, ready: liffReady } = useLiff();
   const [favorites, setFavorites] = useState<FavoriteRecord[]>([]);
@@ -101,6 +104,18 @@ export default function FavoritesPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {favorites.length === 0 && <Empty description="沒有收藏項目" />}
+
+      {/* 排序提示 */}
+      {favorites.length > 0 && (
+        <div className="mb-4 flex items-center justify-end text-xs text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-2">
+            {/* <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400" /> */}
+            <ClockCircleOutlined />
+            {t.favorites.hint}
+          </span>
+          {/* <span className="opacity-70">已結束活動自動排在後方</span> */}
+        </div>
+      )}
 
       <Row gutter={[24, 24]}>
         {favorites.map((item) => {

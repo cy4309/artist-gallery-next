@@ -34,7 +34,7 @@ function NavItem({ label, icon, onClick, danger, success }: NavItemProps) {
         bg-white/5 hover:bg-white/10
         text-sm hover:rotate-180
         text-white
-        ${danger && "!text-red-400 hover:!text-red-300"}
+        ${danger && "!text-primaryRed hover:!text-red-300"}
         ${success && "!text-green-400 hover:!text-green-300"}
       `}
     >
@@ -81,6 +81,7 @@ export default function Nav() {
 
   /** 🔥 登出 */
   const handleLogout = async () => {
+    sessionStorage.setItem("justLoggedOut", "1"); // ⭐ 放 flag
     setIsOpen(false);
     logout(); // 清前端狀態
 
@@ -109,7 +110,7 @@ export default function Nav() {
   };
 
   return (
-    <nav className="z-50 w-full flex justify-between items-center">
+    <nav className="mb-4 z-50 w-full flex justify-between items-center">
       <Link href="/">
         {/* <h1 className="text-2xl md:text-3xl font-dela">CYC ZINE</h1> */}
         <h1 className="text-2xl md:text-3xl font-dela">

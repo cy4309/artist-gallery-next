@@ -75,8 +75,10 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem={true}
+          defaultTheme="dark" // ⭐ 預設 dark
+          enableSystem={false} // ⭐ 不跟系統走
+          // defaultTheme="system"
+          // enableSystem={true}
         >
           <ClientRoot>
             <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center">

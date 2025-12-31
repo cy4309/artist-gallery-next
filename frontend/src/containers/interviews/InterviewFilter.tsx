@@ -85,7 +85,6 @@ export default function InterviewFilter({
         className={`
           fixed bottom-0 left-0 z-40 w-full
           bg-gray-900/80
-          rounded-t-2xl
           overflow-hidden
           transition-all duration-500
           ${
