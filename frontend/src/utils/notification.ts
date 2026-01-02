@@ -33,32 +33,31 @@ export function showSwal({
 }) {
   return Swal.fire({
     ...baseDarkSwal,
-
-    // ❌ 不用 icon
-    icon: undefined,
-
-    title: `<span style="
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: ${isSuccess ? "#7dd3fc" : "#f87171"};
-    ">
-      ${title}
-    </span>`,
-
-    html: text
-      ? `<p style="
-          margin-top: 0.75rem;
-          font-size: 0.875rem;
-          line-height: 1.6;
-          opacity: 0.8;
-        ">
-          ${text}
-        </p>`
-      : undefined,
-
+    icon: undefined, // ❌ 不用 icon
     showConfirmButton: false,
     timer: 1600,
+    title,
+    text,
+
+    customClass: {
+      title: `
+        font-semibold
+        uppercase
+        text-base
+        tracking-widest
+      `,
+
+      // ⭐ 只有在「真的有 text」時，才加間距樣式
+      ...(text && {
+        htmlContainer: `
+          mt-2
+          text-xs
+          leading-relaxed
+          text-gray-300
+          opacity-80
+        `,
+      }),
+    },
   });
 }
 
@@ -78,36 +77,32 @@ export async function showConfirmSwal({
 }) {
   const result = await Swal.fire({
     ...baseDarkSwal,
-
     icon: undefined,
-
-    title: `<span style="
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    ">
-      ${title}
-    </span>`,
-
-    html: text
-      ? `<p style="
-          margin-top: 0.75rem;
-          font-size: 0.875rem;
-          line-height: 1.6;
-          opacity: 0.75;
-        ">
-          ${text}
-        </p>`
-      : undefined,
-
+    title,
+    text,
     showCancelButton: true,
-
     confirmButtonText: confirmText,
     cancelButtonText: cancelText,
-
     buttonsStyling: false,
 
     customClass: {
+      title: `
+        font-semibold
+        uppercase
+        text-base
+        tracking-widest
+      `,
+
+      ...(text && {
+        htmlContainer: `
+          mt-2
+          text-xs
+          leading-relaxed
+          text-gray-300
+          opacity-75
+        `,
+      }),
+
       actions: "flex gap-3 mt-6",
       confirmButton: `
         px-4 py-2

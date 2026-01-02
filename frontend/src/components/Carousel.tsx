@@ -273,20 +273,24 @@ const Carousel = ({
                 </li>
                 <li className="text-sm">{item.address}</li>
 
-                <img
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full"
-                  draggable={false}
-                  src={getCultureImageUrl(item.imageUrl)}
-                  alt={item.actName || "活動圖片"}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src =
-                      "/images/placeholder-no-image.png";
-                  }}
-                />
+                <li className="w-full">
+                  <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full"
+                      draggable={false}
+                      src={getCultureImageUrl(item.imageUrl)}
+                      alt={item.actName || "活動圖片"}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          "/images/placeholder-no-image.png";
+                      }}
+                    />
+                  </div>
+                </li>
 
-                <li className="text-sm">{item.description}</li>
+                <li className="text-xs leading-6">{item.description}</li>
 
                 <BaseButton
                   className="text-white"

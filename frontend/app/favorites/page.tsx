@@ -12,6 +12,7 @@ import type { FavoriteRecord } from "@/types/favorite/shared";
 import LoadingIndicator from "@/components/LoadingIndicator";
 import { formatDateSmart } from "@/utils/date";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import EventCard from "@/components/EventCard";
 
 const { Title, Text } = Typography;
 
@@ -123,66 +124,78 @@ export default function FavoritesPage() {
 
           return (
             <Col xs={24} md={12} lg={8} key={item.eventId}>
-              <Card
-                hoverable={!ended}
-                cover={
-                  <div className="relative">
-                    <img
-                      className={`h-52 w-full object-cover ${
-                        ended ? "grayscale opacity-70" : ""
-                      }`}
-                      src={item.imageUrl || "/images/placeholder-no-image.png"}
-                      alt={item.eventTitle}
-                    />
-
-                    <div className="absolute top-2 right-2">
-                      <FavoriteButton
-                        eventId={item.eventId}
-                        onUnfavorite={() => {
-                          setFavorites((prev) =>
-                            prev.filter((f) => f.eventId !== item.eventId)
-                          );
-                        }}
-                      />
-                    </div>
-
-                    {ended && (
-                      <Tag color="default" className="absolute top-2 left-2">
-                        已結束
-                      </Tag>
-                    )}
-                  </div>
+              <EventCard
+                item={item}
+                ended={ended}
+                onUnfavorite={() =>
+                  setFavorites((prev) =>
+                    prev.filter((f) => f.eventId !== item.eventId)
+                  )
                 }
-              >
-                <Title level={5}>{item.eventTitle}</Title>
-
-                {(item.eventStartDate || item.eventEndDate) && (
-                  <Text type="secondary" className="block mb-1">
-                    {formatDateSmart(item.eventStartDate)}
-                    {item.eventEndDate
-                      ? ` - ${formatDateSmart(item.eventEndDate)}`
-                      : ""}
-                  </Text>
-                )}
-
-                {item.eventLocation && (
-                  <Text className="block text-sm mb-2">
-                    {item.eventLocation}
-                  </Text>
-                )}
-
-                {item.eventUrl && (
-                  <a
-                    href={item.eventUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primaryBlue dark:text-blue-300 text-sm"
-                  >
-                    查看活動官網 →
-                  </a>
-                )}
-              </Card>
+              />
             </Col>
+
+            // <Col xs={24} md={12} lg={8} key={item.eventId}>
+            //   <Card
+            //     hoverable={!ended}
+            //     cover={
+            //       <div className="relative">
+            //         <img
+            //           className={`h-52 w-full object-cover ${
+            //             ended ? "grayscale opacity-70" : ""
+            //           }`}
+            //           src={item.imageUrl || "/images/placeholder-no-image.png"}
+            //           alt={item.eventTitle}
+            //         />
+
+            //         <div className="absolute top-2 right-2">
+            //           <FavoriteButton
+            //             eventId={item.eventId}
+            //             onUnfavorite={() => {
+            //               setFavorites((prev) =>
+            //                 prev.filter((f) => f.eventId !== item.eventId)
+            //               );
+            //             }}
+            //           />
+            //         </div>
+
+            //         {ended && (
+            //           <Tag color="default" className="absolute top-2 left-2">
+            //             已結束
+            //           </Tag>
+            //         )}
+            //       </div>
+            //     }
+            //   >
+            //     <Title level={5}>{item.eventTitle}</Title>
+
+            //     {(item.eventStartDate || item.eventEndDate) && (
+            //       <Text type="secondary" className="block mb-1">
+            //         {formatDateSmart(item.eventStartDate)}
+            //         {item.eventEndDate
+            //           ? ` - ${formatDateSmart(item.eventEndDate)}`
+            //           : ""}
+            //       </Text>
+            //     )}
+
+            //     {item.eventLocation && (
+            //       <Text className="block text-sm mb-2">
+            //         {item.eventLocation}
+            //       </Text>
+            //     )}
+
+            //     {item.eventUrl && (
+            //       <a
+            //         href={item.eventUrl}
+            //         target="_blank"
+            //         rel="noreferrer"
+            //         className="text-primaryBlue dark:text-blue-300 text-sm"
+            //       >
+            //         查看活動官網 →
+            //       </a>
+            //     )}
+            //   </Card>
+            // </Col>
           );
         })}
       </Row>
