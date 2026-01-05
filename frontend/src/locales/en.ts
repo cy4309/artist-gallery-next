@@ -41,6 +41,12 @@ export const en = {
         text: "See you next time👋",
       },
     },
+    confirmOpenExternal: {
+      title: "Continue Exploring?",
+      text: "You are about to explore content on an external website.",
+      confirmText: "Continue",
+      cancelText: "Cancel",
+    },
   },
   auth: {
     processing: {

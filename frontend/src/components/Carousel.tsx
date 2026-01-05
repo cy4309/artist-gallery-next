@@ -6,6 +6,8 @@ import BaseButton from "@/components/BaseButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getCultureImageUrl } from "@/utils/imageProxy";
 import { toISODateTime, formatDateSmart } from "@/utils/date";
+import { showConfirmSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export interface CarouselItem {
   actId: number;
@@ -44,6 +46,7 @@ const Carousel = ({
   pauseOnHover = false,
   round = false,
 }: CarouselProps) => {
+  const { t } = useLocale();
   const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
 
   const [dynamicWidth, setDynamicWidth] = useState(baseWidth);
@@ -294,7 +297,24 @@ const Carousel = ({
 
                 <BaseButton
                   className="text-white"
-                  onClick={() => window.open(item.website)}
+                  // onClick={() => window.open(item.website)}
+                  onClick={async () => {
+                    const confirmed = await showConfirmSwal({
+                      title: t.notification.confirmOpenExternal.title,
+                      text: t.notification.confirmOpenExternal.text,
+                      confirmText:
+                        t.notification.confirmOpenExternal.confirmText,
+                      cancelText: t.notification.confirmOpenExternal.cancelText,
+                    });
+
+                    if (confirmed) {
+                      window.open(
+                        item.website,
+                        "_blank",
+                        "noopener,noreferrer"
+                      );
+                    }
+                  }}
                 >
                   Visit Website
                 </BaseButton>

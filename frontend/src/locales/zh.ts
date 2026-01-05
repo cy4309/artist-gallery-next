@@ -41,6 +41,12 @@ export const zh = {
         text: "下次再見👋",
       },
     },
+    confirmOpenExternal: {
+      title: "繼續探索嗎？",
+      text: "你即將前往外部網站瀏覽相關內容。",
+      confirmText: "繼續前往",
+      cancelText: "留在此頁",
+    },
   },
   auth: {
     processing: {

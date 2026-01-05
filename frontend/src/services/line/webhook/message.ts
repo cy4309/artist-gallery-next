@@ -11,7 +11,7 @@ export async function handleMessageEvent(event: any) {
 
   console.log("[LINE message]", text);
 
-  if (text === "help") {
+  if (text === "help" || text === "Help") {
     await replyTextMessage(
       replyToken,
       "👋 歡迎使用 CYC Zine\n\n" +

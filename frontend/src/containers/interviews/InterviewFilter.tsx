@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
 import { InterviewTag } from "@/types/interview";
 import { INTERVIEW_TAG_GROUPS } from "@/data/interviews/interviewTagGroups";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { useDrawer } from "@/hooks/useDrawer";
 
 export type FilterTag = InterviewTag | "all";
 
@@ -20,7 +20,7 @@ function TagButton({
       className={`px-4 py-2 rounded-md text-sm transition
         ${
           active
-            ? "bg-gray-500 text-white"
+            ? "bg-primaryBlue text-white"
             : "bg-white hover:bg-primaryGray text-gray-700"
         }`}
     >
@@ -36,31 +36,15 @@ export default function InterviewFilter({
   active: FilterTag;
   onChange: (tag: FilterTag) => void;
 }) {
+  const drawer = useDrawer();
   const { t } = useLocale();
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    // ① 防止背景 scroll
-    document.body.style.overflow = "hidden";
-    // ② ESC 關閉選單
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
-    };
-    window.addEventListener("keydown", onEsc);
-    // ③ cleanup（非常重要）
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onEsc);
-    };
-  }, [isOpen]);
 
   return (
     <>
       {/* Filter Trigger */}
       <div className="flex justify-center">
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={drawer.open}
           className="
             px-4 py-2
             rounded-md
@@ -81,17 +65,13 @@ export default function InterviewFilter({
 
       {/* Drawer */}
       <div
-        onClick={() => setIsOpen(false)}
+        onClick={drawer.close}
         className={`
-          fixed bottom-0 left-0 z-40 w-full
+          fixed bottom-0 left-0 z-40 w-full min-h-dvh
           bg-gray-900/80
           overflow-hidden
-          transition-all duration-500
-          ${
-            isOpen
-              ? "h-[100vh] opacity-100 pointer-events-auto"
-              : "h-0 opacity-0 pointer-events-none"
-          }
+          transition-transform duration-500 ease-out
+            ${drawer.isOpen ? "translate-y-0" : "translate-y-full"}
         `}
       >
         {/* Handle */}
@@ -107,7 +87,7 @@ export default function InterviewFilter({
               active={active === "all"}
               onClick={() => {
                 onChange("all");
-                setIsOpen(false);
+                drawer.close;
               }}
             >
               {t.interviews.tagMap.all}
@@ -128,7 +108,7 @@ export default function InterviewFilter({
                     active={active === tag}
                     onClick={() => {
                       onChange(tag);
-                      setIsOpen(false);
+                      drawer.close;
                     }}
                   >
                     {t.interviews.tagMap[tag]}

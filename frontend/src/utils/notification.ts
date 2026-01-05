@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
  * ---------------------------- */
 const baseDarkSwal = {
   background: "rgba(15,15,15,0.92)",
+  // background: "rgba(34,34,34,0.92)",
   color: "#e5e5e5",
   width: "22rem",
   backdrop: `

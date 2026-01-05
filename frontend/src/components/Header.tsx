@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, ReactNode, useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import {
   GlobalOutlined,
   SunOutlined,
   MoonOutlined,
   AlignLeftOutlined,
   PoweroffOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,7 @@ import { useUser } from "@/hooks/useUser";
 // import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { useDrawer } from "@/hooks/useDrawer";
 
 interface NavItemProps {
   label?: string;
@@ -32,8 +34,7 @@ function NavItem({ label, icon, onClick, danger, success }: NavItemProps) {
         w-full flex items-center justify-center
         px-3 py-2 rounded-xl
         bg-white/5 hover:bg-white/10
-        text-sm hover:rotate-180
-        text-white
+        text-sm text-white
         ${danger && "!text-primaryRed hover:!text-red-300"}
         ${success && "!text-green-400 hover:!text-green-300"}
       `}
@@ -45,44 +46,28 @@ function NavItem({ label, icon, onClick, danger, success }: NavItemProps) {
 }
 
 export default function Nav() {
+  const drawer = useDrawer();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
   const { user, logout, loadUser, loading } = useUser();
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useLocale();
 
   useEffect(() => {
-    if (!isOpen) return;
-    // ① 防止背景 scroll
-    document.body.style.overflow = "hidden";
-    // ② ESC 關閉選單
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
-    };
-    window.addEventListener("keydown", onEsc);
-    // ③ cleanup（非常重要）
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onEsc);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen && !user) {
+    if (drawer.isOpen && !user && !loading) {
       loadUser();
     }
-  }, [isOpen, user, loadUser]);
+  }, [drawer.isOpen, user, loading, loadUser]);
 
   /** 封裝導航跳轉 + 關閉 Drawer */
   const go = (path: string) => {
     router.push(path);
-    setIsOpen(false);
+    drawer.close();
   };
 
   /** 🔥 登出 */
   const handleLogout = async () => {
     sessionStorage.setItem("justLoggedOut", "1"); // ⭐ 放 flag
-    setIsOpen(false);
+    drawer.close();
     logout(); // 清前端狀態
 
     await fetch("/api/auth/logout", { method: "POST" }); // 清server cookie
@@ -93,20 +78,20 @@ export default function Nav() {
 
   /** 🔥 登入 */
   const handleLogin = async () => {
-    setIsOpen(false);
+    drawer.close();
     router.push("/auth");
   };
 
   /** 🌙 Dark Mode */
   const handleToggleDarkMode = () => {
     setTheme(theme === "dark" ? "light" : "dark");
-    setIsOpen(false);
+    drawer.close();
   };
 
   /** toggle Locale */
   const handleLocale = () => {
     setLocale(locale === "zh" ? "en" : "zh");
-    setIsOpen(false);
+    drawer.close();
   };
 
   return (
@@ -120,8 +105,8 @@ export default function Nav() {
 
       <div className="flex justify-end items-center fixed right-4">
         <BaseButton
+          onClick={drawer.open}
           className="bg-white dark:bg-primary hover:rotate-180"
-          onClick={() => setIsOpen(true)}
         >
           <AlignLeftOutlined />
         </BaseButton>
@@ -129,26 +114,42 @@ export default function Nav() {
 
       {/* Drawer / Side Menu */}
       <div
-        className={`fixed z-50 top-0 right-0 w-full bg-gray-900/80 transition-all duration-500 overflow-hidden flex flex-col items-center text-white dark:text-primaryBlue ${
-          isOpen ? "h-screen" : "h-0"
-        }`}
+        className={`
+          fixed inset-0 z-50
+          bg-gray-900/80
+          transition-transform duration-500 ease-out
+          flex flex-col items-center text-white
+          dark:text-primaryBlue
+          ${drawer.isOpen ? "translate-y-0" : "-translate-y-full"}
+        `}
       >
+        {/* <div
+        className={`fixed z-50 top-0 right-0 w-full bg-gray-900/80 transition-all duration-500 overflow-hidden flex flex-col items-center text-white dark:text-primaryBlue ${
+            isOpen ? "h-screen" : "h-0"
+          }`}
+        > */}
         <div className="p-4 w-full flex justify-between items-center">
           <h1
             className="text-2xl md:text-3xl cursor-pointer font-dela"
             onClick={() => {
               router.push("/");
-              setIsOpen(false);
+              drawer.close();
             }}
           >
             CYC <span className="tracking-[0.15em] -ml-1">ZINE</span>
           </h1>
-          <button
+          <BaseButton
+            onClick={drawer.close}
+            className="text-primary bg-white dark:text-white dark:bg-gray-900/80 hover:rotate-180"
+          >
+            <CloseOutlined />
+          </BaseButton>
+          {/* <button
             onClick={() => setIsOpen(false)}
-            className="text-white text-2xl md:text-3xl cursor-pointer"
+            className="w-12 text-white text-2xl md:text-3xl cursor-pointer"
           >
             &times;
-          </button>
+          </button> */}
         </div>
 
         <div className="flex items-center gap-4">
