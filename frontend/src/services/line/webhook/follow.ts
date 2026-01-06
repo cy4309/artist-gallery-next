@@ -1,4 +1,5 @@
 import { upsertLineUser } from "@/services/line/upsertLineUser";
+import { getLineProfileLiff } from "@/services/line/getLineProfileLiff";
 import type { UserInitPayload } from "@/types/user";
 
 export async function handleFollowEvent(event: any) {
@@ -7,13 +8,26 @@ export async function handleFollowEvent(event: any) {
 
   console.log("[LINE follow]", lineUserId);
 
+  let name = "LINE User";
+  let picture = "";
+
+  try {
+    // ⭐ 關鍵：follow不會給使用者profile，這裡打liff主動抓profile，若資料不齊全，之後line login oauth會補齊
+    const profile = await getLineProfileLiff(lineUserId);
+    name = profile.displayName || name;
+    picture = profile.pictureUrl || "";
+  } catch (err) {
+    console.warn("[LINE follow] failed to fetch profile", err);
+    // 失敗也沒關係，用預設值
+  }
+
   const user: UserInitPayload = {
     id: `line_${lineUserId}`,
     provider: "line",
     lineUserId,
-    name: "LINE User",
-    email: "",
-    picture: "",
+    name,
+    email: "", // follow 拿不到 email，正常
+    picture,
   };
 
   // ❗ 不回訊、不 push，只做資料同步
