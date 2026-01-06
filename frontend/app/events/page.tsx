@@ -12,7 +12,7 @@ import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function EventsPage() {
   const { t } = useLocale();
-  const [hoveredId, setHoveredId] = useState<string | null>(t.events.title);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [clickedId, setClickedId] = useState<string | null>(null);
   const [orgData, setOrgData] = useState<OrgEvent[]>([]);
   const [isMapClicked, setIsMapClicked] = useState(false);
@@ -65,7 +65,7 @@ export default function EventsPage() {
   const handleCloseList = () => {
     setIsMapClicked(false);
     setClickedId(null);
-    setHoveredId(t.events.title);
+    setHoveredId(null);
   };
 
   return (
@@ -74,10 +74,10 @@ export default function EventsPage() {
         {/* 地圖初始畫面 */}
         {!isMapClicked && (
           <div className="fixed inset-0 flex flex-col justify-center items-center">
-            {hoveredId && (
+            {(hoveredId ?? t.events.title) && (
               <BaseButton className="my-4">
                 <h5 className="text-center text-xl font-bold">
-                  - {hoveredId} -
+                  - {hoveredId ?? t.events.title} -
                 </h5>
               </BaseButton>
             )}

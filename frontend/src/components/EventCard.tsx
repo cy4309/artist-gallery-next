@@ -27,10 +27,12 @@ export default function EventCard({
       `}
     >
       {/* Image */}
-      <div className="relative aspect-[16/9] overflow-hidden">
+      <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
         <img
+          loading="lazy"
+          decoding="async"
           src={item.imageUrl || "/images/placeholder-no-image.png"}
-          alt={item.eventTitle}
+          alt={item.eventTitle || "活動圖片"}
           className={`
             w-full h-full object-cover
             transition-transform duration-500

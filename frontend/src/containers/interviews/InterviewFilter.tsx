@@ -69,6 +69,7 @@ export default function InterviewFilter({
         className={`
           fixed bottom-0 left-0 z-40 w-full min-h-dvh
           bg-gray-900/80
+          backdrop-blur-md
           overflow-hidden
           transition-transform duration-500 ease-out
             ${drawer.isOpen ? "translate-y-0" : "translate-y-full"}

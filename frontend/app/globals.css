@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.border-cyc {
+  @apply p-2 border rounded-md border-primaryBlue border-l-0 border-r-0;
+}
+
 /* :root {
   --background: #ffffff;
   --foreground: #171717;
