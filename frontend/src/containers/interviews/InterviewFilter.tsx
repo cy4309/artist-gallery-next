@@ -55,7 +55,7 @@ export default function InterviewFilter({
             transition
           "
         >
-          <span className="opacity-60">Filter</span>
+          <span className="opacity-60">{t.interviews.filter.title}</span>
           <span className="opacity-40">·</span>
           {active === "all"
             ? t.interviews.tagMap.all
@@ -64,7 +64,7 @@ export default function InterviewFilter({
       </div>
 
       {/* Drawer */}
-      <div
+      {/* <div
         onClick={drawer.close}
         className={`
           fixed bottom-0 left-0 z-40 w-full min-h-dvh
@@ -73,6 +73,21 @@ export default function InterviewFilter({
           overflow-hidden
           transition-transform duration-500 ease-out
             ${drawer.isOpen ? "translate-y-0" : "translate-y-full"}
+        `}
+      > */}
+      <div
+        onClick={drawer.close}
+        className={`
+          fixed bottom-0 left-0 z-40 w-full min-h-dvh
+          bg-gray-900/80
+          backdrop-blur-md
+          overflow-hidden
+          transition-all duration-500 ease-out
+          ${
+            drawer.isOpen
+              ? "translate-y-0 opacity-100 pointer-events-auto"
+              : "translate-y-full opacity-0 pointer-events-none"
+          }
         `}
       >
         {/* Handle */}
@@ -88,7 +103,7 @@ export default function InterviewFilter({
               active={active === "all"}
               onClick={() => {
                 onChange("all");
-                drawer.close;
+                drawer.close();
               }}
             >
               {t.interviews.tagMap.all}
@@ -109,7 +124,7 @@ export default function InterviewFilter({
                     active={active === tag}
                     onClick={() => {
                       onChange(tag);
-                      drawer.close;
+                      drawer.close();
                     }}
                   >
                     {t.interviews.tagMap[tag]}

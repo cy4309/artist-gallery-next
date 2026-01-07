@@ -296,7 +296,7 @@ const Carousel = ({
                 <li className="text-xs leading-6">{item.description}</li>
 
                 <BaseButton
-                  className="text-white"
+                  className="text-white !px-4"
                   // onClick={() => window.open(item.website)}
                   onClick={async () => {
                     const confirmed = await showConfirmSwal({
@@ -316,7 +316,7 @@ const Carousel = ({
                     }
                   }}
                 >
-                  Visit Website
+                  {t.buttons.visit}
                 </BaseButton>
               </ul>
             </motion.div>

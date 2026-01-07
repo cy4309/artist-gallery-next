@@ -74,7 +74,7 @@ export default function AuthPage() {
   // ④ 若正在處理 callback → 顯示 Loading
   if (processingCallback) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-dvh flex flex-col items-center justify-center p-6 text-center">
         <p className="text-lg font-bold mb-3">{t.auth.processing.title}</p>
         <p className="text-sm text-gray-600">{t.auth.processing.description}</p>
       </div>
@@ -285,7 +285,7 @@ export default function AuthPage() {
 //   // ④ 若正在處理 callback → 顯示 Loading
 //   if (processingCallback) {
 //     return (
-//       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+//       <div className="min-h-dvh flex flex-col items-center justify-center p-6 text-center">
 //         <p className="text-lg font-bold mb-3">Signing you in...</p>
 //         <p className="text-sm text-gray-600">
 //           Please wait while we complete your login.

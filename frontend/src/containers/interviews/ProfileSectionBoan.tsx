@@ -3,8 +3,11 @@ import { Card } from "antd";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Lenis from "@studio-freight/lenis";
 import BaseButton from "@/components/BaseButton";
+import { showConfirmSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function ProfileSectionBoan() {
+  const { t } = useLocale();
   const sectionRef = useRef<HTMLDivElement | null>(null);
 
   /**
@@ -101,13 +104,24 @@ export default function ProfileSectionBoan() {
             <p className="font-dela opacity-80">Tattoo artist</p>
 
             <BaseButton
-              label="visit the website."
+              label={t.buttons.visit}
               className="my-4 w-full"
-              onClick={() =>
-                window.open(
-                  "https://cy4309.github.io/TFD105_01CYC/MainPage.html"
-                )
-              }
+              onClick={async () => {
+                const confirmed = await showConfirmSwal({
+                  title: t.notification.confirmOpenExternal.title,
+                  text: t.notification.confirmOpenExternal.text,
+                  confirmText: t.notification.confirmOpenExternal.confirmText,
+                  cancelText: t.notification.confirmOpenExternal.cancelText,
+                });
+
+                if (confirmed) {
+                  window.open(
+                    "https://cy4309.github.io/TFD105_01CYC/MainPage.html",
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
+                }
+              }}
             />
           </div>
 
@@ -163,7 +177,7 @@ export default function ProfileSectionBoan() {
 //   return (
 //     <section
 //       ref={parallaxRef}
-//       // className="min-h-screen bg-gradient-to-b from-gray-500 to-white text-white font-sans overflow-hidden"
+//       // className="min-h-dvh bg-gradient-to-b from-gray-500 to-white text-white font-sans overflow-hidden"
 //       className="w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center items-center"
 //     >
 //       <motion.div

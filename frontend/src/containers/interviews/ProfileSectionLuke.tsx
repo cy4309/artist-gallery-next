@@ -3,8 +3,11 @@ import { Card } from "antd";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Lenis from "@studio-freight/lenis";
 import BaseButton from "@/components/BaseButton";
+import { showConfirmSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function ProfileSectionLuke() {
+  const { t } = useLocale();
   const sectionRef = useRef<HTMLDivElement | null>(null);
 
   const { scrollYProgress } = useScroll({
@@ -86,9 +89,24 @@ export default function ProfileSectionLuke() {
             <p className="font-dela opacity-80">3D Animator</p>
 
             <BaseButton
-              label="visit the website."
+              label={t.buttons.visit}
               className="my-4 w-full"
-              onClick={() => window.open("https://anymaction.com")}
+              onClick={async () => {
+                const confirmed = await showConfirmSwal({
+                  title: t.notification.confirmOpenExternal.title,
+                  text: t.notification.confirmOpenExternal.text,
+                  confirmText: t.notification.confirmOpenExternal.confirmText,
+                  cancelText: t.notification.confirmOpenExternal.cancelText,
+                });
+
+                if (confirmed) {
+                  window.open(
+                    "https://anymaction.com",
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
+                }
+              }}
             />
           </div>
 
@@ -145,8 +163,8 @@ export default function ProfileSectionLuke() {
 //   return (
 //     <section
 //       ref={parallaxRef}
-//       // className="min-h-screen bg-gradient-to-b from-gray-500 to-white text-white font-sans overflow-hidden"
-//       className="w-full min-h-screen overflow-hidden flex flex-col justify-center items-center"
+//       // className="min-h-dvh bg-gradient-to-b from-gray-500 to-white text-white font-sans overflow-hidden"
+//       className="w-full min-h-dvh overflow-hidden flex flex-col justify-center items-center"
 //     >
 //       <motion.div
 //         style={{ y: y1 }}

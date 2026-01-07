@@ -1,6 +1,8 @@
-import Interviews from "../../app/interviews/page";
-
 export const en = {
+  buttons: {
+    back: "Back",
+    visit: "Visit Website",
+  },
   header: {
     events: "Events",
     favorites: "Favorites",
@@ -86,13 +88,13 @@ export const en = {
     contact: "contact",
   },
   interviews: {
-    continue: "To be continued...",
     hero: {
       title: "Curated Columns.",
       description:
         "We highlight voices, stories, and cultural moments across Taiwan — helping you explore, connect, and build your own inspiration map.",
     },
     filter: {
+      title: "Filter",
       group: {
         type: "Type",
         culture: "Culture",
@@ -117,6 +119,8 @@ export const en = {
       digitalArt: "Digital Art",
       photography: "Photography",
     },
+    continue: "To be continued...",
+    seemore: "Explore the Story",
   },
   events: {
     title: "Select a City",

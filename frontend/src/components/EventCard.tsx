@@ -3,6 +3,9 @@
 import FavoriteButton from "@/components/FavoriteButton";
 import { formatDateSmart } from "@/utils/date";
 import type { FavoriteRecord } from "@/types/favorite/shared";
+import { showConfirmSwal } from "@/utils/notification";
+import { ArrowRightOutlined } from "@ant-design/icons";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 interface EventCardProps {
   item: FavoriteRecord;
@@ -15,6 +18,8 @@ export default function EventCard({
   ended = false,
   onUnfavorite,
 }: EventCardProps) {
+  const { t } = useLocale();
+
   return (
     <div
       className={`
@@ -75,14 +80,33 @@ export default function EventCard({
         )}
 
         {item.eventUrl && (
-          <a
-            href={item.eventUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-block mt-2 text-xs tracking-wide text-primaryBlue dark:text-blue-300 hover:underline"
+          <button
+            type="button"
+            onClick={async () => {
+              const confirmed = await showConfirmSwal({
+                title: t.notification.confirmOpenExternal.title,
+                text: t.notification.confirmOpenExternal.text,
+                confirmText: t.notification.confirmOpenExternal.confirmText,
+                cancelText: t.notification.confirmOpenExternal.cancelText,
+              });
+
+              if (confirmed) {
+                window.open(item.eventUrl, "_blank", "noopener,noreferrer");
+              }
+            }}
+            className="
+              mt-2 gap-1
+              flex justify-center items-center
+              text-xs tracking-wide
+              text-primaryBlue dark:text-blue-300
+              hover:underline
+            "
           >
-            View Event →
-          </a>
+            {t.buttons.visit}
+            <span aria-hidden>
+              <ArrowRightOutlined />
+            </span>
+          </button>
         )}
       </div>
     </div>

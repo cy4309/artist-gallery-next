@@ -1,6 +1,8 @@
-import { Descriptions } from "antd";
-
 export const zh = {
+  buttons: {
+    back: "返回",
+    visit: "查看網站",
+  },
   header: {
     events: "活動",
     favorites: "收藏",
@@ -82,13 +84,13 @@ export const zh = {
     contact: "聯絡我們",
   },
   interviews: {
-    continue: "持續新增中...",
     hero: {
       title: "專欄精選。",
       description:
         "這裡收錄我們精選的台灣文化人物與故事。不只是閱讀，而是一步步建立你的文化靈感地圖。",
     },
     filter: {
+      title: "篩選器",
       group: {
         type: "類型",
         culture: "文化",
@@ -113,6 +115,8 @@ export const zh = {
       digitalArt: "數位藝術",
       photography: "攝影",
     },
+    continue: "持續新增中...",
+    seemore: "查看人物故事",
   },
   events: {
     title: "請選擇城市",

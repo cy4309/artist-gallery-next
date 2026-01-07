@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 interface BackButtonProps {
   label?: string;
@@ -16,16 +17,22 @@ export default function BackButton({
   onClick,
   children,
 }: BackButtonProps) {
+  const { t } = useLocale();
   const router = useRouter();
-  const pathname = usePathname();
+  // const pathname = usePathname();
 
   function handleBack() {
-    const isInterviewDetail =
-      pathname.startsWith("/interviews/") && pathname.split("/").length === 3; // /interviews/{slug}
-
+    // const isInterviewDetail =
+    //   pathname.startsWith("/interviews/") && pathname.split("/").length === 3; // /interviews/{slug}
     // ⭐ 規則 1：interviews detail → 永遠回 /interviews
-    if (isInterviewDetail) {
-      router.push("/interviews");
+    // if (isInterviewDetail) {
+    //   router.push("/interviews");
+    //   return;
+    // }
+
+    // ⭐ 規則 1：優先回上一頁（保留 scroll）
+    if (window.history.length > 1) {
+      router.back();
       return;
     }
 
@@ -73,7 +80,7 @@ export default function BackButton({
       // "
     >
       <ArrowLeftOutlined />
-      <span className="ml-2">Back</span>
+      <span className="ml-2">{t.buttons.back}</span>
       {children ?? label}
     </button>
   );

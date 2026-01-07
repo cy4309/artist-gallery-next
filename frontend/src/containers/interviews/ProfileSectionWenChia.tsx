@@ -3,10 +3,13 @@ import { Card } from "antd";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Lenis from "@studio-freight/lenis";
 import BaseButton from "@/components/BaseButton";
+import { showConfirmSwal } from "@/utils/notification";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function ProfileSectionWenChia() {
-  const iframeAutoMutedPlay = `?autoplay=1&mute=1`;
+  const { t } = useLocale();
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const iframeAutoMutedPlay = `?autoplay=1&mute=1`;
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -90,13 +93,24 @@ export default function ProfileSectionWenChia() {
             </span>
 
             <BaseButton
-              label="visit the website."
+              label={t.buttons.visit}
               className="my-4 w-full"
-              onClick={() =>
-                window.open(
-                  "https://www.youtube.com/watch?v=EEkoPJh-CaY&ab_channel=%E5%AE%85%E7%94%B7"
-                )
-              }
+              onClick={async () => {
+                const confirmed = await showConfirmSwal({
+                  title: t.notification.confirmOpenExternal.title,
+                  text: t.notification.confirmOpenExternal.text,
+                  confirmText: t.notification.confirmOpenExternal.confirmText,
+                  cancelText: t.notification.confirmOpenExternal.cancelText,
+                });
+
+                if (confirmed) {
+                  window.open(
+                    "https://www.youtube.com/watch?v=EEkoPJh-CaY&ab_channel=%E5%AE%85%E7%94%B7",
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
+                }
+              }}
             />
           </div>
 

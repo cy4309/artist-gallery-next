@@ -4,8 +4,10 @@ import { InterviewPerson } from "@/types/interview";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRightOutlined } from "@ant-design/icons";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export default function InterviewCard({ person }: { person: InterviewPerson }) {
+  const { t } = useLocale();
   const router = useRouter();
 
   return (
@@ -29,8 +31,8 @@ export default function InterviewCard({ person }: { person: InterviewPerson }) {
         <p className="text-sm">{person.role}</p>
 
         {/* 👇 可點擊提示 */}
-        <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-          查看人物故事
+        <p className="text-xs text-gray-500 mt-2 flex justify-center items-center gap-1">
+          {t.interviews.seemore}
           <span aria-hidden>
             <ArrowRightOutlined />
           </span>
