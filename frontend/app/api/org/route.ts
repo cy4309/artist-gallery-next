@@ -11,12 +11,14 @@ const ORG_API =
 export async function GET() {
   try {
     const res = await fetch(ORG_API, {
+      cache: "no-store", // ❗ 關掉 Next 的 server cache
+
       // ✅ 用 Next 的 Data Cache + ISR revalidate， 10 分鐘快取，接下來10分鐘內的請求都直接用快取結果，fetch的內建 Server Cache
-      next: { revalidate: 60 * 10 },
-      headers: {
-        "User-Agent": "cyc-zine/1.0", // 🔥 很多政府 API 需要
-        Accept: "application/json",
-      },
+      // next: { revalidate: 60 * 10 },
+      // headers: {
+      //   "User-Agent": "cyc-zine/1.0", // 🔥 很多政府 API 需要
+      //   Accept: "application/json",
+      // },
     });
 
     if (!res.ok) {
@@ -31,7 +33,7 @@ export async function GET() {
 
     const data = await res.json();
 
-    // 可選：也能在 response header 告訴瀏覽器/代理層快取（不影響 Next 的 cache）
+    // ✅ 用 CDN 快取（Vercel 會吃）（不影響 Next 的 cache）
     return NextResponse.json(data, {
       headers: {
         "Cache-Control": "s-maxage=600, stale-while-revalidate=60",
