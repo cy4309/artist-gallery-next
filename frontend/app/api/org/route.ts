@@ -13,10 +13,10 @@ export async function GET() {
     const res = await fetch(ORG_API, {
       // ✅ 用 Next 的 Data Cache + ISR revalidate， 10 分鐘快取，接下來10分鐘內的請求都直接用快取結果，fetch的內建 Server Cache
       next: { revalidate: 60 * 10 },
-      // headers: {
-      //   "User-Agent": "cyc-zine/1.0", // 🔥 很多政府 API 需要
-      //   Accept: "application/json",
-      // },
+      headers: {
+        "User-Agent": "cyc-zine/1.0", // 🔥 很多政府 API 需要
+        Accept: "application/json",
+      },
     });
 
     if (!res.ok) {
