@@ -34,7 +34,7 @@ export function showSwal({
 }) {
   return Swal.fire({
     ...baseDarkSwal,
-    icon: undefined, // ❌ 不用 icon
+    icon: isSuccess ? "success" : "error",
     showConfirmButton: false,
     timer: 1600,
     title,
@@ -78,7 +78,7 @@ export async function showConfirmSwal({
 }) {
   const result = await Swal.fire({
     ...baseDarkSwal,
-    icon: undefined,
+    icon: "question",
     title,
     text,
     showCancelButton: true,
