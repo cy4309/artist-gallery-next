@@ -9,13 +9,15 @@ import BaseButton from "@/components/BaseButton";
 import BackButton from "@/components/BackButton";
 import { OrgEvent } from "@/types/event";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import LoadingIndicator from "@/components/LoadingIndicator";
 
 export default function EventsPage() {
   const { t } = useLocale();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [clickedId, setClickedId] = useState<string | null>(null);
-  const [orgData, setOrgData] = useState<OrgEvent[]>([]);
   const [isMapClicked, setIsMapClicked] = useState(false);
+  const [orgData, setOrgData] = useState<OrgEvent[]>([]);
+  const [orgLoading, setOrgLoading] = useState(true);
 
   // 依照 orgData + clickedId 動態算出當前城市對應活動
   const nowData = useMemo(() => {
@@ -27,12 +29,15 @@ export default function EventsPage() {
   useEffect(() => {
     const fetchOrgData = async () => {
       try {
+        setOrgLoading(true);
         const response = await getOrgData();
         // 若 getOrgData 沒有型別，可以這樣註記：
         // const response = (await getOrgData()) as OrgEvent[];
         setOrgData(response as OrgEvent[]);
       } catch (error) {
         console.error("Failed to fetch org data:", error);
+      } finally {
+        setOrgLoading(false);
       }
     };
 
@@ -90,7 +95,17 @@ export default function EventsPage() {
 
         {/* 點城市後的活動列表 / 輪播 */}
         {isMapClicked &&
-          (nowData.length > 0 ? (
+          (orgLoading ? (
+            <div className="w-full min-h-dvh flex items-center justify-center">
+              {/* <div className="flex flex-col items-center my-12">
+                <p className="text-sm opacity-70 animate-pulse">
+                  正在載入活動資料…
+                </p>
+              </div> */}
+              <LoadingIndicator />
+            </div>
+          ) : nowData.length > 0 ? (
+            // (nowData.length > 0 ? (
             <div className="flex flex-col justify-center items-center">
               <div className="m-4 w-full flex justify-start items-center">
                 <BackButton onClick={handleCloseList} />
