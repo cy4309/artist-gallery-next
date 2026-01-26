@@ -6,7 +6,7 @@ import type { User } from "@/types/user";
  * 從 httpOnly cookie 讀取目前登入使用者
  */
 export async function getCurrentUser(): Promise<User | null> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const session = cookieStore.get("cyc_session");
 
   if (!session) return null;
