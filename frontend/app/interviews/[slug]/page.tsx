@@ -1,7 +1,7 @@
 "use client";
 
 import { interviews } from "@/data/interviews/interviews";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 // import { motion } from "framer-motion";
 import { PROFILE_SECTION_MAP } from "@/data/interviews/interviewsProfileMap";
 import BackButton from "@/components/BackButton";
@@ -14,12 +14,9 @@ function DefaultProfileFallback() {
   );
 }
 
-export default function InterviewDetail({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const person = interviews.find((p) => p.slug === params.slug);
+export default function InterviewDetail() {
+  const { slug } = useParams<{ slug: string }>();
+  const person = interviews.find((p) => p.slug === slug);
   if (!person) notFound();
 
   const ProfileSection = PROFILE_SECTION_MAP[person.slug];

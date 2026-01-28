@@ -41,7 +41,7 @@ interface UserContextType {
   toggleFavoriteOptimistic: (eventId: string) => void;
   toggleFavoriteWithSync: (
     eventId: string,
-    extra?: FavoriteExtraPayload
+    extra?: FavoriteExtraPayload,
   ) => Promise<void>;
 }
 
@@ -113,7 +113,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (options?.afterLoginAction) {
       localStorage.setItem(
         "afterLoginAction",
-        JSON.stringify(options.afterLoginAction)
+        JSON.stringify(options.afterLoginAction),
       );
     }
 
@@ -139,13 +139,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setFavorites((prev) =>
       prev.includes(eventId)
         ? prev.filter((id) => id !== eventId)
-        : [...prev, eventId]
+        : [...prev, eventId],
     );
   }
 
   async function toggleFavoriteWithSync(
     eventId: string,
-    extra?: FavoriteExtraPayload
+    extra?: FavoriteExtraPayload,
   ) {
     // ⭐ 1️⃣ 樂觀更新 UI（立刻）
     toggleFavoriteOptimistic(eventId);
