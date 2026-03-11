@@ -181,13 +181,13 @@ const Carousel = ({
   const dragProps = isSingle
     ? { drag: false }
     : loop
-    ? {}
-    : {
-        dragConstraints: {
-          left: -trackItemOffset * (carouselItems.length - 1),
-          right: 0,
-        },
-      };
+      ? {}
+      : {
+          dragConstraints: {
+            left: -trackItemOffset * (carouselItems.length - 1),
+            right: 0,
+          },
+        };
 
   return (
     <div
@@ -231,7 +231,7 @@ const Carousel = ({
                   -(index - 1) * trackItemOffset,
                 ],
                 [90, 0, -90],
-                { clamp: false }
+                { clamp: false },
               );
 
           return (
@@ -311,7 +311,7 @@ const Carousel = ({
                       window.open(
                         item.website,
                         "_blank",
-                        "noopener,noreferrer"
+                        "noopener,noreferrer",
                       );
                     }
                   }}
@@ -340,8 +340,8 @@ const Carousel = ({
                     ? "bg-white"
                     : "bg-[#333]"
                   : round
-                  ? "bg-[#555]"
-                  : "bg-[rgba(51,51,51,0.4)]"
+                    ? "bg-[#555]"
+                    : "bg-[rgba(51,51,51,0.4)]"
               }`}
               animate={{
                 scale: currentIndex % items.length === index ? 1.2 : 1,
