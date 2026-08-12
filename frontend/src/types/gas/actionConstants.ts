@@ -14,6 +14,9 @@ export const GAS_ACTION = {
   CHECK_FAVORITE: "checkFavorite",
   ENSURE_FAVORITE: "ensureFavorite",
   LIST_FAVORITES: "listFavorites",
+
+  // push
+  REGISTER_PUSH_TOKEN: "registerPushToken",
 } as const;
 
 // 👉 所有合法 action 字串 union
