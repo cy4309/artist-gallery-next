@@ -6,6 +6,7 @@ import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
+import { isAllowedAppReturnTo } from "@/utils/appReturnTo";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -17,12 +18,23 @@ function getBaseUrl() {
   return isProd ? NEXT_PUBLIC_BASE_URL : "http://localhost:3000"; // 直接寫死就行，因為google console只接受localhost，但不影響next使用https或是0.0.0.0
 }
 
+function getErrorMessage(err: unknown): unknown {
+  if (typeof err === "object" && err !== null && "response" in err) {
+    const data = (err as { response?: { data?: unknown } }).response?.data;
+    if (data !== undefined) return data;
+  }
+  if (err instanceof Error) return err.message;
+  return "Google login error";
+}
+
 export async function GET(req: NextRequest) {
   try {
     const baseUrl = getBaseUrl();
     const redirectUri = `${baseUrl}/api/auth/login`;
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
+    const stateParam = searchParams.get("state");
+    const returnToParam = searchParams.get("returnTo") || "";
 
     // STEP 1 — Redirect to Google login
     if (!code) {
@@ -31,9 +43,13 @@ export async function GET(req: NextRequest) {
       authURL.searchParams.set("redirect_uri", redirectUri);
       authURL.searchParams.set("response_type", "code");
       authURL.searchParams.set("scope", "openid email profile");
-      authURL.searchParams.set("prompt", "select_account"); // ⭐ 強制每次都選帳號
+      authURL.searchParams.set("prompt", "select_account");
 
-      const state = crypto.randomUUID();
+      const state = isAllowedAppReturnTo(returnToParam)
+        ? Buffer.from(
+            JSON.stringify({ returnTo: returnToParam, ts: Date.now() }),
+          ).toString("base64url")
+        : crypto.randomUUID();
       authURL.searchParams.set("state", state);
 
       return NextResponse.redirect(authURL.toString());
@@ -81,7 +97,7 @@ export async function GET(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
-      }
+      },
     );
 
     const googleUser = userInfoRes.data;
@@ -125,14 +141,31 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // STEP 5 — Set cookies
-    const res = NextResponse.redirect(`${baseUrl}/auth/callback`);
+    // STEP 5 — Set cookies + redirect（網站回 callback；App 帶回 session）
+    let appReturnTo = "";
+    if (stateParam) {
+      try {
+        const decoded = JSON.parse(
+          Buffer.from(stateParam, "base64url").toString("utf8"),
+        );
+        if (typeof decoded.returnTo === "string") {
+          appReturnTo = decoded.returnTo;
+        }
+      } catch {
+        appReturnTo = "";
+      }
+    }
+
+    const target = isAllowedAppReturnTo(appReturnTo)
+      ? `${appReturnTo}${appReturnTo.includes("?") ? "&" : "?"}session=${encodeURIComponent(
+          JSON.stringify(finalUser),
+        )}`
+      : `${baseUrl}/auth/callback`;
+
+    const res = NextResponse.redirect(target);
     setUserCookies(res, finalUser);
     return res;
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.response?.data || err.message },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }
