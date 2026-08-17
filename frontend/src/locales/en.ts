@@ -2,6 +2,7 @@ export const en = {
   buttons: {
     back: "Back",
     visit: "Visit Website",
+    share: "Share Event",
   },
   header: {
     events: "Events",
@@ -48,6 +49,10 @@ export const en = {
       text: "You are about to explore content on an external website.",
       confirmText: "Continue",
       cancelText: "Cancel",
+    },
+    shareCopied: {
+      title: "Link copied",
+      text: "The event URL has been copied to your clipboard",
     },
   },
   auth: {
@@ -124,6 +129,9 @@ export const en = {
   },
   events: {
     title: "Select a City",
+    searchPlaceholder: "Search events…",
+    searchNoResults: "No matching events",
+    searchHint: "Try a different keyword or city",
   },
   favorites: {
     sortedHint: "Sorted by saved date (Newest → Oldest)",

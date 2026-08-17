@@ -24,7 +24,7 @@ const MapTw = ({ onHover, onClick }: MapTwProps) => {
   return (
     <>
       <svg
-        className="layerOne h-[50vh]"
+        className="layerOne h-full w-auto max-h-full"
         data-name="layerOne"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 1440 2055"

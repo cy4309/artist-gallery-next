@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
+import { motion, useMotionValue, animate } from "framer-motion";
 import BaseButton from "@/components/BaseButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getCultureImageUrl } from "@/utils/imageProxy";
 import { toISODateTime, formatDateSmart } from "@/utils/date";
 import { showConfirmSwal } from "@/utils/notification";
+import { getEventShareUrl, shareEvent } from "@/utils/share";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export interface CarouselItem {
@@ -30,12 +31,18 @@ export interface CarouselProps {
   loop?: boolean;
   pauseOnHover?: boolean;
   round?: boolean;
+  activeIndex?: number;
+  onIndexChange?: (index: number, item: CarouselItem) => void;
 }
 
-const DRAG_BUFFER = 0;
+const DRAG_BUFFER = 50;
 const VELOCITY_THRESHOLD = 500;
 const GAP = 16;
-const SPRING_OPTIONS = { type: "spring", stiffness: 300, damping: 30 };
+const SPRING_OPTIONS = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 30,
+};
 
 const Carousel = ({
   autoplay = false,
@@ -45,6 +52,8 @@ const Carousel = ({
   loop = false,
   pauseOnHover = false,
   round = false,
+  activeIndex,
+  onIndexChange,
 }: CarouselProps) => {
   const { t } = useLocale();
   const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
@@ -57,10 +66,19 @@ const Carousel = ({
   // 如果只有一筆，不 clone
   const carouselItems = isSingle ? items : loop ? [...items, items[0]] : items;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    activeIndex != null && activeIndex >= 0 ? activeIndex : 0,
+  );
   const x = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [slideHeight, setSlideHeight] = useState<number | undefined>(undefined);
+  const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const dragStartX = useRef(0);
+  const dragOriginX = useRef(0);
+  const draggingRef = useRef(false);
+  const animationRef = useRef<ReturnType<typeof animate> | null>(null);
 
   // -------------------  RWD Width  -------------------
   useEffect(() => {
@@ -118,76 +136,127 @@ const Carousel = ({
     isSingle,
   ]);
 
-  const effectiveTransition = isResetting ? { duration: 0 } : SPRING_OPTIONS;
+  useEffect(() => {
+    if (draggingRef.current) return;
 
-  const handleAnimationComplete = () => {
-    if (!isSingle && loop && currentIndex === carouselItems.length - 1) {
-      setIsResetting(true);
-      x.set(0);
-      setCurrentIndex(0);
-      setTimeout(() => setIsResetting(false), 50);
-    }
-  };
+    animationRef.current?.stop();
+    animationRef.current = animate(x, -(currentIndex * trackItemOffset), {
+      ...(isResetting ? { duration: 0 } : SPRING_OPTIONS),
+      onComplete: () => {
+        if (!isSingle && loop && currentIndex === carouselItems.length - 1) {
+          setIsResetting(true);
+          x.set(0);
+          setCurrentIndex(0);
+          setTimeout(() => setIsResetting(false), 50);
+        }
+      },
+    });
+
+    return () => {
+      animationRef.current?.stop();
+    };
+  }, [
+    currentIndex,
+    trackItemOffset,
+    isResetting,
+    x,
+    isSingle,
+    loop,
+    carouselItems.length,
+  ]);
+
+  useEffect(() => {
+    if (activeIndex == null || items.length === 0) return;
+    const real = currentIndex % items.length;
+    if (real === activeIndex) return;
+    if (currentIndex === items.length && activeIndex === 0) return;
+    setCurrentIndex(activeIndex);
+  }, [activeIndex, currentIndex, items.length]);
+
+  useEffect(() => {
+    if (!onIndexChange || items.length === 0) return;
+    const real = currentIndex % items.length;
+    const item = items[real];
+    if (!item) return;
+    onIndexChange(real, item);
+  }, [currentIndex, items, onIndexChange]);
+
+  // -------------------  Current slide height  -------------------
+  useLayoutEffect(() => {
+    const el = itemRefs.current[currentIndex];
+    if (!el) return;
+
+    const updateHeight = () => {
+      setSlideHeight(el.offsetHeight);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [currentIndex, itemWidth, items]);
 
   // -------------------  Drag  -------------------
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    if (isSingle) return; // 🔥 單筆不能拖
+  const snapToIndex = (nextIndex: number) => {
+    setCurrentIndex(nextIndex);
+  };
 
-    const offsetX = info.offset.x;
-    const offsetY = info.offset.y;
-    const MIN_HORIZONTAL_DRAG = 30;
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (isSingle) return;
+    if ((event.target as HTMLElement).closest("button, a")) return;
 
-    // 👉 加上「水平位移必須大於垂直位移」的條件
-    if (
-      Math.abs(offsetX) < Math.abs(offsetY) ||
-      Math.abs(offsetX) < MIN_HORIZONTAL_DRAG
-    ) {
+    event.preventDefault();
+    draggingRef.current = true;
+    setIsDragging(true);
+    animationRef.current?.stop();
+    dragStartX.current = event.clientX;
+    dragOriginX.current = x.get();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
+    x.set(dragOriginX.current + (event.clientX - dragStartX.current));
+  };
+
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
+
+    draggingRef.current = false;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const offset = event.clientX - dragStartX.current;
+    let nextIndex = currentIndex;
+
+    if (offset < -DRAG_BUFFER) {
+      if (loop && currentIndex === items.length - 1) {
+        nextIndex = currentIndex + 1;
+      } else {
+        nextIndex = Math.min(currentIndex + 1, carouselItems.length - 1);
+      }
+    } else if (offset > DRAG_BUFFER) {
+      if (loop && currentIndex === 0) {
+        nextIndex = items.length - 1;
+      } else {
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+    }
+
+    if (nextIndex === currentIndex) {
+      animationRef.current?.stop();
+      animationRef.current = animate(
+        x,
+        -(currentIndex * trackItemOffset),
+        SPRING_OPTIONS,
+      );
       return;
     }
 
-    const velocity = info.velocity.x;
-
-    if (offsetX < -DRAG_BUFFER || velocity < -VELOCITY_THRESHOLD) {
-      if (loop && currentIndex === items.length - 1) {
-        setCurrentIndex(currentIndex + 1); // go to clone
-      } else {
-        setCurrentIndex((prev) => Math.min(prev + 1, carouselItems.length - 1));
-      }
-    } else if (offsetX > DRAG_BUFFER || velocity > VELOCITY_THRESHOLD) {
-      if (loop && currentIndex === 0) {
-        setCurrentIndex(items.length - 1);
-      } else {
-        setCurrentIndex((prev) => Math.max(prev - 1, 0));
-      }
-    }
-    // const offset = info.offset.x;
-    // const velocity = info.velocity.x;
-
-    // if (offset < -DRAG_BUFFER || velocity < -VELOCITY_THRESHOLD) {
-    //   if (loop && currentIndex === items.length - 1) {
-    //     setCurrentIndex(currentIndex + 1); // go to clone
-    //   } else {
-    //     setCurrentIndex((prev) => Math.min(prev + 1, carouselItems.length - 1));
-    //   }
-    // } else if (offset > DRAG_BUFFER || velocity > VELOCITY_THRESHOLD) {
-    //   if (loop && currentIndex === 0) {
-    //     setCurrentIndex(items.length - 1);
-    //   } else {
-    //     setCurrentIndex((prev) => Math.max(prev - 1, 0));
-    //   }
-    // }
+    snapToIndex(nextIndex);
   };
-
-  const dragProps = isSingle
-    ? { drag: false }
-    : loop
-      ? {}
-      : {
-          dragConstraints: {
-            left: -trackItemOffset * (carouselItems.length - 1),
-            right: 0,
-          },
-        };
 
   return (
     <div
@@ -202,59 +271,47 @@ const Carousel = ({
         ...(round && { height: `${dynamicWidth}px` }),
       }}
     >
-      <motion.div
-        className="flex"
-        drag="x"
-        {...dragProps}
+      <div
+        className="overflow-hidden cursor-grab active:cursor-grabbing select-none"
         style={{
-          width: itemWidth,
-          gap: `${GAP}px`,
-          perspective: 1000,
-          perspectiveOrigin: `${
-            currentIndex * trackItemOffset + itemWidth / 2
-          }px 50%`,
-          x,
+          height: round ? undefined : slideHeight,
+          transition: isDragging ? undefined : "height 280ms ease",
+          touchAction: "pan-x",
         }}
-        onDragEnd={handleDragEnd}
-        animate={{ x: -(currentIndex * trackItemOffset) }}
-        transition={effectiveTransition}
-        onAnimationComplete={handleAnimationComplete}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
-        {carouselItems.map((item, index) => {
-          const rotateY = isSingle
-            ? 0
-            : useTransform(
-                x,
-                [
-                  -(index + 1) * trackItemOffset,
-                  -index * trackItemOffset,
-                  -(index - 1) * trackItemOffset,
-                ],
-                [90, 0, -90],
-                { clamp: false },
-              );
-
-          return (
-            <motion.div
-              // key={index}
-              key={`${item.actId}-${index}`} // ✅ 用 actId + index 當 key
-              className={`relative shrink-0 flex flex-col ${
+        <motion.div
+          className="flex items-start"
+          style={{
+            width: itemWidth,
+            gap: `${GAP}px`,
+            x,
+          }}
+        >
+          {carouselItems.map((item, index) => (
+            <div
+              key={`${item.actId}-${index}`}
+              ref={(node) => {
+                itemRefs.current[index] = node;
+              }}
+              className={`relative shrink-0 flex flex-col h-auto ${
                 round
                   ? "items-center justify-center text-center bg-[#060606]"
-                  : "items-start justify-between bg-[#222] border border-[#222] rounded-xl"
-              } overflow-hidden cursor-grab active:cursor-grabbing`}
+                  : "items-start bg-[#222] border border-[#222] rounded-xl"
+              }`}
               style={{
                 width: itemWidth,
-                height: round ? itemWidth : "100%",
-                rotateY,
-                ...(round && { borderRadius: "50%" }),
+                ...(round && { height: itemWidth, borderRadius: "50%" }),
               }}
-              transition={effectiveTransition}
             >
               <ul className="p-4 flex flex-col justify-center items-center gap-2 text-white">
-                {/* ⭐ 收藏按鈕（使用 actId 作 eventId） */}
-                <div className="w-full flex justify-end items-center mb-4 text-sm">
-                  {/* <FavoriteButton eventId={String(item.actId)} /> */}
+                <div
+                  className="w-full flex justify-end items-center mb-4 text-sm"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   <FavoriteButton
                     eventId={String(item.actId)}
                     eventTitle={item.actName}
@@ -265,7 +322,7 @@ const Carousel = ({
                     imageUrl={
                       process.env.NEXT_PUBLIC_BASE_URL +
                       getCultureImageUrl(item.imageUrl)
-                    } //line只吃https
+                    }
                   />
                 </div>
 
@@ -281,7 +338,7 @@ const Carousel = ({
                     <img
                       loading="lazy"
                       decoding="async"
-                      className="w-full"
+                      className="w-full pointer-events-none"
                       draggable={false}
                       src={getCultureImageUrl(item.imageUrl)}
                       alt={item.actName || "活動圖片"}
@@ -293,36 +350,59 @@ const Carousel = ({
                   </div>
                 </li>
 
-                <li className="text-xs leading-6">{item.description}</li>
+                <li className="text-xs leading-6 whitespace-pre-wrap">
+                  {item.description}
+                </li>
 
-                <BaseButton
-                  className="text-white !px-4"
-                  // onClick={() => window.open(item.website)}
-                  onClick={async () => {
-                    const confirmed = await showConfirmSwal({
-                      title: t.notification.confirmOpenExternal.title,
-                      text: t.notification.confirmOpenExternal.text,
-                      confirmText:
-                        t.notification.confirmOpenExternal.confirmText,
-                      cancelText: t.notification.confirmOpenExternal.cancelText,
-                    });
-
-                    if (confirmed) {
-                      window.open(
-                        item.website,
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
-                    }
-                  }}
+                <li
+                  className="flex flex-wrap justify-center gap-3"
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
-                  {t.buttons.visit}
-                </BaseButton>
+                  {item.website ? (
+                    <BaseButton
+                      className="text-white !px-4"
+                      onClick={async () => {
+                        const confirmed = await showConfirmSwal({
+                          title: t.notification.confirmOpenExternal.title,
+                          text: t.notification.confirmOpenExternal.text,
+                          confirmText:
+                            t.notification.confirmOpenExternal.confirmText,
+                          cancelText:
+                            t.notification.confirmOpenExternal.cancelText,
+                        });
+
+                        if (confirmed) {
+                          window.open(
+                            item.website,
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
+                        }
+                      }}
+                    >
+                      {t.buttons.visit}
+                    </BaseButton>
+                  ) : null}
+
+                  <BaseButton
+                    className="text-white !px-4"
+                    onClick={() =>
+                      shareEvent({
+                        title: item.actName,
+                        url: getEventShareUrl(item.actId),
+                        copiedTitle: t.notification.shareCopied.title,
+                        copiedText: t.notification.shareCopied.text,
+                      })
+                    }
+                  >
+                    {t.buttons.share}
+                  </BaseButton>
+                </li>
               </ul>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
 
       {/* Dots — 單筆只顯示一顆 */}
       <div

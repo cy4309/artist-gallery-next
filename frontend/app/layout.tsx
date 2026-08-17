@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Dela_Gothic_One,
   Nunito,
@@ -48,6 +48,13 @@ export const metadata: Metadata = {
   description: "Discover Activities & Events",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -81,9 +88,9 @@ export default function RootLayout({
           // enableSystem={true}
         >
           <ClientRoot>
-            <div className="p-4 w-full min-h-dvh flex flex-col justify-center items-center gap-3">
+            <div className="p-4 w-full h-dvh flex flex-col items-center gap-3">
               <Header />
-              <main className="w-full flex flex-col grow min-h-0 justify-center items-center">
+              <main className="w-full flex flex-col grow min-h-0 overflow-y-auto">
                 {children}
               </main>
               <Footer />

@@ -2,6 +2,7 @@ export const zh = {
   buttons: {
     back: "返回",
     visit: "查看網站",
+    share: "分享活動",
   },
   header: {
     events: "活動",
@@ -48,6 +49,10 @@ export const zh = {
       text: "你即將前往外部網站瀏覽相關內容。",
       confirmText: "繼續前往",
       cancelText: "留在此頁",
+    },
+    shareCopied: {
+      title: "已複製網址",
+      text: "活動連結已複製到剪貼簿",
     },
   },
   auth: {
@@ -120,6 +125,9 @@ export const zh = {
   },
   events: {
     title: "請選擇城市",
+    searchPlaceholder: "搜尋活動關鍵字…",
+    searchNoResults: "找不到符合的活動",
+    searchHint: "試試其他關鍵字或縣市",
   },
   favorites: {
     sortedHint: "依收藏時間排序（新 → 舊）",
