@@ -40,8 +40,9 @@ const VELOCITY_THRESHOLD = 500;
 const GAP = 16;
 const SPRING_OPTIONS = {
   type: "spring" as const,
-  stiffness: 300,
-  damping: 30,
+  stiffness: 420,
+  damping: 42,
+  mass: 0.8,
 };
 
 const Carousel = ({
@@ -56,29 +57,102 @@ const Carousel = ({
   onIndexChange,
 }: CarouselProps) => {
   const { t } = useLocale();
-  const isSingle = items.length === 1; // 🔥 單筆判斷（最重要）
+  const isSingle = items.length <= 1;
+  const canLoop = loop && !isSingle;
 
   const [dynamicWidth, setDynamicWidth] = useState(baseWidth);
   const containerPadding = 16;
   const itemWidth = dynamicWidth - containerPadding * 2;
   const trackItemOffset = itemWidth + GAP;
 
-  // 如果只有一筆，不 clone
-  const carouselItems = isSingle ? items : loop ? [...items, items[0]] : items;
+  const carouselItems = canLoop
+    ? [items[items.length - 1], ...items, items[0]]
+    : items;
 
-  const [currentIndex, setCurrentIndex] = useState(() =>
-    activeIndex != null && activeIndex >= 0 ? activeIndex : 0,
-  );
+  const toInternalIndex = (real: number) => (canLoop ? real + 1 : real);
+  const toRealIndex = (internal: number) => {
+    if (!canLoop || items.length === 0) return internal;
+    if (internal === 0) return items.length - 1;
+    if (internal === items.length + 1) return 0;
+    return internal - 1;
+  };
+
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const start = activeIndex != null && activeIndex >= 0 ? activeIndex : 0;
+    return canLoop ? start + 1 : start;
+  });
   const x = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [slideHeight, setSlideHeight] = useState<number | undefined>(undefined);
-  const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
   const dragStartX = useRef(0);
   const dragOriginX = useRef(0);
+  const lastMoveX = useRef(0);
+  const lastMoveTime = useRef(0);
   const draggingRef = useRef(false);
+  const skipAnimateRef = useRef(true);
+  const prevOffsetRef = useRef(trackItemOffset);
   const animationRef = useRef<ReturnType<typeof animate> | null>(null);
+  const onIndexChangeRef = useRef(onIndexChange);
+  const notifiedRealIndexRef = useRef<number | null>(null);
+  const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const currentIndexRef = useRef(currentIndex);
+  const itemsRef = useRef(items);
+  const canLoopRef = useRef(canLoop);
+  const trackItemOffsetRef = useRef(trackItemOffset);
+  const [slideHeight, setSlideHeight] = useState<number | undefined>(undefined);
+
+  itemsRef.current = items;
+  canLoopRef.current = canLoop;
+  trackItemOffsetRef.current = trackItemOffset;
+  onIndexChangeRef.current = onIndexChange;
+
+  const toRealIndexFrom = (internal: number, len: number, looping: boolean) => {
+    if (!looping || len === 0) return internal;
+    if (internal === 0) return len - 1;
+    if (internal === len + 1) return 0;
+    return internal - 1;
+  };
+
+  const notifyStableIndex = (internalIndex: number) => {
+    if (!onIndexChangeRef.current) return;
+
+    const len = itemsRef.current.length;
+    if (len === 0) return;
+
+    const looping = canLoopRef.current;
+    if (looping && (internalIndex === 0 || internalIndex === len + 1)) return;
+
+    const real = toRealIndexFrom(internalIndex, len, looping);
+    const item = itemsRef.current[real];
+    if (!item || notifiedRealIndexRef.current === real) return;
+
+    notifiedRealIndexRef.current = real;
+    onIndexChangeRef.current(real, item);
+  };
+
+  const setIndex = (nextIndex: number) => {
+    currentIndexRef.current = nextIndex;
+    setCurrentIndex(nextIndex);
+  };
+
+  const resetLoopClone = (internalIndex: number) => {
+    const len = itemsRef.current.length;
+    const offset = trackItemOffsetRef.current;
+
+    if (internalIndex === 0) {
+      skipAnimateRef.current = true;
+      x.set(-len * offset);
+      setIndex(len);
+      notifyStableIndex(len);
+      return;
+    }
+
+    if (internalIndex === len + 1) {
+      skipAnimateRef.current = true;
+      x.set(-offset);
+      setIndex(1);
+      notifyStableIndex(1);
+    }
+  };
 
   // -------------------  RWD Width  -------------------
   useEffect(() => {
@@ -112,110 +186,116 @@ const Carousel = ({
 
   // -------------------  Autoplay  -------------------
   useEffect(() => {
-    if (isSingle) return; // 🔥 單筆不 autoplay
+    if (isSingle || !autoplay) return;
+    if (pauseOnHover && isHovered) return;
 
-    if (autoplay && (!pauseOnHover || !isHovered)) {
-      const timer = setInterval(() => {
-        setCurrentIndex((prev) => {
-          if (prev === items.length - 1 && loop) return prev + 1; // clone
-          if (prev === carouselItems.length - 1) return loop ? 0 : prev;
-          return prev + 1;
-        });
-      }, autoplayDelay);
+    const timer = setInterval(() => {
+      setIndex(Math.min(currentIndexRef.current + 1, carouselItems.length - 1));
+    }, autoplayDelay);
 
-      return () => clearInterval(timer);
-    }
+    return () => clearInterval(timer);
   }, [
     autoplay,
     autoplayDelay,
     isHovered,
-    loop,
-    items.length,
-    carouselItems.length,
     pauseOnHover,
     isSingle,
+    carouselItems.length,
   ]);
 
   useEffect(() => {
     if (draggingRef.current) return;
 
+    const animatingIndex = currentIndexRef.current;
+    const target = -(animatingIndex * trackItemOffset);
+
+    if (prevOffsetRef.current !== trackItemOffset) {
+      prevOffsetRef.current = trackItemOffset;
+      skipAnimateRef.current = true;
+    }
+
+    if (skipAnimateRef.current) {
+      skipAnimateRef.current = false;
+      animationRef.current?.stop();
+      x.set(target);
+      return;
+    }
+
     animationRef.current?.stop();
-    animationRef.current = animate(x, -(currentIndex * trackItemOffset), {
-      ...(isResetting ? { duration: 0 } : SPRING_OPTIONS),
+    animationRef.current = animate(x, target, {
+      ...SPRING_OPTIONS,
       onComplete: () => {
-        if (!isSingle && loop && currentIndex === carouselItems.length - 1) {
-          setIsResetting(true);
-          x.set(0);
-          setCurrentIndex(0);
-          setTimeout(() => setIsResetting(false), 50);
+        if (currentIndexRef.current !== animatingIndex) return;
+
+        const len = itemsRef.current.length;
+        if (
+          canLoopRef.current &&
+          (animatingIndex === 0 || animatingIndex === len + 1)
+        ) {
+          resetLoopClone(animatingIndex);
+          return;
         }
+
+        notifyStableIndex(animatingIndex);
       },
     });
-
-    return () => {
-      animationRef.current?.stop();
-    };
-  }, [
-    currentIndex,
-    trackItemOffset,
-    isResetting,
-    x,
-    isSingle,
-    loop,
-    carouselItems.length,
-  ]);
+  }, [currentIndex, trackItemOffset, x]);
 
   useEffect(() => {
-    if (activeIndex == null || items.length === 0) return;
-    const real = currentIndex % items.length;
-    if (real === activeIndex) return;
-    if (currentIndex === items.length && activeIndex === 0) return;
-    setCurrentIndex(activeIndex);
-  }, [activeIndex, currentIndex, items.length]);
+    if (activeIndex == null || items.length === 0 || draggingRef.current)
+      return;
+    if (toRealIndex(currentIndexRef.current) === activeIndex) return;
+
+    notifiedRealIndexRef.current = activeIndex;
+    skipAnimateRef.current = true;
+    setIndex(toInternalIndex(activeIndex));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when URL-driven index changes
+  }, [activeIndex, items.length, canLoop]);
 
   useEffect(() => {
-    if (!onIndexChange || items.length === 0) return;
-    const real = currentIndex % items.length;
-    const item = items[real];
-    if (!item) return;
-    onIndexChange(real, item);
-  }, [currentIndex, items, onIndexChange]);
+    if (activeIndex != null && activeIndex >= 0) {
+      notifiedRealIndexRef.current = activeIndex;
+    }
+  }, [activeIndex]);
 
-  // -------------------  Current slide height  -------------------
   useLayoutEffect(() => {
+    if (round) return;
+
     const el = itemRefs.current[currentIndex];
     if (!el) return;
 
     const updateHeight = () => {
-      setSlideHeight(el.offsetHeight);
+      setSlideHeight(el.getBoundingClientRect().height);
     };
 
     updateHeight();
     const observer = new ResizeObserver(updateHeight);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [currentIndex, itemWidth, items]);
+  }, [currentIndex, itemWidth, carouselItems.length, round]);
 
   // -------------------  Drag  -------------------
   const snapToIndex = (nextIndex: number) => {
-    setCurrentIndex(nextIndex);
+    setIndex(nextIndex);
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (isSingle) return;
     if ((event.target as HTMLElement).closest("button, a")) return;
 
-    event.preventDefault();
     draggingRef.current = true;
-    setIsDragging(true);
     animationRef.current?.stop();
     dragStartX.current = event.clientX;
     dragOriginX.current = x.get();
+    lastMoveX.current = event.clientX;
+    lastMoveTime.current = event.timeStamp;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingRef.current) return;
+    lastMoveX.current = event.clientX;
+    lastMoveTime.current = event.timeStamp;
     x.set(dragOriginX.current + (event.clientX - dragStartX.current));
   };
 
@@ -223,33 +303,62 @@ const Carousel = ({
     if (!draggingRef.current) return;
 
     draggingRef.current = false;
-    setIsDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
+    const len = itemsRef.current.length;
+    const looping = canLoopRef.current;
     const offset = event.clientX - dragStartX.current;
-    let nextIndex = currentIndex;
+    const elapsed = Math.max(event.timeStamp - lastMoveTime.current, 1);
+    const velocity = ((event.clientX - lastMoveX.current) / elapsed) * 1000;
+    const forward = offset < -DRAG_BUFFER || velocity < -VELOCITY_THRESHOLD;
+    const back = offset > DRAG_BUFFER || velocity > VELOCITY_THRESHOLD;
+    const idx = currentIndexRef.current;
 
-    if (offset < -DRAG_BUFFER) {
-      if (loop && currentIndex === items.length - 1) {
-        nextIndex = currentIndex + 1;
-      } else {
-        nextIndex = Math.min(currentIndex + 1, carouselItems.length - 1);
+    // Stuck at loop clone — normalize and optionally continue in swipe direction
+    if (looping && idx === len + 1) {
+      if (back) {
+        skipAnimateRef.current = true;
+        x.set(-len * trackItemOffsetRef.current);
+        setIndex(len);
+        notifyStableIndex(len);
+        return;
       }
-    } else if (offset > DRAG_BUFFER) {
-      if (loop && currentIndex === 0) {
-        nextIndex = items.length - 1;
-      } else {
-        nextIndex = Math.max(currentIndex - 1, 0);
-      }
+
+      resetLoopClone(len + 1);
+      if (forward) snapToIndex(2);
+      return;
     }
 
-    if (nextIndex === currentIndex) {
+    if (looping && idx === 0) {
+      if (forward) {
+        skipAnimateRef.current = true;
+        x.set(-trackItemOffsetRef.current);
+        setIndex(1);
+        notifyStableIndex(1);
+        return;
+      }
+
+      resetLoopClone(0);
+      if (back) snapToIndex(len - 1);
+      return;
+    }
+
+    const maxIndex = carouselItems.length - 1;
+    let nextIndex = idx;
+
+    if (forward) {
+      nextIndex = Math.min(idx + 1, maxIndex);
+    } else if (back) {
+      nextIndex = Math.max(idx - 1, 0);
+    }
+
+    if (nextIndex === idx) {
       animationRef.current?.stop();
       animationRef.current = animate(
         x,
-        -(currentIndex * trackItemOffset),
+        -(idx * trackItemOffsetRef.current),
         SPRING_OPTIONS,
       );
       return;
@@ -274,9 +383,8 @@ const Carousel = ({
       <div
         className="overflow-hidden cursor-grab active:cursor-grabbing select-none"
         style={{
-          height: round ? undefined : slideHeight,
-          transition: isDragging ? undefined : "height 280ms ease",
           touchAction: "pan-x",
+          ...(!round && slideHeight != null ? { height: slideHeight } : {}),
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -289,13 +397,14 @@ const Carousel = ({
             width: itemWidth,
             gap: `${GAP}px`,
             x,
+            willChange: "transform",
           }}
         >
           {carouselItems.map((item, index) => (
             <div
               key={`${item.actId}-${index}`}
-              ref={(node) => {
-                itemRefs.current[index] = node;
+              ref={(el) => {
+                itemRefs.current[index] = el;
               }}
               className={`relative shrink-0 flex flex-col h-auto ${
                 round
@@ -336,7 +445,7 @@ const Carousel = ({
                 <li className="w-full">
                   <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
                     <img
-                      loading="lazy"
+                      loading="eager"
                       decoding="async"
                       className="w-full pointer-events-none"
                       draggable={false}
@@ -355,7 +464,7 @@ const Carousel = ({
                 </li>
 
                 <li
-                  className="flex flex-wrap justify-center gap-3"
+                  className="mt-4 flex flex-wrap justify-center gap-3"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   {item.website ? (
@@ -404,33 +513,34 @@ const Carousel = ({
         </motion.div>
       </div>
 
-      {/* Dots — 單筆只顯示一顆 */}
-      <div
-        className={`flex w-full justify-center ${
-          round ? "absolute z-20 bottom-12 left-1/2 -translate-x-1/2" : ""
-        }`}
-      >
-        <div className="mt-4 flex w-[150px] justify-between px-8">
-          {items.map((_, index) => (
-            <motion.div
-              key={index}
-              className={`h-2 w-2 rounded-full transition ${
-                currentIndex % items.length === index
-                  ? round
-                    ? "bg-white"
-                    : "bg-[#333]"
-                  : round
-                    ? "bg-[#555]"
-                    : "bg-[rgba(51,51,51,0.4)]"
-              }`}
-              animate={{
-                scale: currentIndex % items.length === index ? 1.2 : 1,
-              }}
-              onClick={() => !isSingle && setCurrentIndex(index)} // 單筆不能點
-            />
-          ))}
+      {!isSingle && (
+        <div
+          className={`flex w-full justify-center ${
+            round ? "absolute z-20 bottom-12 left-1/2 -translate-x-1/2" : ""
+          }`}
+        >
+          <div className="mt-4 flex w-[150px] justify-between px-8">
+            {items.map((_, index) => (
+              <motion.div
+                key={index}
+                className={`h-2 w-2 rounded-full transition ${
+                  toRealIndex(currentIndex) === index
+                    ? round
+                      ? "bg-white"
+                      : "bg-[#333]"
+                    : round
+                      ? "bg-[#555]"
+                      : "bg-[rgba(51,51,51,0.4)]"
+                }`}
+                animate={{
+                  scale: toRealIndex(currentIndex) === index ? 1.2 : 1,
+                }}
+                onClick={() => snapToIndex(toInternalIndex(index))}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

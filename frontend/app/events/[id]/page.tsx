@@ -67,20 +67,37 @@ export default function EventDetailPage() {
     return orgData.filter((item) => item.cityName === event.cityName);
   }, [orgData, event, city]);
 
+  const routeId = params?.id;
+  const [historyId, setHistoryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHistoryId(null);
+  }, [routeId]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const match = window.location.pathname.match(/\/events\/([^/?#]+)/);
+      if (match?.[1]) setHistoryId(match[1]);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const effectiveId = historyId ?? routeId;
+
   const activeIndex = useMemo(() => {
     const index = cityEvents.findIndex(
-      (item) => String(item.actId) === String(id),
+      (item) => String(item.actId) === String(effectiveId),
     );
     return index >= 0 ? index : 0;
-  }, [cityEvents, id]);
+  }, [cityEvents, effectiveId]);
 
-  const handleIndexChange = useCallback(
-    (_index: number, item: CarouselItem) => {
-      if (String(item.actId) === String(id)) return;
-      router.replace(`/events/${item.actId}`, { scroll: false });
-    },
-    [id, router],
-  );
+  const handleIndexChange = useCallback((_index: number, item: CarouselItem) => {
+    const nextUrl = `/events/${item.actId}`;
+    if (window.location.pathname === nextUrl) return;
+    window.history.replaceState(null, "", nextUrl);
+  }, []);
 
   const imageUrl = event ? getCultureImageUrl(event.imageUrl) : "";
   const favoriteImageUrl = event
