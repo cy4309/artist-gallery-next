@@ -12,6 +12,14 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ClientRoot from "@/components/ClientRoot"; // layout是ssr，裡面要接component需包一層client才可以
 import Script from "next/script";
+import {
+  DEFAULT_OG_IMAGE,
+  getSiteBaseUrl,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+} from "@/utils/siteMetadata";
+
+const siteUrl = getSiteBaseUrl();
 
 const delaGothic = Dela_Gothic_One({
   subsets: ["latin"],
@@ -44,8 +52,36 @@ const caveat = Caveat_Brush({
 });
 
 export const metadata: Metadata = {
-  title: "CYC Zine",
-  description: "Discover Activities & Events",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "zh_TW",
+    url: siteUrl,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const viewport: Viewport = {
