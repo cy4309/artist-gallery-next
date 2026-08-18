@@ -30,12 +30,5 @@ export default function EntryPage() {
     boot();
   }, [ready]);
 
-  return (
-    <div className="w-full min-h-dvh flex items-center justify-center">
-      <LoadingIndicator />
-      {/* <span className="text-sm text-slate-500">
-        Launching CYC Zine...
-      </span> */}
-    </div>
-  );
+  return <LoadingIndicator />;
 }

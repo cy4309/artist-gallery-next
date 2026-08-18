@@ -106,6 +106,10 @@ export default function EventDetailPage() {
 
   const notFound = status === "success" && !event;
 
+  if (status === "loading") {
+    return <LoadingIndicator label="載入中…" />;
+  }
+
   return (
     <>
       {/* 手機：活動詳情 */}
@@ -115,18 +119,11 @@ export default function EventDetailPage() {
           <h1 className="text-lg font-bold tracking-[2px]">活動詳情</h1>
         </div>
 
-        {status === "loading" && (
-          <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6">
-            <LoadingIndicator />
-            <p className="text-sm text-gray-500 dark:text-gray-400">載入中…</p>
-          </div>
-        )}
-
-        {(status === "error" || notFound) && (
-          <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
+        {status === "error" && (
+          <div className="flex flex-1 min-h-0 w-full flex-col items-center justify-center gap-3 px-6 text-center">
             <p className="text-lg font-semibold">載入失敗</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {notFound ? "找不到這個活動" : errorMessage}
+              {errorMessage}
             </p>
             <button
               type="button"
@@ -135,6 +132,12 @@ export default function EventDetailPage() {
             >
               再試一次
             </button>
+          </div>
+        )}
+
+        {notFound && (
+          <div className="flex flex-1 min-h-0 w-full flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="text-lg font-semibold">找不到這個活動</p>
           </div>
         )}
 
@@ -234,12 +237,6 @@ export default function EventDetailPage() {
       {/* 桌面：同一城市 Carousel，網址跟著目前活動走 */}
       <div className="hidden lg:block">
         <div className="container flex justify-center items-center mx-auto">
-          {status === "loading" && (
-            <div className="w-full min-h-dvh flex items-center justify-center">
-              <LoadingIndicator />
-            </div>
-          )}
-
           {(status === "error" || notFound) && (
             <div className="m-4 w-full flex flex-col justify-center items-center">
               <BackButton onClick={() => router.push("/events")} />

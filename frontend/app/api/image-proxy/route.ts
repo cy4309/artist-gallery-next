@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     return new Response(buffer, {
       headers: {
         "Content-Type": contentType,
-        // ⭐ 快取一天（非常重要）
+        "Content-Length": String(buffer.byteLength),
         "Cache-Control": "public, max-age=86400",
       },
     });

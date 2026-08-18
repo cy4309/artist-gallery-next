@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { fetchOrgEventById } from "@/services/server/orgDataServer";
 import { formatDateSmart } from "@/utils/date";
-import { getCultureImageAbsoluteUrl } from "@/utils/imageProxy";
+import { getEventOgImageUrl } from "@/utils/imageProxy";
 import {
   getSiteBaseUrl,
   SITE_DESCRIPTION,
@@ -55,7 +55,7 @@ export async function generateMetadata({
     const title = event.actName;
     const description = buildEventDescription(event);
     const pageUrl = `${baseUrl}/events/${event.actId}`;
-    const imageUrl = getCultureImageAbsoluteUrl(event.imageUrl, baseUrl);
+    const imageUrl = getEventOgImageUrl(event.actId, baseUrl);
 
     return {
       title,
@@ -70,6 +70,8 @@ export async function generateMetadata({
         images: [
           {
             url: imageUrl,
+            width: 1200,
+            height: 630,
             alt: title,
           },
         ],

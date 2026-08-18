@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 
@@ -9,6 +9,8 @@ interface BackButtonProps {
   className?: string;
   onClick?: () => void;
   children?: React.ReactNode;
+  /** 無上一頁可返回時的導向，預設回首頁 */
+  fallbackHref?: string;
 }
 
 export default function BackButton({
@@ -16,37 +18,18 @@ export default function BackButton({
   className,
   onClick,
   children,
+  fallbackHref = "/",
 }: BackButtonProps) {
   const { t } = useLocale();
   const router = useRouter();
-  // const pathname = usePathname();
 
   function handleBack() {
-    // const isInterviewDetail =
-    //   pathname.startsWith("/interviews/") && pathname.split("/").length === 3; // /interviews/{slug}
-    // ⭐ 規則 1：interviews detail → 永遠回 /interviews
-    // if (isInterviewDetail) {
-    //   router.push("/interviews");
-    //   return;
-    // }
-
-    // ⭐ 規則 1：優先回上一頁（保留 scroll）
     if (window.history.length > 1) {
       router.back();
       return;
     }
 
-    // ⭐ 規則 2：referrer 是本站 → 正常 back
-    if (
-      document.referrer &&
-      !document.referrer.includes(window.location.host)
-    ) {
-      // 若上一頁不是本站 → 回首頁
-      router.push("/");
-    } else {
-      // 有上一頁 → 回上一頁
-      router.back();
-    }
+    router.push(fallbackHref);
   }
 
   return (

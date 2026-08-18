@@ -33,3 +33,11 @@ export function getCultureImageAbsoluteUrl(
   const rawUrl = buildCultureRawUrl(path);
   return `${origin}/api/image-proxy?url=${encodeURIComponent(rawUrl)}`;
 }
+
+/** 活動分享用 OG 圖（乾淨 URL，爬蟲相容性較佳） */
+export function getEventOgImageUrl(
+  actId: number | string,
+  baseUrl: string,
+): string {
+  return `${baseUrl.replace(/\/$/, "")}/api/og/event/${actId}`;
+}

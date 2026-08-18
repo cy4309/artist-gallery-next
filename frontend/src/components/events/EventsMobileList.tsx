@@ -46,13 +46,15 @@ export default function EventsMobileList({
 
   const hasSearch = searchQuery.trim().length > 0;
 
+  if (orgLoading) {
+    return <LoadingIndicator />;
+  }
+
   return (
     <div className="min-h-dvh">
       <div className="flex items-center justify-end gap-3 px-5 pt-4 pb-2">
-        <p className="text-sm text-gray-400">
-          {orgLoading ? " " : `${filtered.length} 筆`}
-        </p>
-        {!orgLoading && orgData.length > 0 && (
+        <p className="text-sm text-gray-400">{`${filtered.length} 筆`}</p>
+        {orgData.length > 0 && (
           <EventSearchTrigger
             expanded={searchOpen}
             onToggle={toggleSearch}
@@ -61,7 +63,7 @@ export default function EventsMobileList({
         )}
       </div>
 
-      {!orgLoading && orgData.length > 0 && (
+      {orgData.length > 0 && (
         <>
           <EventSearchPanel
             expanded={searchOpen}
@@ -77,21 +79,14 @@ export default function EventsMobileList({
         </>
       )}
 
-      {orgLoading && (
-        <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6">
-          <LoadingIndicator />
-          <p className="text-sm text-gray-400">載入活動中…</p>
-        </div>
-      )}
-
-      {!orgLoading && orgData.length === 0 && (
+      {orgData.length === 0 && (
         <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-lg font-semibold">目前沒有活動</p>
           <p className="text-sm text-gray-400">稍後再回來看看</p>
         </div>
       )}
 
-      {!orgLoading && orgData.length > 0 && filtered.length === 0 && (
+      {orgData.length > 0 && filtered.length === 0 && (
         <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-lg font-semibold">
             {hasSearch ? t.events.searchNoResults : "這個縣市暫無活動"}
@@ -102,7 +97,7 @@ export default function EventsMobileList({
         </div>
       )}
 
-      {!orgLoading && filtered.length > 0 && (
+      {filtered.length > 0 && (
         <div className="px-5 pt-4 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
           {filtered.map((event) => (
             <OrgEventCard key={event.actId} event={event} />

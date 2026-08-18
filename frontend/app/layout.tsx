@@ -127,7 +127,9 @@ export default function RootLayout({
             <div className="p-4 w-full h-dvh flex flex-col items-center gap-3">
               <Header />
               <main className="w-full flex flex-col grow min-h-0 overflow-y-auto">
-                {children}
+                <div className="flex flex-col flex-1 min-h-0 w-full">
+                  {children}
+                </div>
               </main>
               <Footer />
             </div>

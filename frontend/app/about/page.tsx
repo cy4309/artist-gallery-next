@@ -15,7 +15,7 @@ export default function About() {
 
   // if (!mounted) return null;
   return (
-    <div className="flex flex-col justify-center items-center text-center gap-8">
+    <div className="flex flex-1 min-h-0 w-full flex-col justify-center items-center text-center gap-8 px-5 py-8">
       <motion.h1
         className="gap-4 text-2xl md:text-4xl font-dela"
         initial={{ opacity: 0, y: 40 }}
@@ -25,7 +25,7 @@ export default function About() {
         {t.about.title}
       </motion.h1>
       <motion.div
-        className="text-sm max-w-md flex flex-col gap-6"
+        className="text-sm max-w-md flex flex-col gap-6 items-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 1 }}

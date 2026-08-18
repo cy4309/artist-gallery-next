@@ -11,12 +11,7 @@ export default function LiffGate({ children }: { children: React.ReactNode }) {
 
   // 📱 LINE WebView：等 LIFF
   if (!ready) {
-    return (
-      <div className="w-full min-h-dvh flex items-center justify-center">
-        <LoadingIndicator />
-        {/* <span className="text-sm text-slate-500">Loading...</span> */}
-      </div>
-    );
+    return <LoadingIndicator />;
   }
 
   if (error) {
