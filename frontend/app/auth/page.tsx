@@ -90,91 +90,99 @@ export default function AuthPage() {
 
   // ⑥ 正常登入畫面（你原本的 UI）
   return (
-    <div className="p-4 w-full h-full flex justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-black dark:to-slate-900">
-      <div
-        className="
-          w-full max-w-md
-          bg-white/90 dark:bg-white/5 backdrop-blur-xl
-          border border-white/20 dark:border-white/10
-          shadow-xl rounded-2xl 
-          p-4 md:p-8
-          flex flex-col items-center gap-8
-        "
-      >
-        {/* Logo + 文案 */}
-        <div className="flex flex-col items-center gap-4">
-          <Image
-            src="/images/cyc-logo.png"
-            width={64}
-            height={64}
-            alt="CYC logo"
-            className="opacity-90"
-          />
-          <h1 className="text-2xl md:text-3xl font-dela tracking-wide">
-            {t.auth.title}
-          </h1>
+    <div className="w-full flex-1 min-h-0 overflow-y-auto">
+      <div className="min-h-full p-4 flex flex-col justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-black dark:to-slate-900">
+        <div
+          className="
+            w-full max-w-md
+            bg-white/90 dark:bg-white/5 backdrop-blur-xl
+            border border-white/20 dark:border-white/10
+            shadow-xl rounded-2xl
+            p-4 md:p-8
+            flex flex-col items-center gap-6 sm:gap-8
+          "
+        >
+          {/* Logo + 文案 */}
+          <div className="flex flex-col items-center gap-4">
+            <Image
+              src="/images/cyc-logo.png"
+              width={64}
+              height={64}
+              alt="CYC logo"
+              className="opacity-90"
+            />
+            <h1 className="text-2xl md:text-3xl font-dela tracking-wide">
+              {t.auth.title}
+            </h1>
 
-          <h2 className="text-lg md:text-xl text-slate-600 dark:text-slate-300 text-center font-dela tracking-wide">
-            {t.auth.subtitle}
-          </h2>
+            <h2 className="text-lg md:text-xl text-slate-600 dark:text-slate-300 text-center font-dela tracking-wide">
+              {t.auth.subtitle}
+            </h2>
 
-          <p className="text-slate-600 dark:text-slate-300 opacity-75 text-sm leading-6 mt-3">
-            {t.auth.intro.title}
-            <br />
-            {t.auth.intro.item1}
-            <br />
-            {t.auth.intro.item2}
-            <span className="text-xs text-slate-600 dark:text-slate-300 block mt-3 opacity-75">
-              {t.auth.intro.note}
+            <p className="text-slate-600 dark:text-slate-300 opacity-75 text-sm leading-6 mt-3">
+              {t.auth.intro.title}
+              <br />
+              {t.auth.intro.item1}
+              <br />
+              {t.auth.intro.item2}
+              <span className="text-xs text-slate-600 dark:text-slate-300 block mt-3 opacity-75">
+                {t.auth.intro.note}
+              </span>
+            </p>
+          </div>
+
+          {/* LINE Login Button */}
+          <BaseButton
+            className="w-full text-white bg-[#00C300] hover:bg-[#00a800]"
+            onClick={loginWithLine}
+          >
+            <FontAwesomeIcon
+              icon={faLine}
+              className="text-xl w-5 h-5 shrink-0"
+            />
+            <span className="font-medium ml-4">Sign in with LINE</span>
+          </BaseButton>
+
+          {/* Google Login Button */}
+          <BaseButton
+            className="w-full text-white bg-[#4285F4] hover:bg-[#3367D6]"
+            onClick={loginWithGoogle}
+          >
+            <FontAwesomeIcon
+              icon={faGoogle}
+              className="text-xl w-5 h-5 shrink-0"
+            />
+            <span className="font-medium ml-4">Sign in with Google</span>
+          </BaseButton>
+
+          {/* Divider */}
+          <div className="flex items-center w-full gap-4">
+            {/* <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              or
             </span>
+            <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" /> */}
+            <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
+          </div>
+
+          {/* Footer Text */}
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center leading-6">
+            {t.auth.footer.prefix}{" "}
+            <Link
+              href="/privacy"
+              className="underline cursor-pointer hover:opacity-70"
+            >
+              {t.auth.footer.privacy}
+            </Link>{" "}
+            {t.auth.footer.and}{" "}
+            <Link
+              href="/terms"
+              className="underline cursor-pointer hover:opacity-70"
+            >
+              {t.auth.footer.terms}
+            </Link>
           </p>
         </div>
-
-        {/* LINE Login Button */}
-        <BaseButton
-          className="w-full text-white bg-[#00C300] hover:bg-[#00a800]"
-          onClick={loginWithLine}
-        >
-          <FontAwesomeIcon icon={faLine} className="text-xl w-5 h-5 shrink-0" />
-          <span className="font-medium ml-4">Sign in with LINE</span>
-        </BaseButton>
-
-        {/* Google Login Button */}
-        <BaseButton
-          className="w-full text-white bg-[#4285F4] hover:bg-[#3367D6]"
-          onClick={loginWithGoogle}
-        >
-          <FontAwesomeIcon
-            icon={faGoogle}
-            className="text-xl w-5 h-5 shrink-0"
-          />
-          <span className="font-medium ml-4">Sign in with Google</span>
-        </BaseButton>
-
-        {/* Divider */}
-        <div className="flex items-center w-full gap-4">
-          <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
-          <span className="text-xs text-slate-500 dark:text-slate-400">or</span>
-          <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
-        </div>
-
-        {/* Footer Text */}
-        <p className="text-xs text-slate-500 dark:text-slate-400 text-center leading-6">
-          {t.auth.footer.prefix}{" "}
-          <Link
-            href="/privacy"
-            className="underline cursor-pointer hover:opacity-70"
-          >
-            {t.auth.footer.privacy}
-          </Link>{" "}
-          {t.auth.footer.and}{" "}
-          <Link
-            href="/terms"
-            className="underline cursor-pointer hover:opacity-70"
-          >
-            {t.auth.footer.terms}
-          </Link>
-        </p>
       </div>
     </div>
   );
