@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/services/server/authService";
-import { GAS_ACTION } from "@/types/gas/actionConstants";
-
-const GAS_URL = process.env.GAS_URL!;
+import { isFavoriteWithAliases } from "@/services/server/favoriteIdResolve";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +8,7 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -20,35 +18,24 @@ export async function GET(req: NextRequest) {
     if (!eventId) {
       return NextResponse.json(
         { success: false, error: "Missing eventId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: GAS_ACTION.CHECK_FAVORITE,
-        userId: user.id,
-        eventId,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("GAS checkFavorite failed");
-    }
-
-    const data = await res.json();
+    const isFavorite = await isFavoriteWithAliases(user.id, eventId);
 
     return NextResponse.json({
       success: true,
-      isFavorite: Boolean(data?.isFavorite),
+      isFavorite,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[/api/favorites/check]", err);
     return NextResponse.json(
-      { success: false, error: err.message || "Server error" },
-      { status: 500 }
+      {
+        success: false,
+        error: err instanceof Error ? err.message : "Server error",
+      },
+      { status: 500 },
     );
   }
 }

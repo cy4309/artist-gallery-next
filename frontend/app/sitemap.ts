@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { interviews } from "@/data/interviews/interviews";
-import { fetchOrgEvents } from "@/services/server/orgDataServer";
+import { fetchOrgEventsFromSheet } from "@/services/server/eventsServer";
+import { eventDetailPath } from "@/utils/eventId";
 import { getSiteBaseUrl } from "@/utils/siteMetadata";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -48,9 +49,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let eventRoutes: MetadataRoute.Sitemap = [];
   try {
-    const events = await fetchOrgEvents();
+    const events = await fetchOrgEventsFromSheet();
     eventRoutes = events.map((event) => ({
-      url: `${baseUrl}/events/${event.actId}`,
+      url: `${baseUrl}${eventDetailPath(event.id)}`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,

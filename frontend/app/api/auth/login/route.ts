@@ -128,7 +128,10 @@ export async function GET(req: NextRequest) {
       });
 
       if (createRes.data?.user) {
-        finalUser = createRes.data.user;
+        finalUser = {
+          ...createRes.data.user,
+          picture: createRes.data.user.picture || normalizedUser.picture,
+        };
       }
     } else {
       const updateRes = await axios.post(GAS_URL, {
@@ -137,8 +140,17 @@ export async function GET(req: NextRequest) {
       });
 
       if (updateRes.data?.user) {
-        finalUser = updateRes.data.user;
+        finalUser = {
+          ...updateRes.data.user,
+          // GAS 若覆蓋掉 picture，保留 Google 原始頭像
+          picture: updateRes.data.user.picture || normalizedUser.picture,
+        };
       }
+    }
+
+    // 雙保險：最終一定要有 Google picture
+    if (!finalUser.picture && normalizedUser.picture) {
+      finalUser = { ...finalUser, picture: normalizedUser.picture };
     }
 
     // STEP 5 — Set cookies + redirect（網站回 callback；App 帶回 session）

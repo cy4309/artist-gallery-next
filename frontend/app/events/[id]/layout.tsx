@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { fetchOrgEventById } from "@/services/server/orgDataServer";
+import { fetchOrgEventByRouteId } from "@/services/server/eventsServer";
 import { formatDateSmart } from "@/utils/date";
 import { getEventOgImageUrl } from "@/utils/imageProxy";
+import { eventDetailPath } from "@/utils/eventId";
 import {
   getSiteBaseUrl,
   SITE_DESCRIPTION,
@@ -40,28 +41,28 @@ type LayoutProps = {
 export async function generateMetadata({
   params,
 }: Pick<LayoutProps, "params">): Promise<Metadata> {
-  const { id } = await params;
+  const { id: rawId } = await params;
   const baseUrl = getSiteBaseUrl();
 
   try {
-    const event = await fetchOrgEventById(id);
+    const event = await fetchOrgEventByRouteId(rawId);
     if (!event) {
       return {
-        title: "找不到活動",
+        title: { absolute: SITE_NAME },
         description: "找不到這個活動",
       };
     }
 
-    const title = event.actName;
+    const ogTitle = event.actName;
     const description = buildEventDescription(event);
-    const pageUrl = `${baseUrl}/events/${event.actId}`;
-    const imageUrl = getEventOgImageUrl(event.actId, baseUrl);
+    const pageUrl = `${baseUrl}${eventDetailPath(event.id)}`;
+    const imageUrl = getEventOgImageUrl(event.id, baseUrl);
 
     return {
-      title,
+      title: { absolute: SITE_NAME },
       description,
       openGraph: {
-        title,
+        title: ogTitle,
         description,
         url: pageUrl,
         siteName: SITE_NAME,
@@ -72,20 +73,20 @@ export async function generateMetadata({
             url: imageUrl,
             width: 1200,
             height: 630,
-            alt: title,
+            alt: ogTitle,
           },
         ],
       },
       twitter: {
         card: "summary_large_image",
-        title,
+        title: ogTitle,
         description,
         images: [imageUrl],
       },
     };
   } catch {
     return {
-      title: "活動",
+      title: { absolute: SITE_NAME },
       description: SITE_DESCRIPTION,
     };
   }

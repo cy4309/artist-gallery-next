@@ -14,7 +14,13 @@ import { getCultureImageUrl } from "@/utils/imageProxy";
 import { eventCityName } from "@/utils/city";
 import { showConfirmSwal } from "@/utils/notification";
 import { getEventShareUrl, shareEvent } from "@/utils/share";
+import {
+  eventDetailPath,
+  favoriteIdAliases,
+  toCanonicalId,
+} from "@/utils/eventId";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { findOrgEventByRouteId } from "@/services/events/canonicalToLegacy";
 
 function formatDateRange(startTime?: string, endTime?: string): string {
   const start = formatDateSmart(startTime);
@@ -52,10 +58,10 @@ export default function EventDetailPage() {
     load();
   }, [load]);
 
-  const event = useMemo(
-    () => orgData.find((item) => String(item.actId) === String(id)) ?? null,
-    [orgData, id],
-  );
+  const event = useMemo(() => {
+    if (!id) return null;
+    return findOrgEventByRouteId(orgData, String(id));
+  }, [orgData, id]);
 
   const city = event ? eventCityName(event) : null;
 
@@ -87,17 +93,23 @@ export default function EventDetailPage() {
   const effectiveId = historyId ?? routeId;
 
   const activeIndex = useMemo(() => {
+    if (!effectiveId) return 0;
+    const decoded = toCanonicalId(String(effectiveId));
+    const aliases = new Set(favoriteIdAliases(decoded));
     const index = cityEvents.findIndex(
-      (item) => String(item.actId) === String(effectiveId),
+      (item) => aliases.has(item.id) || item.id === decoded,
     );
     return index >= 0 ? index : 0;
   }, [cityEvents, effectiveId]);
 
-  const handleIndexChange = useCallback((_index: number, item: CarouselItem) => {
-    const nextUrl = `/events/${item.actId}`;
-    if (window.location.pathname === nextUrl) return;
-    window.history.replaceState(null, "", nextUrl);
-  }, []);
+  const handleIndexChange = useCallback(
+    (_index: number, item: CarouselItem) => {
+      const nextUrl = eventDetailPath(item.id);
+      if (window.location.pathname === nextUrl) return;
+      window.history.replaceState(null, "", nextUrl);
+    },
+    [],
+  );
 
   const imageUrl = event ? getCultureImageUrl(event.imageUrl) : "";
   const favoriteImageUrl = event
@@ -107,7 +119,7 @@ export default function EventDetailPage() {
   const notFound = status === "success" && !event;
 
   if (status === "loading") {
-    return <LoadingIndicator label="載入中…" />;
+    return <LoadingIndicator />;
   }
 
   return (
@@ -158,7 +170,7 @@ export default function EventDetailPage() {
                 />
                 <div className="absolute top-2.5 right-2.5 z-10">
                   <FavoriteButton
-                    eventId={String(event.actId)}
+                    eventId={event.id}
                     eventTitle={event.actName}
                     eventStartDate={toISODateTime(event.startTime)}
                     eventEndDate={toISODateTime(event.endTime)}
@@ -190,7 +202,7 @@ export default function EventDetailPage() {
               </p>
             ) : null}
 
-            <div className="mt-2 flex flex-wrap justify-center gap-3">
+            <div className="mt-2 flex flex-wrap justify-center gap-6">
               {event.website ? (
                 <BaseButton
                   className="!px-4"
@@ -221,7 +233,7 @@ export default function EventDetailPage() {
                 onClick={() =>
                   shareEvent({
                     title: event.actName,
-                    url: getEventShareUrl(event.actId),
+                    url: getEventShareUrl(event.id),
                     copiedTitle: t.notification.shareCopied.title,
                     copiedText: t.notification.shareCopied.text,
                   })

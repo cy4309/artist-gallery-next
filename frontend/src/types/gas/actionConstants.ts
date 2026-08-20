@@ -17,6 +17,10 @@ export const GAS_ACTION = {
 
   // push
   REGISTER_PUSH_TOKEN: "registerPushToken",
+
+  // events sheet
+  REPLACE_EVENTS: "replaceEvents",
+  LIST_EVENTS: "listEvents",
 } as const;
 
 // 👉 所有合法 action 字串 union

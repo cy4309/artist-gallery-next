@@ -6,6 +6,7 @@ import { OrgEvent } from "@/types/event";
 import { formatDateSmart, toISODateTime } from "@/utils/date";
 import { getCultureImageUrl } from "@/utils/imageProxy";
 import { eventCityName } from "@/utils/city";
+import { eventDetailPath } from "@/utils/eventId";
 
 type OrgEventCardProps = {
   event: OrgEvent;
@@ -26,7 +27,7 @@ export default function OrgEventCard({ event }: OrgEventCardProps) {
 
   return (
     <Link
-      href={`/events/${event.actId}`}
+      href={eventDetailPath(event.id)}
       className="block rounded-2xl overflow-hidden border-[3px] border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90 backdrop-blur-md transition-opacity hover:opacity-90 active:opacity-80"
     >
       <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-200 dark:bg-gray-700">
@@ -49,7 +50,7 @@ export default function OrgEventCard({ event }: OrgEventCardProps) {
           }}
         >
           <FavoriteButton
-            eventId={String(event.actId)}
+            eventId={event.id}
             eventTitle={event.actName}
             eventStartDate={toISODateTime(event.startTime)}
             eventEndDate={toISODateTime(event.endTime)}

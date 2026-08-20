@@ -30,6 +30,12 @@ function unifyTai(value: string): string {
   return value.replace(/臺/g, "台").trim();
 }
 
+/** 統一顯示為「台」寫法（已知縣市回標準名，其餘只做台/臺轉換） */
+export function displayCityName(raw?: string | null): string {
+  if (!raw) return "";
+  return toCityName(raw) ?? unifyTai(raw);
+}
+
 function cityAliases(city: CityName): string[] {
   const withTai = city.replace(/台/g, "臺");
   return withTai === city ? [city] : [city, withTai];
@@ -62,6 +68,30 @@ export function eventCityName(event: {
   address?: string;
 }): CityName | null {
   return toCityName(event.cityName) ?? toCityName(event.address);
+}
+
+/** 兩段縣市文字是否指同一縣市（台／臺、含地址比對） */
+export function matchesCity(
+  raw?: string,
+  target?: string,
+): boolean {
+  if (!raw || !target) return false;
+  const a = toCityName(raw);
+  const b = toCityName(target);
+  if (a && b) return a === b;
+  return unifyTai(raw).includes(unifyTai(target));
+}
+
+export function eventMatchesCity(
+  event: { cityName?: string; address?: string },
+  target?: string,
+): boolean {
+  if (!target) return false;
+  const normalized = eventCityName(event);
+  const targetCity = toCityName(target);
+  if (normalized && targetCity) return normalized === targetCity;
+  const haystack = unifyTai(`${event.cityName ?? ""}${event.address ?? ""}`);
+  return haystack.includes(unifyTai(target));
 }
 
 export function uniqueCityNames(

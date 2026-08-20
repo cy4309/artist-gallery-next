@@ -15,6 +15,8 @@ import OrgEventCard from "@/components/events/OrgEventCard";
 import { OrgEvent } from "@/types/event";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import LoadingIndicator from "@/components/LoadingIndicator";
+import { eventMatchesCity, displayCityName } from "@/utils/city";
+import { eventDetailPath } from "@/utils/eventId";
 import { filterEventsByKeyword } from "@/utils/eventSearch";
 
 export default function EventsPage() {
@@ -37,7 +39,7 @@ export default function EventsPage() {
 
   const nowData = useMemo(() => {
     if (!clickedId) return [];
-    return orgData.filter((data) => data.cityName.includes(clickedId));
+    return orgData.filter((data) => eventMatchesCity(data, clickedId));
   }, [clickedId, orgData]);
 
   const searchResults = useMemo(
@@ -76,7 +78,7 @@ export default function EventsPage() {
 
     const timer = setTimeout(() => {
       if (nowData.length > 0) {
-        router.push(`/events/${nowData[0].actId}`);
+        router.push(eventDetailPath(nowData[0].id));
         return;
       }
       setIsMapClicked(true);
@@ -138,7 +140,7 @@ export default function EventsPage() {
               ) : (
                 <div className="grid grid-cols-2 xl:grid-cols-3 gap-5 max-w-5xl mx-auto pb-8">
                   {searchResults.map((event) => (
-                    <OrgEventCard key={event.actId} event={event} />
+                    <OrgEventCard key={event.id} event={event} />
                   ))}
                 </div>
               )}
@@ -152,7 +154,7 @@ export default function EventsPage() {
                   {(hoveredId ?? t.events.title) && (
                     <BaseButton className="my-4 shrink-0">
                       <h5 className="text-center text-xl font-bold">
-                        - {hoveredId ?? t.events.title} -
+                        - {displayCityName(hoveredId) || t.events.title} -
                       </h5>
                     </BaseButton>
                   )}
@@ -167,7 +169,7 @@ export default function EventsPage() {
                 <div className="m-4 w-full flex flex-col justify-center items-center">
                   <BackButton onClick={handleCloseList} />
                   <p className="my-4 text-center">
-                    No events found - {clickedId} -
+                    No events found - {displayCityName(clickedId)} -
                   </p>
                 </div>
               )}

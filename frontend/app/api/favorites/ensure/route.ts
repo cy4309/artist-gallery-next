@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/services/server/authService";
+import { resolveFavoriteEventId } from "@/services/server/favoriteIdResolve";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
 import type { ToggleFavoriteServerPayload } from "@/types/favorite/server";
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -19,9 +20,11 @@ export async function POST(req: NextRequest) {
     if (!body?.eventId) {
       return NextResponse.json(
         { success: false, error: "Missing eventId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
+
+    const eventId = await resolveFavoriteEventId(user.id, body.eventId);
 
     const res = await fetch(GAS_URL, {
       method: "POST",
@@ -30,12 +33,12 @@ export async function POST(req: NextRequest) {
         action: GAS_ACTION.ENSURE_FAVORITE,
         userId: user.id,
         ...body,
+        eventId,
       }),
     });
 
     const gasData = await res.json();
 
-    // ⭐⭐ 關鍵：驗證 GAS 回傳的「邏輯成功」
     if (!res.ok || !gasData?.success) {
       throw new Error("GAS ensureFavorite logic failed");
     }
@@ -43,12 +46,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       created: Boolean(gasData.created),
+      eventId,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[/api/favorites/ensure]", err);
     return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
+      {
+        success: false,
+        error: err instanceof Error ? err.message : "Server error",
+      },
+      { status: 500 },
     );
   }
 }

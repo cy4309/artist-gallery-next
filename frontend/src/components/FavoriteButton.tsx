@@ -5,6 +5,7 @@ import { HeartFilled, HeartOutlined } from "@ant-design/icons";
 import { event } from "@/helpers/ga";
 import { showConfirmSwal, showSwal } from "@/utils/notification";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { favoritesInclude } from "@/utils/eventId";
 
 export interface FavoriteButtonProps {
   eventId: string;
@@ -36,7 +37,7 @@ export default function FavoriteButton({
     favorites,
     toggleFavoriteWithSync,
   } = useUser();
-  const isFavorite = user ? favorites.includes(eventId) : false;
+  const isFavorite = user ? favoritesInclude(favorites, eventId) : false;
 
   async function handleClick() {
     if (userLoading) return;
@@ -66,7 +67,7 @@ export default function FavoriteButton({
       }
     }
 
-    const wasFavorite = favorites.includes(eventId);
+    const wasFavorite = favoritesInclude(favorites, eventId);
 
     /** ------------------------------
      * ① 取消收藏 → confirm

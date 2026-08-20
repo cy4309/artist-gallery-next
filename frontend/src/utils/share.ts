@@ -1,7 +1,8 @@
 import { showSwal } from "@/utils/notification";
+import { eventDetailPath } from "@/utils/eventId";
 
-export function getEventShareUrl(actId: number | string): string {
-  const path = `/events/${actId}`;
+export function getEventShareUrl(eventId: string): string {
+  const path = eventDetailPath(eventId);
   if (typeof window === "undefined") return path;
   return `${window.location.origin}${path}`;
 }

@@ -15,7 +15,11 @@ export async function upsertGoogleUser(user: UserInitPayload) {
       action: GAS_ACTION.CREATE_GOOGLE_USER,
       user,
     });
-    return createRes.data?.user ?? user;
+    const created = createRes.data?.user ?? user;
+    return {
+      ...created,
+      picture: created.picture || user.picture,
+    };
   }
 
   const updateRes = await axios.post(GAS_URL, {
@@ -23,5 +27,9 @@ export async function upsertGoogleUser(user: UserInitPayload) {
     user,
   });
 
-  return updateRes.data?.user ?? user;
+  const updated = updateRes.data?.user ?? user;
+  return {
+    ...updated,
+    picture: updated.picture || user.picture,
+  };
 }

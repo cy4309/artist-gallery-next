@@ -9,6 +9,7 @@ import {
   toggleFavoriteClient,
   fetchFavoriteList,
 } from "@/services/client/favoriteClient";
+import { findStoredFavoriteId } from "@/utils/eventId";
 
 type AfterLoginAction =
   | {
@@ -136,11 +137,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   function toggleFavoriteOptimistic(eventId: string) {
-    setFavorites((prev) =>
-      prev.includes(eventId)
-        ? prev.filter((id) => id !== eventId)
-        : [...prev, eventId],
-    );
+    setFavorites((prev) => {
+      const stored = findStoredFavoriteId(prev, eventId);
+      if (stored) {
+        return prev.filter((id) => id !== stored);
+      }
+      return [...prev, eventId];
+    });
   }
 
   async function toggleFavoriteWithSync(

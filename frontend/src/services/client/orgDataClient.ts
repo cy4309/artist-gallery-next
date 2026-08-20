@@ -1,13 +1,16 @@
+import { canonicalListToOrgEvents } from "@/services/events/canonicalToLegacy";
+import { CanonicalEvent } from "@/types/event";
+
 export async function getOrgData() {
-  const res = await fetch("/api/org", {
-    method: "GET",
-  });
+  const res = await fetch("/api/events");
 
   if (!res.ok) {
-    throw new Error("Failed to fetch org data");
+    throw new Error("Failed to fetch events");
   }
 
-  return res.json();
+  const json = (await res.json()) as { events?: CanonicalEvent[] };
+  const events: CanonicalEvent[] = Array.isArray(json.events) ? json.events : [];
+  return canonicalListToOrgEvents(events);
 }
 
 // export async function getOrgData() {

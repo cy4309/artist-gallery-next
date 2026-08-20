@@ -11,6 +11,7 @@ import { getEventShareUrl, shareEvent } from "@/utils/share";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 
 export interface CarouselItem {
+  id: string;
   actId: number;
   actName: string;
   startTime: string;
@@ -19,8 +20,6 @@ export interface CarouselItem {
   imageUrl: string;
   description: string;
   website: string;
-  // cityName: string;
-  // cityId: number;
 }
 
 export interface CarouselProps {
@@ -402,7 +401,7 @@ const Carousel = ({
         >
           {carouselItems.map((item, index) => (
             <div
-              key={`${item.actId}-${index}`}
+              key={`${item.id}-${index}`}
               ref={(el) => {
                 itemRefs.current[index] = el;
               }}
@@ -422,7 +421,7 @@ const Carousel = ({
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <FavoriteButton
-                    eventId={String(item.actId)}
+                    eventId={item.id}
                     eventTitle={item.actName}
                     eventStartDate={toISODateTime(item.startTime)}
                     eventEndDate={toISODateTime(item.endTime)}
@@ -464,7 +463,7 @@ const Carousel = ({
                 </li>
 
                 <li
-                  className="mt-4 flex flex-wrap justify-center gap-3"
+                  className="mt-4 flex flex-wrap justify-center gap-6"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   {item.website ? (
@@ -498,7 +497,7 @@ const Carousel = ({
                     onClick={() =>
                       shareEvent({
                         title: item.actName,
-                        url: getEventShareUrl(item.actId),
+                        url: getEventShareUrl(item.id),
                         copiedTitle: t.notification.shareCopied.title,
                         copiedText: t.notification.shareCopied.text,
                       })

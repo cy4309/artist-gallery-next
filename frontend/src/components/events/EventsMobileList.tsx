@@ -100,7 +100,7 @@ export default function EventsMobileList({
       {filtered.length > 0 && (
         <div className="px-5 pt-4 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
           {filtered.map((event) => (
-            <OrgEventCard key={event.actId} event={event} />
+            <OrgEventCard key={event.id} event={event} />
           ))}
         </div>
       )}

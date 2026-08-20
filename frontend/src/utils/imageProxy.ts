@@ -3,6 +3,8 @@
  * 保證回傳 https-safe 的圖片 URL
  * 文化部 cloud.culture.tw 的圖片，在前端請用 http://，不是 https://，這支供前端使用
  */
+import { eventDetailPath } from "@/utils/eventId";
+
 function buildCultureRawUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
@@ -34,10 +36,14 @@ export function getCultureImageAbsoluteUrl(
   return `${origin}/api/image-proxy?url=${encodeURIComponent(rawUrl)}`;
 }
 
-/** 活動分享用 OG 圖（乾淨 URL，爬蟲相容性較佳） */
+/** 活動分享用 OG 圖（路徑用 culture-901 格式，不用 %3A） */
 export function getEventOgImageUrl(
-  actId: number | string,
+  eventId: number | string,
   baseUrl: string,
 ): string {
-  return `${baseUrl.replace(/\/$/, "")}/api/og/event/${actId}`;
+  const segment =
+    typeof eventId === "string" && eventId.includes(":")
+      ? eventDetailPath(eventId).replace(/^\/events\//, "")
+      : String(eventId);
+  return `${baseUrl.replace(/\/$/, "")}/api/og/event/${encodeURIComponent(segment)}`;
 }
