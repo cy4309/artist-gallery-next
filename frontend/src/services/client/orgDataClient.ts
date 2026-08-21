@@ -1,8 +1,22 @@
 import { canonicalListToOrgEvents } from "@/services/events/canonicalToLegacy";
 import { CanonicalEvent } from "@/types/event";
 
-export async function getOrgData() {
-  const res = await fetch("/api/events");
+export type GetOrgDataOptions = {
+  city?: string;
+  categories?: string[];
+  id?: string;
+};
+
+export async function getOrgData(options: GetOrgDataOptions = {}) {
+  const params = new URLSearchParams();
+  if (options.city) params.set("city", options.city);
+  if (options.categories?.length) {
+    params.set("categories", options.categories.join(","));
+  }
+  if (options.id) params.set("id", options.id);
+
+  const query = params.toString();
+  const res = await fetch(query ? `/api/events?${query}` : "/api/events");
 
   if (!res.ok) {
     throw new Error("Failed to fetch events");
@@ -12,30 +26,3 @@ export async function getOrgData() {
   const events: CanonicalEvent[] = Array.isArray(json.events) ? json.events : [];
   return canonicalListToOrgEvents(events);
 }
-
-// export async function getOrgData() {
-//   const response = await axios.get(
-//     "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindFestivalTypeJ"
-//   );
-
-//   return response.data;
-// }
-
-// import axios from "axios";
-// import { showSwal } from "@/utils/notification";
-
-// export const getOrgData = async () => {
-//   try {
-//     const response = await axios.get(
-//       // "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=all"
-//       "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindFestivalTypeJ"
-//     );
-//     return response.data;
-//   } catch (error) {
-//     showSwal({
-//       isSuccess: false,
-//       title: "API occurs an error",
-//     });
-//     throw error;
-//   }
-// };

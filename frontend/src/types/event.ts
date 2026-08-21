@@ -5,6 +5,8 @@ export interface CanonicalEvent {
   id: string;
   source: EventSource;
   sourceId?: string;
+  /** festival | 1–17 | ntpc */
+  category?: string;
   title: string;
   startTime: string;
   endTime: string;
@@ -24,6 +26,7 @@ export interface OrgEvent {
   /** canonical id，例如 culture:924 / ntpc:abc */
   id: string;
   source?: EventSource;
+  category?: string;
   actId: number;
   cityName: string;
   actName: string;

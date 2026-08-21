@@ -183,6 +183,13 @@ body {
   transform: translate(-5px, -5px);
 }
 
+/* 離島：只放大可點範圍，外觀不變 */
+.lienchiang_country,
+.penghu_country,
+.kinmen_country {
+  pointer-events: bounding-box;
+}
+
 /* .sideNav {
   height: 0;
   width: 100%;

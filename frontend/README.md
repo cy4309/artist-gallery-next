@@ -20,25 +20,18 @@
 ## 活動資料流（重要）
 
 ```
-文化部 API ─┐
-            ├─► fetchAllCanonicalEvents（merge／去重）
-新北 API ───┘         │
-                      ▼
-              filterActiveEvents（台灣日曆，結束日 < 今天才濾掉）
-                      │
-                      ▼
-         POST/GET /api/events/sync ──► GAS replaceEvents ──► Sheet「EVENTS」
-                      │
-                      ▼
-         GET /api/events ◄── GAS listEvents（空／失敗則 fallback live merge）
-                      │
-                      ▼
-              前端列表／詳情／sitemap／OG
+文化部節慶 + 全 category ─┐
+新北 API（白名單）────────┼─► sync → Sheet「EVENTS」（含 category）
+                          │
+活動頁：選縣市 → 選類型 → GET /api/events?city&categories（Sheet 篩選，失敗才 live）
 ```
 
-- **Canonical id**：`culture:901`、`ntpc:…`（內部）
-- **網址**：`/events/culture-901`、`/events/ntpc-…`（dash，不用 `%3A`）
-- 前端透過 `/api/events` 取資料，再 map 成舊 UI 用的 `OrgEvent`
+- **文化部**：節慶 + category 1–8、11、13–17（寫入 Sheet 為中文：節慶／展覽／音樂…）
+- **新北**：只收 `活動、表演與節慶`、`展覽`（類型寫成「新北文化局」）
+- 進頁不預載；確認類型後才打 API
+- Sheet 有 5 分鐘記憶體快取；description 截斷 300 字減輕 GAS
+- **Canonical id**：`culture:…`、`ntpc:…`；網址 `/events/culture-901` 等
+- 前端透過 `/api/events` 取資料，再 map 成 `OrgEvent`
 
 相關程式：
 

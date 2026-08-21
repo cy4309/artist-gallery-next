@@ -9,6 +9,7 @@ import { toISODateTime, formatDateSmart } from "@/utils/date";
 import { showConfirmSwal } from "@/utils/notification";
 import { getEventShareUrl, shareEvent } from "@/utils/share";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { getEventCategoryLabel } from "@/utils/eventCategories";
 
 export interface CarouselItem {
   id: string;
@@ -20,6 +21,8 @@ export interface CarouselItem {
   imageUrl: string;
   description: string;
   website: string;
+  category?: string;
+  source?: string;
 }
 
 export interface CarouselProps {
@@ -417,9 +420,12 @@ const Carousel = ({
             >
               <ul className="p-4 flex flex-col justify-center items-center gap-2 text-white">
                 <div
-                  className="w-full flex justify-end items-center mb-4 text-sm"
+                  className="w-full flex justify-between items-center mb-4 text-sm gap-2"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
+                  <span className="rounded-md bg-white/15 px-2 py-1 text-[11px] font-semibold tracking-wide text-white">
+                    {getEventCategoryLabel(item) || "活動"}
+                  </span>
                   <FavoriteButton
                     eventId={item.id}
                     eventTitle={item.actName}
@@ -428,8 +434,10 @@ const Carousel = ({
                     eventLocation={item.address}
                     eventUrl={item.website}
                     imageUrl={
-                      process.env.NEXT_PUBLIC_BASE_URL +
-                      getCultureImageUrl(item.imageUrl)
+                      item.imageUrl?.trim()
+                        ? process.env.NEXT_PUBLIC_BASE_URL +
+                          getCultureImageUrl(item.imageUrl)
+                        : undefined
                     }
                   />
                 </div>
@@ -448,7 +456,11 @@ const Carousel = ({
                       decoding="async"
                       className="w-full pointer-events-none"
                       draggable={false}
-                      src={getCultureImageUrl(item.imageUrl)}
+                      src={
+                        item.imageUrl?.trim()
+                          ? getCultureImageUrl(item.imageUrl)
+                          : "/images/placeholder-no-image.png"
+                      }
                       alt={item.actName || "活動圖片"}
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =

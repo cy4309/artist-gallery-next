@@ -665,6 +665,7 @@ function getOrCreateEventsSheet(preferredColumns) {
     "id",
     "source",
     "sourceId",
+    "category",
     "title",
     "startTime",
     "endTime",

@@ -1,24 +1,16 @@
 import { favoriteIdAliases } from "@/utils/eventId";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
-
-const GAS_URL = process.env.GAS_URL!;
+import { postToGas } from "@/services/server/gasClient";
 
 async function checkFavoriteRaw(
   userId: string,
   eventId: string,
 ): Promise<boolean> {
-  const res = await fetch(GAS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: GAS_ACTION.CHECK_FAVORITE,
-      userId,
-      eventId,
-    }),
+  const data = await postToGas<{ isFavorite?: boolean }>({
+    action: GAS_ACTION.CHECK_FAVORITE,
+    userId,
+    eventId,
   });
-
-  if (!res.ok) throw new Error("GAS checkFavorite failed");
-  const data = (await res.json()) as { isFavorite?: boolean };
   return Boolean(data?.isFavorite);
 }
 

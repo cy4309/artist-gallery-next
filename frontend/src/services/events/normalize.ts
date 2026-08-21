@@ -67,3 +67,10 @@ export function extractAddressFromDescription(description?: string): string {
 
   return match?.[0]?.trim() ?? "";
 }
+
+/** 寫入 Sheet 前截斷，減輕 GAS listEvents 體積 */
+export function truncateText(value?: string, max = 300): string {
+  const text = (value ?? "").trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}…`;
+}

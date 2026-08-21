@@ -7,6 +7,9 @@ import { formatDateSmart, toISODateTime } from "@/utils/date";
 import { getCultureImageUrl } from "@/utils/imageProxy";
 import { eventCityName } from "@/utils/city";
 import { eventDetailPath } from "@/utils/eventId";
+import { getEventCategoryLabel } from "@/utils/eventCategories";
+
+const PLACEHOLDER_IMAGE = "/images/placeholder-no-image.png";
 
 type OrgEventCardProps = {
   event: OrgEvent;
@@ -20,10 +23,15 @@ function formatDateRange(startTime?: string, endTime?: string): string {
 }
 
 export default function OrgEventCard({ event }: OrgEventCardProps) {
-  const imageUrl = getCultureImageUrl(event.imageUrl);
+  const hasImage = Boolean(event.imageUrl?.trim());
+  const imageUrl = hasImage
+    ? getCultureImageUrl(event.imageUrl)
+    : PLACEHOLDER_IMAGE;
   const city = eventCityName(event);
-  const favoriteImageUrl =
-    (process.env.NEXT_PUBLIC_BASE_URL || "") + imageUrl;
+  const categoryLabel = getEventCategoryLabel(event);
+  const favoriteImageUrl = hasImage
+    ? (process.env.NEXT_PUBLIC_BASE_URL || "") + imageUrl
+    : undefined;
 
   return (
     <Link
@@ -38,10 +46,14 @@ export default function OrgEventCard({ event }: OrgEventCardProps) {
           alt={event.actName || "活動圖片"}
           className="w-full h-full object-cover"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "/images/placeholder-no-image.png";
+            (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE;
           }}
         />
+        {categoryLabel ? (
+          <span className="absolute top-2.5 left-2.5 z-10 rounded-md bg-black/65 px-2 py-1 text-[11px] font-semibold tracking-wide text-white">
+            {categoryLabel}
+          </span>
+        ) : null}
         <div
           className="absolute top-2.5 right-2.5 z-10"
           onClick={(e) => {

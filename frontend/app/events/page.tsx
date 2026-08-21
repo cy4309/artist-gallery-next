@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
 import BaseButton from "@/components/BaseButton";
 import BackButton from "@/components/BackButton";
 import EventsMobileList from "@/components/events/EventsMobileList";
+import EventCategoryPicker from "@/components/events/EventCategoryPicker";
 import {
   EventSearchInline,
   EventSearchTrigger,
@@ -15,55 +16,82 @@ import OrgEventCard from "@/components/events/OrgEventCard";
 import { OrgEvent } from "@/types/event";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import LoadingIndicator from "@/components/LoadingIndicator";
-import { eventMatchesCity, displayCityName } from "@/utils/city";
+import { displayCityName } from "@/utils/city";
 import { eventDetailPath } from "@/utils/eventId";
 import { filterEventsByKeyword } from "@/utils/eventSearch";
+import {
+  EventCategoryId,
+  loadSessionCategories,
+  saveSessionCategories,
+} from "@/utils/eventCategories";
+import { useEventSearchCatalog } from "@/hooks/useEventSearchCatalog";
 
 export default function EventsPage() {
   const { t } = useLocale();
   const router = useRouter();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [clickedId, setClickedId] = useState<string | null>(null);
-  const [isMapClicked, setIsMapClicked] = useState(false);
+  const [pickingCategories, setPickingCategories] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<
+    EventCategoryId[]
+  >([]);
   const [orgData, setOrgData] = useState<OrgEvent[]>([]);
-  const [orgLoading, setOrgLoading] = useState(true);
+  const [orgLoading, setOrgLoading] = useState(false);
+  const [emptyCity, setEmptyCity] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-
-  const toggleSearch = () => {
-    setSearchOpen((open) => {
-      if (open) setSearchQuery("");
-      return !open;
-    });
-  };
-
-  const nowData = useMemo(() => {
-    if (!clickedId) return [];
-    return orgData.filter((data) => eventMatchesCity(data, clickedId));
-  }, [clickedId, orgData]);
+  const {
+    catalog,
+    catalogLoading,
+    ensureCatalog,
+  } = useEventSearchCatalog();
 
   const searchResults = useMemo(
-    () => filterEventsByKeyword(orgData, searchQuery),
-    [orgData, searchQuery],
+    () => filterEventsByKeyword(catalog, searchQuery),
+    [catalog, searchQuery],
   );
 
   const isSearching = searchQuery.trim().length > 0;
+  const showLoading = orgLoading || (searchOpen && catalogLoading);
 
-  useEffect(() => {
-    const fetchOrgData = async () => {
+  const toggleSearch = () => {
+    setSearchOpen((open) => {
+      const next = !open;
+      if (!next) setSearchQuery("");
+      else void ensureCatalog();
+      return next;
+    });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (value.trim()) void ensureCatalog();
+  };
+
+  const loadCityEvents = useCallback(
+    async (city: string, categories: EventCategoryId[]) => {
       try {
         setOrgLoading(true);
-        const response = await getOrgData();
-        setOrgData(response as OrgEvent[]);
+        setEmptyCity(false);
+        setPickingCategories(false);
+        const events = await getOrgData({ city, categories });
+        setOrgData(events);
+
+        if (events.length === 0) {
+          setEmptyCity(true);
+          return;
+        }
+
+        router.push(eventDetailPath(events[0].id));
       } catch (error) {
-        console.error("Failed to fetch org data:", error);
+        console.error("Failed to fetch events:", error);
+        setEmptyCity(true);
       } finally {
         setOrgLoading(false);
       }
-    };
-
-    fetchOrgData();
-  }, []);
+    },
+    [router],
+  );
 
   const handleMapHover = (id: string | null) => {
     setHoveredId(id);
@@ -71,64 +99,87 @@ export default function EventsPage() {
 
   const handleMapClick = (id: string) => {
     setClickedId(id);
+    setEmptyCity(false);
+    setOrgData([]);
+    setSearchQuery("");
+    setSearchOpen(false);
+
+    const saved = loadSessionCategories();
+    if (saved && saved.length > 0) {
+      setSelectedCategories(saved);
+      void loadCityEvents(id, saved);
+      return;
+    }
+
+    setSelectedCategories([]);
+    setPickingCategories(true);
   };
 
-  useEffect(() => {
-    if (!clickedId || orgLoading || isSearching) return;
+  const handleCancelPick = () => {
+    setPickingCategories(false);
+    if (!loadSessionCategories()) {
+      setClickedId(null);
+      setHoveredId(null);
+    }
+    setEmptyCity(false);
+  };
 
-    const timer = setTimeout(() => {
-      if (nowData.length > 0) {
-        router.push(eventDetailPath(nowData[0].id));
-        return;
-      }
-      setIsMapClicked(true);
-    }, 500);
+  const handleChangeCategories = () => {
+    const saved = loadSessionCategories();
+    setSelectedCategories(saved && saved.length > 0 ? saved : []);
+    setEmptyCity(false);
+    setOrgData([]);
+    setSearchQuery("");
+    setSearchOpen(false);
+    setPickingCategories(true);
+  };
 
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [clickedId, orgLoading, nowData, router, isSearching]);
-
-  const handleCloseList = () => {
-    setIsMapClicked(false);
+  const handleCloseEmpty = () => {
+    setEmptyCity(false);
     setClickedId(null);
     setHoveredId(null);
+    setOrgData([]);
   };
 
   return (
     <div className="w-full flex flex-col flex-1 min-h-0">
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
-        <EventsMobileList orgData={orgData} orgLoading={orgLoading} />
+        <EventsMobileList />
       </div>
 
       <div className="hidden lg:flex flex-col w-full h-full min-h-0">
         <div className="w-full shrink-0 flex items-center justify-end gap-2 pb-2">
-          {!orgLoading && orgData.length > 0 && (
-            <div className="flex items-center">
-              <EventSearchTrigger
-                expanded={searchOpen}
-                onToggle={toggleSearch}
-                label={t.events.searchPlaceholder}
-              />
-              <EventSearchInline
-                expanded={searchOpen}
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder={t.events.searchPlaceholder}
-              />
-              {isSearching && (
-                <p className="text-sm text-gray-400 whitespace-nowrap">
-                  {searchResults.length} 筆
-                </p>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={handleChangeCategories}
+            className="text-xs font-semibold text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline px-2"
+          >
+            變更活動類型
+          </button>
+          <div className="flex items-center">
+            <EventSearchTrigger
+              expanded={searchOpen}
+              onToggle={toggleSearch}
+              label={t.events.searchPlaceholder}
+            />
+            <EventSearchInline
+              expanded={searchOpen}
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder={t.events.searchPlaceholder}
+            />
+            {isSearching && !catalogLoading && (
+              <p className="text-sm text-gray-400 whitespace-nowrap">
+                {searchResults.length} 筆
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="container mx-auto px-4 flex-1 min-h-0 flex flex-col">
-          {orgLoading && <LoadingIndicator />}
+          {showLoading && <LoadingIndicator />}
 
-          {!orgLoading && isSearching && (
+          {!showLoading && isSearching && (
             <div className="flex-1 min-h-0 overflow-y-auto">
               {searchResults.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center gap-3 text-center">
@@ -147,9 +198,9 @@ export default function EventsPage() {
             </div>
           )}
 
-          {!orgLoading && !isSearching && (
+          {!showLoading && !isSearching && (
             <div className="flex-1 min-h-0 flex flex-col justify-center items-center">
-              {!isMapClicked && (
+              {!pickingCategories && !emptyCity && (
                 <div className="w-full h-full min-h-0 flex flex-col justify-center items-center">
                   {(hoveredId ?? t.events.title) && (
                     <BaseButton className="my-4 shrink-0">
@@ -165,12 +216,35 @@ export default function EventsPage() {
                 </div>
               )}
 
-              {isMapClicked && (
+              {pickingCategories && (
+                <div className="w-full flex flex-col items-center gap-4 px-4">
+                  <EventCategoryPicker
+                    city={clickedId || "活動類型"}
+                    selected={selectedCategories}
+                    onChange={setSelectedCategories}
+                    onConfirm={async (categories) => {
+                      if (categories.length === 0) return;
+                      setSelectedCategories(categories);
+                      saveSessionCategories(categories);
+                      if (clickedId) {
+                        await loadCityEvents(clickedId, categories);
+                      } else {
+                        setPickingCategories(false);
+                      }
+                    }}
+                    onCancel={handleCancelPick}
+                    loading={orgLoading}
+                  />
+                </div>
+              )}
+
+              {emptyCity && (
                 <div className="m-4 w-full flex flex-col justify-center items-center">
-                  <BackButton onClick={handleCloseList} />
+                  <BackButton onClick={handleCloseEmpty} />
                   <p className="my-4 text-center">
-                    No events found - {displayCityName(clickedId)} -
+                    {displayCityName(clickedId)} · 共 0 筆
                   </p>
+                  <p className="text-sm text-gray-400">這個縣市目前沒有符合的活動</p>
                 </div>
               )}
             </div>

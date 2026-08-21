@@ -11,7 +11,7 @@ import { getOrgData } from "@/services/client/orgDataClient";
 import { OrgEvent } from "@/types/event";
 import { formatDateSmart, toISODateTime } from "@/utils/date";
 import { getCultureImageUrl } from "@/utils/imageProxy";
-import { eventCityName } from "@/utils/city";
+import { eventCityName, displayCityName } from "@/utils/city";
 import { showConfirmSwal } from "@/utils/notification";
 import { getEventShareUrl, shareEvent } from "@/utils/share";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/utils/eventId";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import { findOrgEventByRouteId } from "@/services/events/canonicalToLegacy";
+import { loadSessionCategories } from "@/utils/eventCategories";
 
 function formatDateRange(startTime?: string, endTime?: string): string {
   const start = formatDateSmart(startTime);
@@ -42,9 +43,14 @@ export default function EventDetailPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
+    if (!id) return;
     try {
       setStatus("loading");
-      const events = (await getOrgData()) as OrgEvent[];
+      const categories = loadSessionCategories() ?? undefined;
+      const events = (await getOrgData({
+        id: String(id),
+        categories,
+      })) as OrgEvent[];
       setOrgData(events);
       setStatus("success");
     } catch (error) {
@@ -52,7 +58,7 @@ export default function EventDetailPage() {
       setErrorMessage("載入失敗");
       setStatus("error");
     }
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     load();
@@ -111,10 +117,16 @@ export default function EventDetailPage() {
     [],
   );
 
-  const imageUrl = event ? getCultureImageUrl(event.imageUrl) : "";
-  const favoriteImageUrl = event
-    ? (process.env.NEXT_PUBLIC_BASE_URL || "") + imageUrl
-    : undefined;
+  const hasImage = Boolean(event?.imageUrl?.trim());
+  const imageUrl = event
+    ? hasImage
+      ? getCultureImageUrl(event.imageUrl)
+      : "/images/placeholder-no-image.png"
+    : "";
+  const favoriteImageUrl =
+    event && hasImage
+      ? (process.env.NEXT_PUBLIC_BASE_URL || "") + imageUrl
+      : undefined;
 
   const notFound = status === "success" && !event;
 
@@ -260,8 +272,12 @@ export default function EventDetailPage() {
 
           {status === "success" && event && (
             <div className="flex flex-col justify-center items-center">
-              <div className="m-4 w-full flex justify-start items-center">
+              <div className="m-4 w-full flex justify-between items-center gap-3">
                 <BackButton onClick={() => router.push("/events")} />
+                <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  {displayCityName(city ?? event.cityName) || "活動"}
+                  {cityEvents.length > 0 ? ` · 共 ${cityEvents.length} 筆` : ""}
+                </p>
               </div>
 
               <Carousel
