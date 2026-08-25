@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
@@ -8,6 +8,7 @@ import BaseButton from "@/components/BaseButton";
 import BackButton from "@/components/BackButton";
 import EventsMobileList from "@/components/events/EventsMobileList";
 import EventCategoryPicker from "@/components/events/EventCategoryPicker";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 import {
   EventSearchInline,
   EventSearchTrigger,
@@ -24,6 +25,11 @@ import {
   loadSessionCategories,
   saveSessionCategories,
 } from "@/utils/eventCategories";
+import {
+  EVENTS_NAV_RESET_EVENT,
+  clearEventsBrowseState,
+  restoreEventsScrollY,
+} from "@/utils/eventsBrowseState";
 import { useEventSearchCatalog } from "@/hooks/useEventSearchCatalog";
 
 export default function EventsPage() {
@@ -40,6 +46,51 @@ export default function EventsPage() {
   const [emptyCity, setEmptyCity] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileListKey, setMobileListKey] = useState(0);
+
+  const resetToStart = useCallback(() => {
+    clearEventsBrowseState();
+    setHoveredId(null);
+    setClickedId(null);
+    setEmptyCity(false);
+    setOrgData([]);
+    setOrgLoading(false);
+    setSearchQuery("");
+    setSearchOpen(false);
+    const saved = loadSessionCategories();
+    if (saved && saved.length > 0) {
+      setSelectedCategories(saved);
+      setPickingCategories(false);
+    } else {
+      setSelectedCategories([]);
+      setPickingCategories(true);
+    }
+    setMobileListKey((key) => key + 1);
+    restoreEventsScrollY(0);
+  }, []);
+
+  useEffect(() => {
+    const saved = loadSessionCategories();
+    if (saved && saved.length > 0) {
+      setSelectedCategories(saved);
+      setPickingCategories(false);
+    } else {
+      setSelectedCategories([]);
+      setPickingCategories(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onNavReset = () => resetToStart();
+    window.addEventListener(EVENTS_NAV_RESET_EVENT, onNavReset);
+    return () => window.removeEventListener(EVENTS_NAV_RESET_EVENT, onNavReset);
+  }, [resetToStart]);
+
+  const resolveCategories = useCallback((): EventCategoryId[] => {
+    if (selectedCategories.length > 0) return selectedCategories;
+    return loadSessionCategories() ?? [];
+  }, [selectedCategories]);
+
   const {
     catalog,
     catalogLoading,
@@ -98,30 +149,35 @@ export default function EventsPage() {
   };
 
   const handleMapClick = (id: string) => {
+    const categories = resolveCategories();
+    if (categories.length === 0) {
+      setPickingCategories(true);
+      return;
+    }
+
     setClickedId(id);
     setEmptyCity(false);
     setOrgData([]);
     setSearchQuery("");
     setSearchOpen(false);
-
-    const saved = loadSessionCategories();
-    if (saved && saved.length > 0) {
-      setSelectedCategories(saved);
-      void loadCityEvents(id, saved);
-      return;
-    }
-
-    setSelectedCategories([]);
-    setPickingCategories(true);
+    void loadCityEvents(id, categories);
   };
 
   const handleCancelPick = () => {
-    setPickingCategories(false);
-    if (!loadSessionCategories()) {
-      setClickedId(null);
-      setHoveredId(null);
+    if (loadSessionCategories()) {
+      setPickingCategories(false);
     }
     setEmptyCity(false);
+  };
+
+  const handleConfirmCategories = async (categories: EventCategoryId[]) => {
+    if (categories.length === 0) return;
+    setSelectedCategories(categories);
+    saveSessionCategories(categories);
+    setPickingCategories(false);
+    if (clickedId) {
+      await loadCityEvents(clickedId, categories);
+    }
   };
 
   const handleChangeCategories = () => {
@@ -144,7 +200,7 @@ export default function EventsPage() {
   return (
     <div className="w-full flex flex-col flex-1 min-h-0">
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
-        <EventsMobileList />
+        <EventsMobileList key={mobileListKey} />
       </div>
 
       <div className="hidden lg:flex flex-col w-full h-full min-h-0">
@@ -217,23 +273,15 @@ export default function EventsPage() {
               )}
 
               {pickingCategories && (
-                <div className="w-full flex flex-col items-center gap-4 px-4">
+                <div className="flex w-full min-h-0 flex-1 flex-col items-center justify-center gap-4 px-4">
                   <EventCategoryPicker
-                    city={clickedId || "活動類型"}
+                    variant="inline"
                     selected={selectedCategories}
                     onChange={setSelectedCategories}
-                    onConfirm={async (categories) => {
-                      if (categories.length === 0) return;
-                      setSelectedCategories(categories);
-                      saveSessionCategories(categories);
-                      if (clickedId) {
-                        await loadCityEvents(clickedId, categories);
-                      } else {
-                        setPickingCategories(false);
-                      }
-                    }}
+                    onConfirm={handleConfirmCategories}
                     onCancel={handleCancelPick}
                     loading={orgLoading}
+                    confirmLoadsData={Boolean(clickedId)}
                   />
                 </div>
               )}
@@ -251,6 +299,8 @@ export default function EventsPage() {
           )}
         </div>
       </div>
+
+      <ScrollToTopButton />
     </div>
   );
 }

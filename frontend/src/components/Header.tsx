@@ -17,6 +17,7 @@ import { useTheme } from "next-themes";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import { useDrawer } from "@/hooks/useDrawer";
 import { motion, AnimatePresence } from "framer-motion";
+import { requestEventsNavReset } from "@/utils/eventsBrowseState";
 
 interface NavItemProps {
   label?: string;
@@ -204,7 +205,10 @@ export default function Nav() {
               <NavItem
                 label={t.header.events}
                 active={clickedKey === "events"}
-                onClick={() => go("/events", "events")}
+                onClick={() => {
+                  requestEventsNavReset();
+                  go("/events", "events");
+                }}
               />
               {user && (
                 <NavItem

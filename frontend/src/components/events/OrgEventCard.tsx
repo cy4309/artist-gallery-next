@@ -13,6 +13,7 @@ const PLACEHOLDER_IMAGE = "/images/placeholder-no-image.png";
 
 type OrgEventCardProps = {
   event: OrgEvent;
+  onBeforeNavigate?: () => void;
 };
 
 function formatDateRange(startTime?: string, endTime?: string): string {
@@ -22,7 +23,7 @@ function formatDateRange(startTime?: string, endTime?: string): string {
   return start || end;
 }
 
-export default function OrgEventCard({ event }: OrgEventCardProps) {
+export default function OrgEventCard({ event, onBeforeNavigate }: OrgEventCardProps) {
   const hasImage = Boolean(event.imageUrl?.trim());
   const imageUrl = hasImage
     ? getCultureImageUrl(event.imageUrl)
@@ -36,6 +37,7 @@ export default function OrgEventCard({ event }: OrgEventCardProps) {
   return (
     <Link
       href={eventDetailPath(event.id)}
+      onClick={() => onBeforeNavigate?.()}
       className="block rounded-2xl overflow-hidden border-[3px] border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90 backdrop-blur-md transition-opacity hover:opacity-90 active:opacity-80"
     >
       <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-200 dark:bg-gray-700">

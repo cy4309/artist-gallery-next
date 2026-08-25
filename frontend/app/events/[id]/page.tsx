@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import BaseButton from "@/components/BaseButton";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -32,7 +32,6 @@ function formatDateRange(startTime?: string, endTime?: string): string {
 
 export default function EventDetailPage() {
   const { t } = useLocale();
-  const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params?.id;
 
@@ -263,7 +262,7 @@ export default function EventDetailPage() {
         <div className="container flex justify-center items-center mx-auto">
           {(status === "error" || notFound) && (
             <div className="m-4 w-full flex flex-col justify-center items-center">
-              <BackButton onClick={() => router.push("/events")} />
+              <BackButton />
               <p className="my-4 text-center">
                 {notFound ? "找不到這個活動" : errorMessage}
               </p>
@@ -273,7 +272,7 @@ export default function EventDetailPage() {
           {status === "success" && event && (
             <div className="flex flex-col justify-center items-center">
               <div className="m-4 w-full flex justify-between items-center gap-3">
-                <BackButton onClick={() => router.push("/events")} />
+                <BackButton />
                 <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
                   {displayCityName(city ?? event.cityName) || "活動"}
                   {cityEvents.length > 0 ? ` · 共 ${cityEvents.length} 筆` : ""}
