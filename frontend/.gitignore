@@ -11,6 +11,7 @@ lerna-debug.log*
 
 # dependencies
 /node_modules
+/cloudflare-data-api/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -18,6 +19,11 @@ lerna-debug.log*
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+
+# Cloudflare Workers (wrangler)
+/cloudflare-data-api/.wrangler/
+/cloudflare-data-api/.dev.vars
+/cloudflare-data-api/dist/
 
 # testing
 /coverage

@@ -1,11 +1,11 @@
 /**
- * GAS 薄層 — 只負責「整批寫入 / 整批讀取」Events Sheet。
- * 記憶體快取降低 GAS 冷啟動反覆讀取成本。
+ * 資料後端薄層 — 整批寫入 / 整批讀取 Events（GAS 或 Cloudflare）。
+ * 記憶體快取降低反覆讀取成本。
  */
 
 import { CanonicalEvent } from "@/types/event";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
-import { postToGas } from "@/services/server/gasClient";
+import { postToDataBackend } from "@/services/server/dataBackendClient";
 import { truncateText } from "@/services/events/normalize";
 import { normalizeCategoryId } from "@/utils/eventCategories";
 
@@ -47,14 +47,14 @@ export async function writeEventsToSheet(
     }),
   );
 
-  const json = await postToGas<{ ok?: boolean; error?: string }>({
+  const json = await postToDataBackend<{ ok?: boolean; error?: string }>({
     action: GAS_ACTION.REPLACE_EVENTS,
     columns: EVENTS_COLUMNS,
     rows,
   });
 
   if (!json.ok) {
-    throw new Error(`GAS replaceEvents logic failed: ${json.error ?? "unknown"}`);
+    throw new Error(`replaceEvents failed: ${json.error ?? "unknown"}`);
   }
 
   invalidateEventsCache();
@@ -65,7 +65,7 @@ export async function listEventsFromSheet(): Promise<CanonicalEvent[]> {
     return eventsCache.events;
   }
 
-  const json = await postToGas<{
+  const json = await postToDataBackend<{
     ok?: boolean;
     events?: CanonicalEvent[];
     error?: string;
@@ -74,7 +74,7 @@ export async function listEventsFromSheet(): Promise<CanonicalEvent[]> {
 
   if (!json.ok) {
     throw new Error(
-      `GAS listEvents logic failed: ${json.error ?? json.status ?? JSON.stringify(json)}`,
+      `listEvents failed: ${json.error ?? json.status ?? JSON.stringify(json)}`,
     );
   }
 

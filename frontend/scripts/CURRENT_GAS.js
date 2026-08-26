@@ -65,6 +65,11 @@ function handleAction(action, data) {
   if (action === "replaceEvents") return replaceEvents(data);
   if (action === "listEvents") return listEvents();
 
+  // 遷移用：整表匯出（Cloudflare 切換）
+  if (action === "listAllUsers") return listAllUsers();
+  if (action === "listAllFavorites") return listAllFavorites();
+  if (action === "listAllPushTokens") return listAllPushTokens();
+
   return { error: "Unknown action" };
 }
 
@@ -103,6 +108,19 @@ function formatDate(date = new Date()) {
     ":" +
     pad(date.getSeconds())
   );
+}
+
+/********************************************************
+ * USERS — Lock：避免 check→create 競態造成重複列
+ ********************************************************/
+function withUsersScriptLock_(fn) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /********************************************************
@@ -147,34 +165,127 @@ function checkGoogleUser(email) {
 
 /********************************************************
  * USERS — createGoogleUser (Google 新用戶)
+ * 寫前再查 email／id；已存在 → update（含清重複），否則 appendRow
  ********************************************************/
 function createGoogleUser(user) {
+  return withUsersScriptLock_(function () {
+    const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
+    const values = sheet.getDataRange().getValues();
+    const col = {
+      id: getColumnIndex(sheet, "id"),
+      email: getColumnIndex(sheet, "email"),
+    };
+    const email = user && user.email != null ? String(user.email) : "";
+    const id = user && user.id != null ? String(user.id) : "";
+
+    for (let i = 1; i < values.length; i++) {
+      const rowEmail = col.email > -1 ? String(values[i][col.email] || "") : "";
+      const rowId = col.id > -1 ? String(values[i][col.id] || "") : "";
+      if ((email && rowEmail === email) || (id && rowId === id)) {
+        return updateGoogleUserUnlocked_(user);
+      }
+    }
+
+    const now = formatDate();
+    const colFull = {
+      id: getColumnIndex(sheet, "id"),
+      provider: getColumnIndex(sheet, "provider"),
+      lineUserId: getColumnIndex(sheet, "lineUserId"),
+      email: getColumnIndex(sheet, "email"),
+      name: getColumnIndex(sheet, "name"),
+      picture: getColumnIndex(sheet, "picture"),
+      created_at: getColumnIndex(sheet, "created_at"),
+      updated_at: getColumnIndex(sheet, "updated_at"),
+    };
+
+    const row = new Array(sheet.getLastColumn()).fill("");
+    if (colFull.id > -1) row[colFull.id] = user.id;
+    if (colFull.provider > -1) row[colFull.provider] = "google";
+    if (colFull.lineUserId > -1) row[colFull.lineUserId] = "";
+    if (colFull.email > -1) row[colFull.email] = user.email;
+    if (colFull.name > -1) row[colFull.name] = user.name;
+    if (colFull.picture > -1) row[colFull.picture] = user.picture;
+    if (colFull.created_at > -1) row[colFull.created_at] = now;
+    if (colFull.updated_at > -1) row[colFull.updated_at] = now;
+
+    sheet.appendRow(row);
+
+    return {
+      success: true,
+      user: {
+        ...user,
+        provider: "google",
+        lineUserId: "",
+        created_at: now,
+        updated_at: now,
+      },
+    };
+  });
+}
+
+/********************************************************
+ * USERS — updateGoogleUser (Google user 更新)
+ * picture：有新值才覆寫；空字串不覆蓋既有頭像
+ * 多筆同 email／id：更新第一筆，刪除其餘
+ ********************************************************/
+function updateGoogleUser(user) {
+  return withUsersScriptLock_(function () {
+    return updateGoogleUserUnlocked_(user);
+  });
+}
+
+function updateGoogleUserUnlocked_(user) {
   const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
+  const values = sheet.getDataRange().getValues();
   const now = formatDate();
 
   const col = {
     id: getColumnIndex(sheet, "id"),
-    provider: getColumnIndex(sheet, "provider"),
-    lineUserId: getColumnIndex(sheet, "lineUserId"),
     email: getColumnIndex(sheet, "email"),
     name: getColumnIndex(sheet, "name"),
     picture: getColumnIndex(sheet, "picture"),
-    created_at: getColumnIndex(sheet, "created_at"),
     updated_at: getColumnIndex(sheet, "updated_at"),
   };
 
-  const row = new Array(sheet.getLastColumn()).fill("");
+  const email = user && user.email != null ? String(user.email) : "";
+  const id = user && user.id != null ? String(user.id) : "";
+  const matchRows = []; // 1-based sheet row numbers
 
-  row[col.id] = user.id; // google_xxx
-  row[col.provider] = "google";
-  row[col.lineUserId] = ""; // ⭐ Google 永遠空
-  row[col.email] = user.email;
-  row[col.name] = user.name;
-  row[col.picture] = user.picture;
-  row[col.created_at] = now;
-  row[col.updated_at] = now;
+  for (let i = 1; i < values.length; i++) {
+    const rowEmail = col.email > -1 ? String(values[i][col.email] || "") : "";
+    const rowId = col.id > -1 ? String(values[i][col.id] || "") : "";
+    if ((email && rowEmail === email) || (id && rowId === id)) {
+      matchRows.push(i + 1);
+    }
+  }
 
-  sheet.appendRow(row);
+  if (matchRows.length === 0) {
+    return { error: "Google user not found" };
+  }
+
+  const keepRow = matchRows[0];
+  const keepIdx = keepRow - 1;
+
+  if (col.name > -1) {
+    sheet.getRange(keepRow, col.name + 1).setValue(user.name);
+  }
+  if (user.picture && col.picture > -1) {
+    sheet.getRange(keepRow, col.picture + 1).setValue(user.picture);
+  }
+  if (col.updated_at > -1) {
+    sheet.getRange(keepRow, col.updated_at + 1).setValue(now);
+  }
+
+  // 由下往上刪，避免列號位移
+  for (let d = matchRows.length - 1; d >= 1; d--) {
+    sheet.deleteRow(matchRows[d]);
+  }
+
+  const pictureValue = user.picture
+    ? user.picture
+    : col.picture > -1
+      ? values[keepIdx][col.picture]
+      : "";
 
   return {
     success: true,
@@ -182,57 +293,11 @@ function createGoogleUser(user) {
       ...user,
       provider: "google",
       lineUserId: "",
-      created_at: now,
+      picture: pictureValue,
       updated_at: now,
     },
+    deduped: matchRows.length > 1 ? matchRows.length - 1 : 0,
   };
-}
-
-/********************************************************
- * USERS — updateGoogleUser (Google user 更新)
- * picture：有新值才覆寫；空字串不覆蓋既有頭像
- ********************************************************/
-function updateGoogleUser(user) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
-  const values = sheet.getDataRange().getValues();
-  const now = formatDate();
-
-  const col = {
-    email: getColumnIndex(sheet, "email"),
-    name: getColumnIndex(sheet, "name"),
-    picture: getColumnIndex(sheet, "picture"),
-    updated_at: getColumnIndex(sheet, "updated_at"),
-  };
-
-  for (let i = 1; i < values.length; i++) {
-    if (values[i][col.email] === user.email) {
-      const rowIndex = i + 1;
-
-      sheet.getRange(rowIndex, col.name + 1).setValue(user.name);
-      // ⭐ 只在有新 picture 時覆寫，避免清空頭像
-      if (user.picture) {
-        sheet.getRange(rowIndex, col.picture + 1).setValue(user.picture);
-      }
-      sheet.getRange(rowIndex, col.updated_at + 1).setValue(now);
-
-      const pictureValue = user.picture
-        ? user.picture
-        : values[i][col.picture];
-
-      return {
-        success: true,
-        user: {
-          ...user,
-          provider: "google",
-          lineUserId: "",
-          picture: pictureValue,
-          updated_at: now,
-        },
-      };
-    }
-  }
-
-  return { error: "Google user not found" };
 }
 
 /********************************************************
@@ -277,52 +342,70 @@ function checkLineUser(userId) {
 
 /********************************************************
  * USERS — createLineUser (Line Only)
- * 使用 LINE id 當 primary key（沒有 email）
+ * 寫前再查 id；已存在 → update（含清重複），否則 appendRow
  ********************************************************/
 function createLineUser(user) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
-  const now = formatDate();
+  return withUsersScriptLock_(function () {
+    const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
+    const values = sheet.getDataRange().getValues();
+    const colId = getColumnIndex(sheet, "id");
+    const id = user && user.id != null ? String(user.id) : "";
 
-  const col = {
-    id: getColumnIndex(sheet, "id"),
-    provider: getColumnIndex(sheet, "provider"),
-    lineUserId: getColumnIndex(sheet, "lineUserId"),
-    email: getColumnIndex(sheet, "email"),
-    name: getColumnIndex(sheet, "name"),
-    picture: getColumnIndex(sheet, "picture"),
-    created_at: getColumnIndex(sheet, "created_at"),
-    updated_at: getColumnIndex(sheet, "updated_at"),
-  };
+    if (id && colId > -1) {
+      for (let i = 1; i < values.length; i++) {
+        if (String(values[i][colId] || "") === id) {
+          return updateLineUserUnlocked_(user);
+        }
+      }
+    }
 
-  const row = new Array(sheet.getLastColumn()).fill("");
+    const now = formatDate();
+    const col = {
+      id: getColumnIndex(sheet, "id"),
+      provider: getColumnIndex(sheet, "provider"),
+      lineUserId: getColumnIndex(sheet, "lineUserId"),
+      email: getColumnIndex(sheet, "email"),
+      name: getColumnIndex(sheet, "name"),
+      picture: getColumnIndex(sheet, "picture"),
+      created_at: getColumnIndex(sheet, "created_at"),
+      updated_at: getColumnIndex(sheet, "updated_at"),
+    };
 
-  row[col.id] = user.id; // line_xxx
-  row[col.provider] = "line";
-  row[col.lineUserId] = user.lineUserId; // 真正 LINE userId
-  row[col.email] = ""; // LINE 沒 email
-  row[col.name] = user.name;
-  row[col.picture] = user.picture;
-  row[col.created_at] = now;
-  row[col.updated_at] = now;
+    const row = new Array(sheet.getLastColumn()).fill("");
+    if (col.id > -1) row[col.id] = user.id;
+    if (col.provider > -1) row[col.provider] = "line";
+    if (col.lineUserId > -1) row[col.lineUserId] = user.lineUserId;
+    if (col.email > -1) row[col.email] = "";
+    if (col.name > -1) row[col.name] = user.name;
+    if (col.picture > -1) row[col.picture] = user.picture;
+    if (col.created_at > -1) row[col.created_at] = now;
+    if (col.updated_at > -1) row[col.updated_at] = now;
 
-  sheet.appendRow(row);
+    sheet.appendRow(row);
 
-  return {
-    success: true,
-    user: {
-      ...user,
-      provider: "line",
-      created_at: now,
-      updated_at: now,
-    },
-  };
+    return {
+      success: true,
+      user: {
+        ...user,
+        provider: "line",
+        created_at: now,
+        updated_at: now,
+      },
+    };
+  });
 }
 
 /********************************************************
  * USERS — updateLineUser (Line Only)
- * 使用 LINE id 當 primary key（沒有 email）
+ * 多筆同 id：更新第一筆，刪除其餘
  ********************************************************/
 function updateLineUser(user) {
+  return withUsersScriptLock_(function () {
+    return updateLineUserUnlocked_(user);
+  });
+}
+
+function updateLineUserUnlocked_(user) {
   const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
   const values = sheet.getDataRange().getValues();
   const now = formatDate();
@@ -334,26 +417,43 @@ function updateLineUser(user) {
     updated_at: getColumnIndex(sheet, "updated_at"),
   };
 
+  const id = user && user.id != null ? String(user.id) : "";
+  const matchRows = [];
+
   for (let i = 1; i < values.length; i++) {
-    if (String(values[i][col.id]) === String(user.id)) {
-      const rowIndex = i + 1;
-
-      sheet.getRange(rowIndex, col.name + 1).setValue(user.name);
-      sheet.getRange(rowIndex, col.picture + 1).setValue(user.picture);
-      sheet.getRange(rowIndex, col.updated_at + 1).setValue(now);
-
-      return {
-        success: true,
-        user: {
-          ...user,
-          provider: "line",
-          updated_at: now,
-        },
-      };
+    if (col.id > -1 && String(values[i][col.id] || "") === id) {
+      matchRows.push(i + 1);
     }
   }
 
-  return { error: "LINE user not found" };
+  if (matchRows.length === 0) {
+    return { error: "LINE user not found" };
+  }
+
+  const keepRow = matchRows[0];
+  if (col.name > -1) {
+    sheet.getRange(keepRow, col.name + 1).setValue(user.name);
+  }
+  if (col.picture > -1) {
+    sheet.getRange(keepRow, col.picture + 1).setValue(user.picture);
+  }
+  if (col.updated_at > -1) {
+    sheet.getRange(keepRow, col.updated_at + 1).setValue(now);
+  }
+
+  for (let d = matchRows.length - 1; d >= 1; d--) {
+    sheet.deleteRow(matchRows[d]);
+  }
+
+  return {
+    success: true,
+    user: {
+      ...user,
+      provider: "line",
+      updated_at: now,
+    },
+    deduped: matchRows.length > 1 ? matchRows.length - 1 : 0,
+  };
 }
 
 /********************************************************
@@ -811,6 +911,125 @@ function listEvents() {
   }
 
   return { ok: true, success: true, events: events };
+}
+
+/********************************************************
+ * 遷移用 — listAllUsers / listAllFavorites / listAllPushTokens
+ ********************************************************/
+function cellStr(v) {
+  if (v === null || v === undefined) return "";
+  if (v instanceof Date) return v.toISOString();
+  return String(v);
+}
+
+function listAllUsers() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("USERS");
+  if (!sheet) return { ok: true, success: true, users: [] };
+  const values = sheet.getDataRange().getValues();
+  if (!values || values.length < 2) return { ok: true, success: true, users: [] };
+
+  const col = {
+    id: getColumnIndex(sheet, "id"),
+    provider: getColumnIndex(sheet, "provider"),
+    lineUserId: getColumnIndex(sheet, "lineUserId"),
+    email: getColumnIndex(sheet, "email"),
+    name: getColumnIndex(sheet, "name"),
+    picture: getColumnIndex(sheet, "picture"),
+    created_at: getColumnIndex(sheet, "created_at"),
+    updated_at: getColumnIndex(sheet, "updated_at"),
+  };
+
+  const users = [];
+  for (let i = 1; i < values.length; i++) {
+    const id = col.id > -1 ? cellStr(values[i][col.id]) : "";
+    if (!id) continue;
+    users.push({
+      id: id,
+      provider: col.provider > -1 ? cellStr(values[i][col.provider]) : "",
+      lineUserId: col.lineUserId > -1 ? cellStr(values[i][col.lineUserId]) : "",
+      email: col.email > -1 ? cellStr(values[i][col.email]) : "",
+      name: col.name > -1 ? cellStr(values[i][col.name]) : "",
+      picture: col.picture > -1 ? cellStr(values[i][col.picture]) : "",
+      created_at: col.created_at > -1 ? cellStr(values[i][col.created_at]) : "",
+      updated_at: col.updated_at > -1 ? cellStr(values[i][col.updated_at]) : "",
+    });
+  }
+  return { ok: true, success: true, users: users };
+}
+
+function listAllFavorites() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("USER_FAVORITES");
+  if (!sheet) return { ok: true, success: true, favorites: [] };
+  const values = sheet.getDataRange().getValues();
+  if (!values || values.length < 2) {
+    return { ok: true, success: true, favorites: [] };
+  }
+
+  const col = {
+    id: getColumnIndex(sheet, "id"),
+    userId: getColumnIndex(sheet, "userId"),
+    eventId: getColumnIndex(sheet, "eventId"),
+    eventTitle: getColumnIndex(sheet, "eventTitle"),
+    eventStartDate: getColumnIndex(sheet, "eventStartDate"),
+    eventEndDate: getColumnIndex(sheet, "eventEndDate"),
+    eventLocation: getColumnIndex(sheet, "eventLocation"),
+    eventUrl: getColumnIndex(sheet, "eventUrl"),
+    imageUrl: getColumnIndex(sheet, "imageUrl"),
+    createdAt: getColumnIndex(sheet, "createdAt"),
+  };
+
+  const favorites = [];
+  for (let i = 1; i < values.length; i++) {
+    const userId = col.userId > -1 ? cellStr(values[i][col.userId]) : "";
+    const eventId = col.eventId > -1 ? cellStr(values[i][col.eventId]) : "";
+    if (!userId || !eventId) continue;
+    favorites.push({
+      id: col.id > -1 ? cellStr(values[i][col.id]) : "",
+      userId: userId,
+      eventId: eventId,
+      eventTitle: col.eventTitle > -1 ? cellStr(values[i][col.eventTitle]) : "",
+      eventStartDate:
+        col.eventStartDate > -1 ? cellStr(values[i][col.eventStartDate]) : "",
+      eventEndDate:
+        col.eventEndDate > -1 ? cellStr(values[i][col.eventEndDate]) : "",
+      eventLocation:
+        col.eventLocation > -1 ? cellStr(values[i][col.eventLocation]) : "",
+      eventUrl: col.eventUrl > -1 ? cellStr(values[i][col.eventUrl]) : "",
+      imageUrl: col.imageUrl > -1 ? cellStr(values[i][col.imageUrl]) : "",
+      createdAt: col.createdAt > -1 ? cellStr(values[i][col.createdAt]) : "",
+    });
+  }
+  return { ok: true, success: true, favorites: favorites };
+}
+
+function listAllPushTokens() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("DEVICE_PUSH_TOKENS");
+  if (!sheet) return { ok: true, success: true, tokens: [] };
+  const values = sheet.getDataRange().getValues();
+  if (!values || values.length < 2) return { ok: true, success: true, tokens: [] };
+
+  const col = {
+    expoPushToken: getColumnIndex(sheet, "expoPushToken"),
+    platform: getColumnIndex(sheet, "platform"),
+    userId: getColumnIndex(sheet, "userId"),
+    updatedAt: getColumnIndex(sheet, "updatedAt"),
+    createdAt: getColumnIndex(sheet, "createdAt"),
+  };
+
+  const tokens = [];
+  for (let i = 1; i < values.length; i++) {
+    const token =
+      col.expoPushToken > -1 ? cellStr(values[i][col.expoPushToken]) : "";
+    if (!token) continue;
+    tokens.push({
+      expoPushToken: token,
+      platform: col.platform > -1 ? cellStr(values[i][col.platform]) : "",
+      userId: col.userId > -1 ? cellStr(values[i][col.userId]) : "",
+      updatedAt: col.updatedAt > -1 ? cellStr(values[i][col.updatedAt]) : "",
+      createdAt: col.createdAt > -1 ? cellStr(values[i][col.createdAt]) : "",
+    });
+  }
+  return { ok: true, success: true, tokens: tokens };
 }
 
 // 以下收藏陣列寫法，不建議，gas直接抓一筆一筆比較快

@@ -1,0 +1,13 @@
+name = "cyc-data-api"
+main = "src/index.ts"
+compatibility_date = "2025-02-24"
+
+[[d1_databases]]
+binding = "cyc_data"
+database_name = "cyc-data"
+# 部署後用 `wrangler d1 create cyc-data` 取得 id 再填入
+database_id = "c5a9011b-4f0b-4af0-bcb8-5f90697f32a4"
+
+[vars]
+# 正式 secret 請用: wrangler secret put DATA_API_SECRET
+# DATA_API_SECRET 不寫在這裡

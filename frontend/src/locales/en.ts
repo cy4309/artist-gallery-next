@@ -17,7 +17,7 @@ export const en = {
     login: "Login",
   },
   footer: {
-    title: "© 2022 CYC Zine",
+    title: "2022 CYC Zine",
     privacy: "Privacy Policy",
     terms: "Terms of Use",
   },

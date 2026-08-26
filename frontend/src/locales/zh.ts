@@ -17,7 +17,7 @@ export const zh = {
     login: "登入",
   },
   footer: {
-    title: "© 2022 CYC 獨立雜誌",
+    title: "2022 CYC 獨立雜誌",
     privacy: "隱私權政策",
     terms: "使用條款",
   },

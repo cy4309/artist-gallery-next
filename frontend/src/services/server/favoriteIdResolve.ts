@@ -1,12 +1,12 @@
 import { favoriteIdAliases } from "@/utils/eventId";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
-import { postToGas } from "@/services/server/gasClient";
+import { postToDataBackend } from "@/services/server/dataBackendClient";
 
 async function checkFavoriteRaw(
   userId: string,
   eventId: string,
 ): Promise<boolean> {
-  const data = await postToGas<{ isFavorite?: boolean }>({
+  const data = await postToDataBackend<{ isFavorite?: boolean }>({
     action: GAS_ACTION.CHECK_FAVORITE,
     userId,
     eventId,

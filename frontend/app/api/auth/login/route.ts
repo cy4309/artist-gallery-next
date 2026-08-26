@@ -5,12 +5,11 @@ import { NextResponse, NextRequest } from "next/server";
 import axios from "axios";
 import { setUserCookies } from "@/utils/setUserCookies";
 import { UserInitPayload } from "@/types/user";
-import { GAS_ACTION } from "@/types/gas/actionConstants";
 import { isAllowedAppReturnTo } from "@/utils/appReturnTo";
+import { upsertGoogleUser } from "@/services/server/upsertGoogleUser";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const GAS_URL = process.env.GAS_URL!;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 const isProd = process.env.NODE_ENV === "production"; // cookies本地secure: false, 上線secure: ture
 
@@ -112,41 +111,8 @@ export async function GET(req: NextRequest) {
       picture: googleUser.picture,
     };
 
-    // STEP 4 — Sync to GAS (check or create)
-    // 1️⃣ 檢查 Google user（用 email）
-    const checkRes = await axios.post(GAS_URL, {
-      action: GAS_ACTION.CHECK_GOOGLE_USER,
-      email: normalizedUser.email,
-    });
-
-    let finalUser = normalizedUser;
-
-    if (!checkRes.data.exists) {
-      const createRes = await axios.post(GAS_URL, {
-        action: GAS_ACTION.CREATE_GOOGLE_USER,
-        user: normalizedUser,
-      });
-
-      if (createRes.data?.user) {
-        finalUser = {
-          ...createRes.data.user,
-          picture: createRes.data.user.picture || normalizedUser.picture,
-        };
-      }
-    } else {
-      const updateRes = await axios.post(GAS_URL, {
-        action: GAS_ACTION.UPDATE_GOOGLE_USER,
-        user: normalizedUser,
-      });
-
-      if (updateRes.data?.user) {
-        finalUser = {
-          ...updateRes.data.user,
-          // GAS 若覆蓋掉 picture，保留 Google 原始頭像
-          picture: updateRes.data.user.picture || normalizedUser.picture,
-        };
-      }
-    }
+    // STEP 4 — Sync user to data backend (check or create)
+    let finalUser = await upsertGoogleUser(normalizedUser);
 
     // 雙保險：最終一定要有 Google picture
     if (!finalUser.picture && normalizedUser.picture) {

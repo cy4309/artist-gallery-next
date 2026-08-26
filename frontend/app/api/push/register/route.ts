@@ -8,8 +8,10 @@ import type {
   RegisterPushTokenPayload,
 } from "@/types/push/register";
 import { getCurrentUser } from "@/services/server/authService";
-
-const GAS_URL = process.env.GAS_URL;
+import {
+  getDataBackend,
+  postToDataBackend,
+} from "@/services/server/dataBackendClient";
 
 function isValidPlatform(value: unknown): value is PushPlatform {
   return value === "ios" || value === "android";
@@ -36,7 +38,8 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser();
     const userId = body.userId ?? user?.id;
 
-    if (!GAS_URL) {
+    const backend = getDataBackend();
+    if (backend === "gas" && !process.env.GAS_URL) {
       console.warn("[/api/push/register] GAS_URL not set, accepting in dev");
       return NextResponse.json({
         success: true,
@@ -44,25 +47,10 @@ export async function POST(req: NextRequest) {
         stub: true,
       });
     }
-
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: GAS_ACTION.REGISTER_PUSH_TOKEN,
-        userId: userId ?? null,
-        expoPushToken: body.expoPushToken,
-        platform: body.platform,
-      }),
-    });
-
-    const gasData = await res.json().catch(() => null);
-
-    if (!res.ok || !gasData?.success) {
-      console.warn("[/api/push/register] GAS not ready, accepting token", {
-        status: res.status,
-        gasData,
-      });
+    if (backend === "cloudflare" && !process.env.CF_DATA_API_URL) {
+      console.warn(
+        "[/api/push/register] CF_DATA_API_URL not set, accepting in dev",
+      );
       return NextResponse.json({
         success: true,
         created: true,
@@ -70,10 +58,40 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      created: Boolean(gasData.created),
-    });
+    try {
+      const gasData = await postToDataBackend<{
+        success?: boolean;
+        created?: boolean;
+      }>({
+        action: GAS_ACTION.REGISTER_PUSH_TOKEN,
+        userId: userId ?? null,
+        expoPushToken: body.expoPushToken,
+        platform: body.platform,
+      });
+
+      if (!gasData?.success) {
+        console.warn("[/api/push/register] backend not ready, accepting", {
+          gasData,
+        });
+        return NextResponse.json({
+          success: true,
+          created: true,
+          stub: true,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        created: Boolean(gasData.created),
+      });
+    } catch (err) {
+      console.warn("[/api/push/register] backend error, accepting token", err);
+      return NextResponse.json({
+        success: true,
+        created: true,
+        stub: true,
+      });
+    }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal error";
     console.error("[/api/push/register]", err);

@@ -21,6 +21,22 @@ export const GAS_ACTION = {
   // events sheet
   REPLACE_EVENTS: "replaceEvents",
   LIST_EVENTS: "listEvents",
+
+  // migration dumps (GAS → CF)
+  LIST_ALL_USERS: "listAllUsers",
+  LIST_ALL_FAVORITES: "listAllFavorites",
+  LIST_ALL_PUSH_TOKENS: "listAllPushTokens",
+  REPLACE_USERS: "replaceUsers",
+  REPLACE_FAVORITES: "replaceFavorites",
+  REPLACE_PUSH_TOKENS: "replacePushTokens",
+
+  // admin (Cloudflare D1；GAS 可能不支援)
+  UPSERT_EVENT: "upsertEvent",
+  DELETE_EVENT: "deleteEvent",
+  ADMIN_STATS: "adminStats",
+  LIST_USERS: "listUsers",
+  LIST_FAVORITES_ADMIN: "listFavoritesAdmin",
+  LIST_PUSH_TOKENS: "listPushTokens",
 } as const;
 
 // 👉 所有合法 action 字串 union

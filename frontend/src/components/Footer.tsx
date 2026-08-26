@@ -8,7 +8,15 @@ const Footer = () => {
   return (
     <>
       <footer className="z-50 w-full flex justify-center items-center font-nunito text-center text-xs text-primaryGray dark:text-primaryGray/40">
-        <p>{t.footer.title}</p>
+        <p>
+          <Link
+            href="/admin"
+            className="cursor-default no-underline text-inherit"
+          >
+            ©
+          </Link>{" "}
+          {t.footer.title}
+        </p>
         <Link href="/privacy" className="ml-1 cursor-pointer hover:opacity-70">
           | {t.footer.privacy}
         </Link>
