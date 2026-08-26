@@ -454,7 +454,7 @@ const Carousel = ({
                     <img
                       loading="eager"
                       decoding="async"
-                      className="w-full pointer-events-none"
+                      className="h-full w-full object-cover object-center pointer-events-none"
                       draggable={false}
                       src={
                         item.imageUrl?.trim()

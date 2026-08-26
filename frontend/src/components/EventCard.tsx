@@ -39,7 +39,7 @@ export default function EventCard({
           src={item.imageUrl || "/images/placeholder-no-image.png"}
           alt={item.eventTitle || "活動圖片"}
           className={`
-            w-full h-full object-cover
+            h-full w-full object-cover object-center
             transition-transform duration-500
             ${ended ? "grayscale" : "group-hover:scale-105"}
           `}

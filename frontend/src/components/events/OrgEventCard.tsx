@@ -46,7 +46,7 @@ export default function OrgEventCard({ event, onBeforeNavigate }: OrgEventCardPr
           decoding="async"
           src={imageUrl}
           alt={event.actName || "活動圖片"}
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover object-center"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE;
           }}
