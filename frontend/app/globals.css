@@ -42,6 +42,15 @@ body {
   font-weight: 700;
 }
 
+/* 內容區圖片：降低右鍵／拖曳／長按存圖（加 data-allow-download 可排除） */
+main img:not([data-allow-download]),
+main picture img:not([data-allow-download]) {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}
+
 .font-dela {
   font-family: var(--font-dela-gothic);
   font-weight: 500;

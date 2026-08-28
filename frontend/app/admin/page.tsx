@@ -208,51 +208,83 @@ export default function AdminPage() {
     setStats(null);
   };
 
-  const loadStats = async () => {
-    setBusy("stats");
-    const res = await fetch("/api/admin/stats");
+  const loadStats = async (opts?: { manageBusy?: boolean }) => {
+    const manageBusy = opts?.manageBusy !== false;
+    if (manageBusy) setBusy("stats");
+    const res = await fetch("/api/admin/stats", { cache: "no-store" });
     const data = await res.json();
-    setBusy("");
+    if (manageBusy) setBusy("");
     setBackend(String(data.backend || backend));
     setStats(data.stats || null);
     setNote(data.note || "");
+    if (!res.ok) {
+      setMessage(data.error || "統計讀取失敗");
+    }
   };
 
-  const loadEvents = async (q = query) => {
-    setBusy("events");
-    const res = await fetch(`/api/admin/events?q=${encodeURIComponent(q)}`);
+  const loadEvents = async (q = query, opts?: { manageBusy?: boolean }) => {
+    const manageBusy = opts?.manageBusy !== false;
+    if (manageBusy) setBusy("events");
+    const res = await fetch(`/api/admin/events?q=${encodeURIComponent(q)}`, {
+      cache: "no-store",
+    });
     const data = await res.json();
-    setBusy("");
+    if (manageBusy) setBusy("");
     setEvents(data.events || []);
+    if (data.error) setMessage(data.error);
   };
 
-  const loadUsers = async (q = query) => {
-    setBusy("users");
-    const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`);
+  const loadUsers = async (q = query, opts?: { manageBusy?: boolean }) => {
+    const manageBusy = opts?.manageBusy !== false;
+    if (manageBusy) setBusy("users");
+    const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`, {
+      cache: "no-store",
+    });
     const data = await res.json();
-    setBusy("");
+    if (manageBusy) setBusy("");
     setUsers(data.users || []);
     if (data.error) setMessage(data.error);
   };
 
-  const loadFavorites = async (q = query) => {
-    setBusy("favorites");
-    const res = await fetch(`/api/admin/favorites?q=${encodeURIComponent(q)}`);
+  const loadFavorites = async (q = query, opts?: { manageBusy?: boolean }) => {
+    const manageBusy = opts?.manageBusy !== false;
+    if (manageBusy) setBusy("favorites");
+    const res = await fetch(`/api/admin/favorites?q=${encodeURIComponent(q)}`, {
+      cache: "no-store",
+    });
     const data = await res.json();
-    setBusy("");
+    if (manageBusy) setBusy("");
     setFavorites(data.favorites || []);
     if (data.error) setMessage(data.error);
   };
 
-  const loadTokens = async (q = query) => {
-    setBusy("push");
+  const loadTokens = async (q = query, opts?: { manageBusy?: boolean }) => {
+    const manageBusy = opts?.manageBusy !== false;
+    if (manageBusy) setBusy("push");
     const res = await fetch(
       `/api/admin/push-tokens?q=${encodeURIComponent(q)}`,
+      { cache: "no-store" },
     );
     const data = await res.json();
-    setBusy("");
+    if (manageBusy) setBusy("");
     setTokens(data.tokens || []);
     if (data.error) setMessage(data.error);
+  };
+
+  const refreshAdmin = async () => {
+    if (busy) return;
+    setBusy("refresh");
+    setMessage("");
+    const silent = { manageBusy: false as const };
+    try {
+      await loadStats(silent);
+      if (tab === "events") await loadEvents(query, silent);
+      if (tab === "users") await loadUsers(query, silent);
+      if (tab === "favorites") await loadFavorites(query, silent);
+      if (tab === "push") await loadTokens(query, silent);
+    } finally {
+      setBusy("");
+    }
   };
 
   useEffect(() => {
@@ -388,7 +420,7 @@ export default function AdminPage() {
     <div className="mx-auto w-full max-w-full min-w-0 overflow-x-hidden space-y-6 pb-16">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">CF資料後台</h1>
+          <h1 className="text-2xl font-bold">資料後台</h1>
           <p className="text-sm text-gray-500">
             backend: {backend || "—"} · {busy ? `busy: ${busy}` : "ready"}
           </p>
@@ -396,13 +428,13 @@ export default function AdminPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => void loadStats()}
+            onClick={() => void refreshAdmin()}
             disabled={Boolean(busy)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border-2 border-slate-300 text-base disabled:opacity-40 dark:border-slate-600"
-            aria-label="重新整理統計"
-            title="重新整理統計"
+            aria-label="重新整理"
+            title="重新整理目前分頁與統計"
           >
-            <ReloadOutlined spin={busy === "stats"} />
+            <ReloadOutlined spin={busy === "refresh"} />
           </button>
           <button
             type="button"

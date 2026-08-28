@@ -8,6 +8,7 @@ import { LocaleProvider } from "@/locales/contexts/LocaleContext";
 import LiffGate from "@/components/LiffGate";
 import ClientOnly from "@/components/ClientOnly";
 import AnalyticsListener from "@/components/AnalyticsListener";
+import ImageProtection from "@/components/ImageProtection";
 
 export default function ClientRoot({
   children,
@@ -24,6 +25,7 @@ export default function ClientRoot({
             <Suspense fallback={null}>
               <AnalyticsListener />
             </Suspense>
+            <ImageProtection />
             {/* ⭐ UI 真正 client-only */}
             <ClientOnly>{children}</ClientOnly>
           </UserProvider>

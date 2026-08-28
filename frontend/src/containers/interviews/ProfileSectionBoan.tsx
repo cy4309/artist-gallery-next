@@ -1,14 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Card } from "antd";
 import { motion, useScroll, useTransform } from "framer-motion";
-import Lenis from "@studio-freight/lenis";
 import BaseButton from "@/components/BaseButton";
 import { showConfirmSwal } from "@/utils/notification";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { useMainScrollContainerRef } from "@/hooks/useMainScrollContainerRef";
+import { useMainLenis } from "@/hooks/useMainLenis";
 
 export default function ProfileSectionBoan() {
   const { t } = useLocale();
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const { ref: scrollContainerRef, ready: scrollContainerReady } =
+    useMainScrollContainerRef();
+
+  useMainLenis();
 
   /**
    * ⭐ 關鍵：用 scrollYProgress（0 → 1）
@@ -16,6 +21,7 @@ export default function ProfileSectionBoan() {
    * end start = section 頂部離開 viewport
    */
   const { scrollYProgress } = useScroll({
+    ...(scrollContainerReady ? { container: scrollContainerRef } : {}),
     target: sectionRef,
     offset: ["start end", "end start"],
   });
@@ -30,38 +36,18 @@ export default function ProfileSectionBoan() {
   const imageY = useTransform(scrollYProgress, [0, 1], [-240, 80]);
   const cardY = useTransform(scrollYProgress, [0, 1], [240, -80]);
 
-  /**
-   * Lenis smooth scroll（不影響 Framer Motion）
-   */
-  useEffect(() => {
-    const lenis = new Lenis({
-      lerp: 0.08, // 數值越小越滑
-    });
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
-
   return (
     <section
       ref={sectionRef}
       className="
         relative
         w-full
-        h-[120vh]            /* ⭐ 一定要 > 100vh */
+        min-h-[120vh]            /* ⭐ 至少一屏高，內容多時可再撐高 */
         flex
         flex-col
         items-center
         justify-center
-        overflow-hidden
+        py-12 md:py-16
       "
     >
       {/* -------- 圖片層（背景感） -------- */}

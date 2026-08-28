@@ -22,7 +22,7 @@ export default function InterviewDetail() {
   const ProfileSection = PROFILE_SECTION_MAP[person.slug];
 
   return (
-    <div className="w-full min-h-dvh bg-[url('/images/texture-1.jpg')]">
+    <div className="w-full min-h-max bg-[url('/images/texture-1.jpg')] bg-repeat bg-top text-white">
       <BackButton className="m-4 text-white" />
       {/* Hero */}
       {/* <motion.div

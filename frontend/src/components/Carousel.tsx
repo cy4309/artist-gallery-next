@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { motion, useMotionValue, animate } from "framer-motion";
+import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getCultureImageUrl } from "@/utils/imageProxy";
@@ -369,6 +370,47 @@ const Carousel = ({
     snapToIndex(nextIndex);
   };
 
+  const realIndex = toRealIndex(currentIndex);
+  const canGoPrev = !isSingle && (canLoop || realIndex > 0);
+  const canGoNext = !isSingle && (canLoop || realIndex < items.length - 1);
+
+  const goBy = (delta: number) => {
+    if (isSingle) return;
+
+    const idx = currentIndexRef.current;
+    const maxIndex = carouselItems.length - 1;
+    const nextIndex = Math.min(Math.max(idx + delta, 0), maxIndex);
+    if (nextIndex === idx) return;
+
+    snapToIndex(nextIndex);
+  };
+
+  const navButtonClass =
+    "flex shrink-0 items-center justify-center w-10 h-10 rounded-full border-2 border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90 text-primary dark:text-white shadow-md transition-opacity hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30";
+
+  const dotClass = (active: boolean) =>
+    `h-2 w-2 rounded-full cursor-pointer transition ${
+      active
+        ? round
+          ? "bg-white"
+          : "bg-[#333]"
+        : round
+          ? "bg-[#555]"
+          : "bg-[rgba(51,51,51,0.4)]"
+    }`;
+
+  const renderDots = () =>
+    items.map((_, index) => (
+      <motion.div
+        key={index}
+        className={dotClass(toRealIndex(currentIndex) === index)}
+        animate={{
+          scale: toRealIndex(currentIndex) === index ? 1.2 : 1,
+        }}
+        onClick={() => snapToIndex(toInternalIndex(index))}
+      />
+    ));
+
   return (
     <div
       ref={containerRef}
@@ -382,6 +424,33 @@ const Carousel = ({
         ...(round && { height: `${dynamicWidth}px` }),
       }}
     >
+      {!isSingle && !round && (
+        <div
+          className="mb-3 hidden w-full lg:flex items-center justify-between gap-3"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            aria-label="上一則活動"
+            disabled={!canGoPrev}
+            onClick={() => goBy(-1)}
+            className={navButtonClass}
+          >
+            <LeftOutlined />
+          </button>
+          <div className="flex w-1/3 justify-between">{renderDots()}</div>
+          <button
+            type="button"
+            aria-label="下一則活動"
+            disabled={!canGoNext}
+            onClick={() => goBy(1)}
+            className={navButtonClass}
+          >
+            <RightOutlined />
+          </button>
+        </div>
+      )}
+
       <div
         className="overflow-hidden cursor-grab active:cursor-grabbing select-none"
         style={{
@@ -527,28 +596,13 @@ const Carousel = ({
       {!isSingle && (
         <div
           className={`flex w-full justify-center ${
-            round ? "absolute z-20 bottom-12 left-1/2 -translate-x-1/2" : ""
+            round
+              ? "absolute z-20 bottom-12 left-1/2 -translate-x-1/2"
+              : "lg:hidden"
           }`}
         >
           <div className="mt-4 flex w-[150px] justify-between px-8">
-            {items.map((_, index) => (
-              <motion.div
-                key={index}
-                className={`h-2 w-2 rounded-full transition ${
-                  toRealIndex(currentIndex) === index
-                    ? round
-                      ? "bg-white"
-                      : "bg-[#333]"
-                    : round
-                      ? "bg-[#555]"
-                      : "bg-[rgba(51,51,51,0.4)]"
-                }`}
-                animate={{
-                  scale: toRealIndex(currentIndex) === index ? 1.2 : 1,
-                }}
-                onClick={() => snapToIndex(toInternalIndex(index))}
-              />
-            ))}
+            {renderDots()}
           </div>
         </div>
       )}

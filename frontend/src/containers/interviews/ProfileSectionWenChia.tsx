@@ -1,17 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Card } from "antd";
 import { motion, useScroll, useTransform } from "framer-motion";
-import Lenis from "@studio-freight/lenis";
 import BaseButton from "@/components/BaseButton";
 import { showConfirmSwal } from "@/utils/notification";
 import { useLocale } from "@/locales/contexts/LocaleContext";
+import { useMainScrollContainerRef } from "@/hooks/useMainScrollContainerRef";
+import { useMainLenis } from "@/hooks/useMainLenis";
 
 export default function ProfileSectionWenChia() {
   const { t } = useLocale();
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const { ref: scrollContainerRef, ready: scrollContainerReady } =
+    useMainScrollContainerRef();
   const iframeAutoMutedPlay = `?autoplay=1&mute=1`;
 
+  useMainLenis();
+
   const { scrollYProgress } = useScroll({
+    ...(scrollContainerReady ? { container: scrollContainerRef } : {}),
     target: sectionRef,
     offset: ["start end", "end start"],
   });
@@ -19,35 +25,18 @@ export default function ProfileSectionWenChia() {
   const imageY = useTransform(scrollYProgress, [0, 1], [-240, 80]);
   const cardY = useTransform(scrollYProgress, [0, 1], [240, -80]);
 
-  useEffect(() => {
-    const lenis = new Lenis({
-      lerp: 0.08,
-    });
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
-
   return (
     <section
       ref={sectionRef}
       className="
         relative
         w-full
-        h-[120vh]
+        min-h-[120vh]
         flex
         flex-col
         items-center
         justify-center
-        overflow-hidden
+        py-12 md:py-16
       "
     >
       {/* -------- 圖片層（背景感） -------- */}
