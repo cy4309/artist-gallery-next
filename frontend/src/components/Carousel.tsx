@@ -455,7 +455,9 @@ const Carousel = ({
         className="overflow-hidden cursor-grab active:cursor-grabbing select-none"
         style={{
           touchAction: "pan-x",
-          ...(!round && slideHeight != null ? { height: slideHeight } : {}),
+          ...(!round && slideHeight != null
+            ? { height: slideHeight, maxHeight: "85vh" }
+            : {}),
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -477,17 +479,18 @@ const Carousel = ({
               ref={(el) => {
                 itemRefs.current[index] = el;
               }}
-              className={`relative shrink-0 flex flex-col h-auto ${
+              className={`relative shrink-0 flex flex-col h-auto w-full min-w-0 overflow-hidden ${
                 round
                   ? "items-center justify-center text-center bg-[#060606]"
                   : "items-start bg-[#222] border border-[#222] rounded-xl"
               }`}
               style={{
                 width: itemWidth,
+                maxWidth: itemWidth,
                 ...(round && { height: itemWidth, borderRadius: "50%" }),
               }}
             >
-              <ul className="p-4 flex flex-col justify-center items-center gap-2 text-white">
+              <ul className="w-full min-w-0 p-4 flex flex-col justify-center items-center gap-2 text-white">
                 <div
                   className="w-full flex justify-between items-center mb-4 text-sm gap-2"
                   onPointerDown={(e) => e.stopPropagation()}
@@ -511,19 +514,21 @@ const Carousel = ({
                   />
                 </div>
 
-                <li className="font-black text-lg">{item.actName}</li>
-                <li className="text-sm">
+                <li className="font-black text-lg break-words">
+                  {item.actName}
+                </li>
+                <li className="text-sm break-words">
                   {formatDateSmart(item.startTime)} -{" "}
                   {formatDateSmart(item.endTime)}
                 </li>
-                <li className="text-sm">{item.address}</li>
+                <li className="text-sm break-words">{item.address}</li>
 
-                <li className="w-full">
-                  <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
+                <li className="w-full min-w-0 shrink-0">
+                  <div className="relative w-full min-w-0 aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
                     <img
                       loading="eager"
                       decoding="async"
-                      className="h-full w-full object-cover object-center pointer-events-none"
+                      className="absolute inset-0 h-full w-full max-h-full max-w-full object-cover object-center pointer-events-none"
                       draggable={false}
                       src={
                         item.imageUrl?.trim()
@@ -539,7 +544,7 @@ const Carousel = ({
                   </div>
                 </li>
 
-                <li className="text-xs leading-6 whitespace-pre-wrap">
+                <li className="w-full min-w-0 text-xs leading-6 line-clamp-6 break-words">
                   {item.description}
                 </li>
 

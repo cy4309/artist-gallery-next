@@ -32,14 +32,14 @@ export default function EventCard({
       `}
     >
       {/* Image */}
-      <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
+      <div className="relative w-full min-w-0 aspect-[16/9] overflow-hidden bg-gray-700 rounded-md">
         <img
           loading="lazy"
           decoding="async"
           src={item.imageUrl || "/images/placeholder-no-image.png"}
           alt={item.eventTitle || "活動圖片"}
           className={`
-            h-full w-full object-cover object-center
+            absolute inset-0 h-full w-full max-h-full max-w-full object-cover object-center
             transition-transform duration-500
             ${ended ? "grayscale" : "group-hover:scale-105"}
           `}

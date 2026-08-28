@@ -40,13 +40,13 @@ export default function OrgEventCard({ event, onBeforeNavigate }: OrgEventCardPr
       onClick={() => onBeforeNavigate?.()}
       className="block rounded-2xl overflow-hidden border-[3px] border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90 backdrop-blur-md transition-opacity hover:opacity-90 active:opacity-80"
     >
-      <div className="relative w-full aspect-[16/9] overflow-hidden bg-gray-200 dark:bg-gray-700">
+      <div className="relative w-full min-w-0 aspect-[16/9] overflow-hidden bg-gray-200 dark:bg-gray-700">
         <img
           loading="lazy"
           decoding="async"
           src={imageUrl}
           alt={event.actName || "活動圖片"}
-          className="h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full max-h-full max-w-full object-cover object-center"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE;
           }}

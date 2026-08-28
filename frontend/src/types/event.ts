@@ -1,5 +1,8 @@
 export type EventSource = "culture" | "ntpc";
 
+/** 活動圖片來源：official=API 原圖；og=官網 og:image；search=關鍵字搜圖（Phase 2） */
+export type EventImageSource = "official" | "og" | "search";
+
 /** 統一活動格式（多來源整合後） */
 export interface CanonicalEvent {
   id: string;
@@ -15,6 +18,7 @@ export interface CanonicalEvent {
   description: string;
   website: string;
   imageUrl: string;
+  imageSource?: EventImageSource;
   syncedAt: string;
 }
 

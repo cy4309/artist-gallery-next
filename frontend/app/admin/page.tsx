@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ReloadOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import type { CanonicalEvent } from "@/types/event";
 
 type Stats = {
   events?: number;
+  eventsMissingImage?: number;
+  eventsMissingImageWithWebsite?: number;
   users?: number;
   favorites?: number;
   pushTokens?: number;
@@ -27,6 +29,7 @@ const EVENT_FIELD_LABELS: { key: keyof CanonicalEvent; label: string }[] = [
   { key: "description", label: "description" },
   { key: "website", label: "website" },
   { key: "imageUrl", label: "imageUrl" },
+  { key: "imageSource", label: "imageSource" },
   { key: "syncedAt", label: "syncedAt" },
 ];
 
@@ -163,6 +166,7 @@ export default function AdminPage() {
   const [edit, setEdit] = useState<CanonicalEvent | null>(null);
   const [syncPanelOpen, setSyncPanelOpen] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const enrichContinuousAbortRef = useRef(false);
 
   const toggleExpanded = (key: string) => {
     setExpandedKeys((prev) => {
@@ -289,7 +293,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!authed) return;
-    if (tab === "overview") void loadStats();
+    void loadStats();
     if (tab === "events") void loadEvents();
     if (tab === "users") void loadUsers();
     if (tab === "favorites") void loadFavorites();
@@ -305,10 +309,139 @@ export default function AdminPage() {
     setBusy("");
     setMessage(
       res.ok
-        ? `同步完成：${JSON.stringify(data.result).slice(0, 200)}`
+        ? `同步完成：${JSON.stringify(data.result).slice(0, 280)}`
         : `同步失敗：${JSON.stringify(data).slice(0, 200)}`,
     );
     await loadStats();
+  };
+
+  const runEnrichImages = async () => {
+    setBusy("enrich");
+    setMessage("");
+    const res = await fetch("/api/admin/enrich-images", { method: "POST" });
+    const data = await res.json();
+    setBusy("");
+    setMessage(
+      res.ok
+        ? `補 og 圖完成：${JSON.stringify(data.result).slice(0, 280)}`
+        : `補圖失敗：${JSON.stringify(data).slice(0, 200)}`,
+    );
+    await loadStats();
+    if (tab === "events") await loadEvents();
+  };
+
+  const stopEnrichImagesContinuous = () => {
+    enrichContinuousAbortRef.current = true;
+    setMessage("正在停止連續補圖…");
+  };
+
+  const runEnrichImagesContinuous = async () => {
+    if (
+      !confirm(
+        "將連續掃描缺圖佇列並補 og 圖（每輪最多 40 筆）。掃完一輪或連續 3 輪無進度會自動停止，確定開始？",
+      )
+    ) {
+      return;
+    }
+
+    enrichContinuousAbortRef.current = false;
+    setBusy("enrich-continuous");
+    setMessage("連續補圖準備中…");
+
+    let totalUpdated = 0;
+    let totalMatched = 0;
+    let rounds = 0;
+    let offset = 0;
+    let zeroStreak = 0;
+    let stopReason = "";
+    const maxRounds = 200;
+    const maxZeroStreak = 3;
+
+    try {
+      while (!enrichContinuousAbortRef.current && rounds < maxRounds) {
+        const res = await fetch(
+          `/api/admin/enrich-images?offset=${offset}`,
+          {
+            method: "POST",
+            cache: "no-store",
+          },
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(
+            typeof data.error === "string" ? data.error : "補圖請求失敗",
+          );
+        }
+
+        const result = data.result as {
+          remaining?: number;
+          queueTotal?: number;
+          updated?: number;
+          matched?: number;
+          attempted?: number;
+          nextOffset?: number;
+          scannedAll?: boolean;
+          skipped?: string;
+        };
+
+        rounds += 1;
+        const roundUpdated = result.updated ?? 0;
+        totalUpdated += roundUpdated;
+        totalMatched += result.matched ?? 0;
+
+        if (roundUpdated === 0) {
+          zeroStreak += 1;
+        } else {
+          zeroStreak = 0;
+        }
+
+        offset = result.nextOffset ?? 0;
+
+        setMessage(
+          `連續補圖第 ${rounds} 輪：本輪 +${roundUpdated}，仍缺圖 ${result.remaining ?? "?"} / ${result.queueTotal ?? "?"}，累計 ${totalUpdated} 張`,
+        );
+
+        if (result.skipped) {
+          stopReason = result.skipped;
+          break;
+        }
+        if ((result.attempted ?? 0) === 0) {
+          stopReason = "佇列已空";
+          break;
+        }
+        if (result.scannedAll) {
+          stopReason = "已掃描完整個佇列";
+          break;
+        }
+        if (zeroStreak >= maxZeroStreak) {
+          stopReason = `連續 ${maxZeroStreak} 輪無進度`;
+          break;
+        }
+      }
+
+      if (!stopReason && enrichContinuousAbortRef.current) {
+        stopReason = "手動停止";
+      } else if (!stopReason && rounds >= maxRounds) {
+        stopReason = `已達安全上限（${maxRounds} 輪）`;
+      } else if (!stopReason) {
+        stopReason = "完成";
+      }
+
+      setMessage(
+        `${stopReason}：${rounds} 輪，命中 ${totalMatched}、寫入 ${totalUpdated} 張`,
+      );
+    } catch (error) {
+      setMessage(
+        `連續補圖失敗（已完成 ${rounds} 輪）：${
+          error instanceof Error ? error.message : "未知錯誤"
+        }`,
+      );
+    } finally {
+      enrichContinuousAbortRef.current = false;
+      setBusy("");
+      await loadStats();
+      if (tab === "events") await loadEvents();
+    }
   };
 
   const migrate = async (scope: "events" | "users" | "favorites" | "push") => {
@@ -424,6 +557,25 @@ export default function AdminPage() {
           <p className="text-sm text-gray-500">
             backend: {backend || "—"} · {busy ? `busy: ${busy}` : "ready"}
           </p>
+          {stats ? (
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              缺圖{" "}
+              <span className="font-bold text-amber-600 dark:text-amber-400">
+                {stats.eventsMissingImage ?? "—"}
+              </span>
+              {typeof stats.events === "number" ? ` / ${stats.events}` : ""}{" "}
+              活動
+              {typeof stats.eventsMissingImageWithWebsite === "number" ? (
+                <>
+                  {" "}
+                  · 可補 og：{" "}
+                  <span className="font-semibold">
+                    {stats.eventsMissingImageWithWebsite}
+                  </span>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -499,6 +651,16 @@ export default function AdminPage() {
           </div>
           <p className="text-sm text-gray-500">
             上次同步：{formatTaiwanDisplay(stats?.eventsSyncedAt)}
+            {typeof stats?.eventsMissingImage === "number" ? (
+              <>
+                {" "}
+                · 缺圖 {stats.eventsMissingImage}
+                {typeof stats.events === "number" ? ` / ${stats.events}` : ""}
+                {typeof stats.eventsMissingImageWithWebsite === "number"
+                  ? `（可補 og ${stats.eventsMissingImageWithWebsite}）`
+                  : ""}
+              </>
+            ) : null}
           </p>
           {note ? <p className="text-sm text-amber-600">{note}</p> : null}
 
@@ -532,6 +694,30 @@ export default function AdminPage() {
                       className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
                     >
                       {busy === "sync" ? "同步中…" : "手動同步文化部／新北"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void runEnrichImages()}
+                      disabled={Boolean(busy)}
+                      className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                    >
+                      {busy === "enrich" ? "補圖中…" : "補 og 圖（一輪）"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (busy === "enrich-continuous") {
+                          stopEnrichImagesContinuous();
+                          return;
+                        }
+                        void runEnrichImagesContinuous();
+                      }}
+                      disabled={Boolean(busy) && busy !== "enrich-continuous"}
+                      className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                    >
+                      {busy === "enrich-continuous"
+                        ? "停止連續補圖"
+                        : "連續補 og 圖（掃描佇列）"}
                     </button>
                   </div>
                 </div>

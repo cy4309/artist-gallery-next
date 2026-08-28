@@ -4,7 +4,9 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllCanonicalEvents } from "@/services/events/fetchAllEvents";
 import { filterActiveEvents } from "@/services/events/filterActive";
+import { enrichEventsWithOgImages } from "@/services/events/enrichEventImages";
 import { writeEventsToSheet } from "@/services/server/eventsSheetService";
+import { getDataBackend } from "@/services/server/dataBackendClient";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -40,9 +42,19 @@ async function runSync() {
 
   await writeEventsToSheet(events);
 
+  let enrich: Awaited<ReturnType<typeof enrichEventsWithOgImages>> | undefined;
+  if (getDataBackend() === "cloudflare") {
+    try {
+      enrich = await enrichEventsWithOgImages();
+    } catch (error) {
+      console.warn("[/api/events/sync] enrich-images failed:", error);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     written: events.length,
+    enrich,
     meta: {
       ...meta,
       activeTotal: events.length,

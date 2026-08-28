@@ -32,6 +32,7 @@ export const GAS_ACTION = {
 
   // admin (Cloudflare D1；GAS 可能不支援)
   UPSERT_EVENT: "upsertEvent",
+  PATCH_EVENT_IMAGES: "patchEventImages",
   DELETE_EVENT: "deleteEvent",
   ADMIN_STATS: "adminStats",
   LIST_USERS: "listUsers",

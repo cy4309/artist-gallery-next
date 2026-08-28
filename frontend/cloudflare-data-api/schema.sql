@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS events (
   description TEXT,
   website TEXT,
   image_url TEXT,
+  image_source TEXT,
   synced_at TEXT
 );
 

@@ -167,13 +167,13 @@ export default function EventDetailPage() {
         {status === "success" && event && (
           <div className="px-5 pb-8 space-y-3">
             <div className="relative overflow-hidden rounded-2xl border-[3px] border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90">
-              <div className="relative w-full aspect-[16/9] bg-gray-200 dark:bg-gray-700">
+              <div className="relative w-full min-w-0 aspect-[16/9] bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 <img
                   loading="lazy"
                   decoding="async"
                   src={imageUrl}
                   alt={event.actName || "活動圖片"}
-                  className="h-full w-full object-cover object-center"
+                  className="absolute inset-0 h-full w-full max-h-full max-w-full object-cover object-center"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
                       "/images/placeholder-no-image.png";

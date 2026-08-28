@@ -38,6 +38,35 @@ function uuid(): string {
   return crypto.randomUUID();
 }
 
+const SUPPLEMENTAL_IMAGE_SOURCES = new Set(["og", "search"]);
+
+function isSupplementalImageSource(source: string | null | undefined): boolean {
+  return Boolean(source && SUPPLEMENTAL_IMAGE_SOURCES.has(source));
+}
+
+function resolveEventImage(
+  incomingUrl: string | null,
+  incomingSource: string | null,
+  existingUrl: string | null,
+  existingSource: string | null,
+): { imageUrl: string | null; imageSource: string | null } {
+  const officialUrl = incomingUrl?.trim() || "";
+  if (officialUrl) {
+    return { imageUrl: officialUrl, imageSource: "official" };
+  }
+
+  const keptUrl = existingUrl?.trim() || "";
+  if (keptUrl && isSupplementalImageSource(existingSource)) {
+    return { imageUrl: keptUrl, imageSource: existingSource };
+  }
+
+  if (incomingSource?.trim()) {
+    return { imageUrl: incomingUrl, imageSource: incomingSource };
+  }
+
+  return { imageUrl: incomingUrl, imageSource: null };
+}
+
 function authorize(req: Request, env: Env): boolean {
   const secret = env.DATA_API_SECRET;
   if (!secret) return true; // local / unset
@@ -375,21 +404,47 @@ async function handleAction(
       return v === null || v === undefined ? null : String(v);
     };
 
+    const { results: existingRows } = await db
+      .prepare("SELECT id, image_url, image_source FROM events")
+      .all();
+    const existingById = new Map<
+      string,
+      { imageUrl: string | null; imageSource: string | null }
+    >();
+    for (const row of existingRows || []) {
+      const r = row as Record<string, unknown>;
+      const id = String(r.id || "");
+      if (!id) continue;
+      existingById.set(id, {
+        imageUrl: r.image_url ? String(r.image_url) : null,
+        imageSource: r.image_source ? String(r.image_source) : null,
+      });
+    }
+
     await db.prepare("DELETE FROM events").run();
 
     const BATCH = 50;
     for (let i = 0; i < rows.length; i += BATCH) {
       const slice = rows.slice(i, i + BATCH);
-      const stmts = slice.map((row) =>
-        db
+      const stmts = slice.map((row) => {
+        const id = cell(row, "id") || uuid();
+        const existing = existingById.get(id);
+        const resolved = resolveEventImage(
+          cell(row, "imageUrl"),
+          cell(row, "imageSource"),
+          existing?.imageUrl ?? null,
+          existing?.imageSource ?? null,
+        );
+
+        return db
           .prepare(
             `INSERT INTO events
              (id, source, source_id, category, title, start_time, end_time,
-              city_name, address, description, website, image_url, synced_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              city_name, address, description, website, image_url, image_source, synced_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .bind(
-            cell(row, "id") || uuid(),
+            id,
             cell(row, "source"),
             cell(row, "sourceId"),
             cell(row, "category"),
@@ -400,10 +455,11 @@ async function handleAction(
             cell(row, "address"),
             cell(row, "description"),
             cell(row, "website"),
-            cell(row, "imageUrl"),
+            resolved.imageUrl,
+            resolved.imageSource,
             cell(row, "syncedAt") || nowStamp(),
-          ),
-      );
+          );
+      });
       await db.batch(stmts);
     }
 
@@ -431,7 +487,7 @@ async function handleAction(
         `SELECT id, source, source_id as sourceId, category, title,
                 start_time as startTime, end_time as endTime,
                 city_name as cityName, address, description, website,
-                image_url as imageUrl, synced_at as syncedAt
+                image_url as imageUrl, image_source as imageSource, synced_at as syncedAt
          FROM events`,
       )
       .all();
@@ -442,19 +498,30 @@ async function handleAction(
     const e = data.event as Json;
     if (!e?.id) return { ok: false, error: "event.id required" };
     const stamp = nowStamp();
+    const existing = await db
+      .prepare("SELECT image_url, image_source FROM events WHERE id = ? LIMIT 1")
+      .bind(String(e.id))
+      .first<Record<string, unknown>>();
+    const resolved = resolveEventImage(
+      e.imageUrl ? String(e.imageUrl) : null,
+      e.imageSource ? String(e.imageSource) : null,
+      existing?.image_url ? String(existing.image_url) : null,
+      existing?.image_source ? String(existing.image_source) : null,
+    );
     await db
       .prepare(
         `INSERT INTO events
          (id, source, source_id, category, title, start_time, end_time,
-          city_name, address, description, website, image_url, synced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          city_name, address, description, website, image_url, image_source, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            source=excluded.source, source_id=excluded.source_id,
            category=excluded.category, title=excluded.title,
            start_time=excluded.start_time, end_time=excluded.end_time,
            city_name=excluded.city_name, address=excluded.address,
            description=excluded.description, website=excluded.website,
-           image_url=excluded.image_url, synced_at=excluded.synced_at`,
+           image_url=excluded.image_url, image_source=excluded.image_source,
+           synced_at=excluded.synced_at`,
       )
       .bind(
         String(e.id),
@@ -468,11 +535,50 @@ async function handleAction(
         e.address ? String(e.address) : null,
         e.description ? String(e.description) : null,
         e.website ? String(e.website) : null,
-        e.imageUrl ? String(e.imageUrl) : null,
+        resolved.imageUrl,
+        resolved.imageSource,
         e.syncedAt ? String(e.syncedAt) : stamp,
       )
       .run();
     return { ok: true, success: true };
+  }
+
+  if (action === "patchEventImages") {
+    const patches = Array.isArray(data.patches) ? data.patches : [];
+    if (!patches.length) {
+      return { ok: true, success: true, updated: 0 };
+    }
+
+    const BATCH = 50;
+    let updated = 0;
+    for (let i = 0; i < patches.length; i += BATCH) {
+      const slice = patches.slice(i, i + BATCH);
+      const stmts = slice
+        .map((patch) => {
+          const p = patch as Json;
+          const id = String(p.id || "");
+          const imageUrl = String(p.imageUrl || "").trim();
+          const imageSource = String(p.imageSource || "").trim();
+          if (!id || !imageUrl || !imageSource) return null;
+          return db
+            .prepare(
+              `UPDATE events
+               SET image_url = ?, image_source = ?
+               WHERE id = ? AND (image_url IS NULL OR TRIM(image_url) = '')`,
+            )
+            .bind(imageUrl, imageSource, id);
+        })
+        .filter(Boolean) as D1PreparedStatement[];
+      if (stmts.length) {
+        const results = await db.batch(stmts);
+        updated += results.reduce(
+          (sum, result) => sum + (result.meta?.changes ?? 0),
+          0,
+        );
+      }
+    }
+
+    return { ok: true, success: true, updated };
   }
 
   if (action === "deleteEvent") {
@@ -485,6 +591,19 @@ async function handleAction(
   if (action === "adminStats") {
     const events = await db
       .prepare("SELECT COUNT(*) as c FROM events")
+      .first<{ c: number }>();
+    const missingImage = await db
+      .prepare(
+        `SELECT COUNT(*) as c FROM events
+         WHERE image_url IS NULL OR TRIM(image_url) = ''`,
+      )
+      .first<{ c: number }>();
+    const missingImageWithWebsite = await db
+      .prepare(
+        `SELECT COUNT(*) as c FROM events
+         WHERE (image_url IS NULL OR TRIM(image_url) = '')
+           AND website IS NOT NULL AND TRIM(website) != ''`,
+      )
       .first<{ c: number }>();
     const users = await db
       .prepare("SELECT COUNT(*) as c FROM users")
@@ -502,6 +621,8 @@ async function handleAction(
       ok: true,
       stats: {
         events: events?.c ?? 0,
+        eventsMissingImage: missingImage?.c ?? 0,
+        eventsMissingImageWithWebsite: missingImageWithWebsite?.c ?? 0,
         users: users?.c ?? 0,
         favorites: favorites?.c ?? 0,
         pushTokens: tokens?.c ?? 0,

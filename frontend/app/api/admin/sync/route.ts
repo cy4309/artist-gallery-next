@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/services/server/adminAuth";
 import { fetchAllCanonicalEvents } from "@/services/events/fetchAllEvents";
 import { filterActiveEvents } from "@/services/events/filterActive";
+import { enrichEventsWithOgImages } from "@/services/events/enrichEventImages";
 import { writeEventsToSheet } from "@/services/server/eventsSheetService";
 import { getDataBackend } from "@/services/server/dataBackendClient";
 
@@ -36,6 +37,15 @@ export async function POST() {
 
     await writeEventsToSheet(events);
 
+    let enrich: Awaited<ReturnType<typeof enrichEventsWithOgImages>> | undefined;
+    if (backend === "cloudflare") {
+      try {
+        enrich = await enrichEventsWithOgImages();
+      } catch (error) {
+        console.warn("[/api/admin/sync] enrich-images failed:", error);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       status: 200,
@@ -43,6 +53,7 @@ export async function POST() {
         ok: true,
         written: events.length,
         backend,
+        enrich,
         meta: {
           ...meta,
           activeTotal: events.length,

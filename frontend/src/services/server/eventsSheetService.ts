@@ -5,6 +5,7 @@
 
 import { CanonicalEvent } from "@/types/event";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
+import { mergeSupplementalImages } from "@/services/events/mergeSupplementalImages";
 import { postToDataBackend } from "@/services/server/dataBackendClient";
 import { truncateText } from "@/services/events/normalize";
 import { normalizeCategoryId } from "@/utils/eventCategories";
@@ -22,6 +23,7 @@ const EVENTS_COLUMNS = [
   "description",
   "website",
   "imageUrl",
+  "imageSource",
   "syncedAt",
 ] as const satisfies ReadonlyArray<keyof CanonicalEvent>;
 
@@ -29,14 +31,17 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 
 let eventsCache: { at: number; events: CanonicalEvent[] } | null = null;
 
-function invalidateEventsCache() {
+export function invalidateEventsCache() {
   eventsCache = null;
 }
 
 export async function writeEventsToSheet(
   events: CanonicalEvent[],
 ): Promise<void> {
-  const rows = events.map((event) =>
+  const existing = await listEventsFromSheet().catch(() => [] as CanonicalEvent[]);
+  const merged = mergeSupplementalImages(events, existing);
+
+  const rows = merged.map((event) =>
     EVENTS_COLUMNS.map((col) => {
       const value = event[col] ?? "";
       if (col === "description") return truncateText(String(value), 300);
