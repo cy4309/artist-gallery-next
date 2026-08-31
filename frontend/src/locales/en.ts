@@ -131,7 +131,12 @@ export const en = {
     title: "Select a City",
     searchPlaceholder: "Search events…",
     searchNoResults: "No matching events",
-    searchHint: "Try a different keyword or city",
+    searchHint: "Try a different keyword, date range, or city",
+    dateFrom: "From",
+    dateTo: "To",
+    dateFilterHint: "Either date is optional; combine with keywords",
+    clearDates: "Clear dates",
+    dateConfirm: "Apply dates",
   },
   favorites: {
     sortedHint: "Sorted by saved date (Newest → Oldest)",

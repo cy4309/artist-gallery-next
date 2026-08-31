@@ -1,13 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { ReloadOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import type { CanonicalEvent } from "@/types/event";
+import type { SearchImagePreview } from "@/services/events/enrichEventSearchImages";
+import { getCultureImageUrl } from "@/utils/imageProxy";
 
 type Stats = {
   events?: number;
   eventsMissingImage?: number;
-  eventsMissingImageWithWebsite?: number;
   users?: number;
   favorites?: number;
   pushTokens?: number;
@@ -92,6 +99,110 @@ function formatTaiwanDisplay(value: unknown): string {
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
 }
 
+/** 可接受的缺圖比例上限（例如 1500 活動 → 缺圖 ≤ 300） */
+const MISSING_IMAGE_MAX_RATIO = 0.2;
+
+type EnrichBatchResult = {
+  remaining?: number;
+  queueTotal?: number;
+  updated?: number;
+  matched?: number;
+  attemptedIds?: string[];
+  passComplete?: boolean;
+  skipped?: string;
+};
+
+function missingImageGoal(total: number | undefined): number | null {
+  if (typeof total !== "number" || total <= 0) return null;
+  return Math.ceil(total * MISSING_IMAGE_MAX_RATIO);
+}
+
+async function runEnrichBatchLoop(options: {
+  endpoint: string;
+  shouldAbort: () => boolean;
+  onProgress: (message: string) => void;
+  maxRounds?: number;
+  maxPasses?: number;
+}): Promise<{
+  totalUpdated: number;
+  totalMatched: number;
+  passes: number;
+  rounds: number;
+  stopReason: string;
+}> {
+  const maxRounds = options.maxRounds ?? 1000;
+  const maxPasses = options.maxPasses ?? 50;
+
+  let totalUpdated = 0;
+  let totalMatched = 0;
+  let rounds = 0;
+  let passes = 0;
+  let passUpdated = 0;
+  let excludeIds: string[] = [];
+  let stopReason = "";
+
+  while (!options.shouldAbort() && rounds < maxRounds && passes < maxPasses) {
+    const res = await fetch(options.endpoint, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ excludeIds }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(
+        typeof data.error === "string" ? data.error : "補圖請求失敗",
+      );
+    }
+
+    const result = data.result as EnrichBatchResult;
+
+    rounds += 1;
+    const roundUpdated = result.updated ?? 0;
+    totalUpdated += roundUpdated;
+    totalMatched += result.matched ?? 0;
+    passUpdated += roundUpdated;
+
+    if (Array.isArray(result.attemptedIds) && result.attemptedIds.length) {
+      excludeIds = [...excludeIds, ...result.attemptedIds];
+    }
+
+    options.onProgress(
+      `本批 +${roundUpdated}，仍缺圖 ${result.queueTotal ?? "?"}，累計 +${totalUpdated}`,
+    );
+
+    if (result.skipped) {
+      stopReason = result.skipped;
+      break;
+    }
+    if ((result.queueTotal ?? 0) === 0) {
+      stopReason = "佇列已空";
+      break;
+    }
+    if (result.passComplete) {
+      passes += 1;
+      if (passUpdated === 0) {
+        stopReason = `已掃描 ${passes} 遍，本遍無新圖`;
+        break;
+      }
+      passUpdated = 0;
+      excludeIds = [];
+    }
+  }
+
+  if (!stopReason && options.shouldAbort()) {
+    stopReason = "手動停止";
+  } else if (!stopReason && rounds >= maxRounds) {
+    stopReason = `已達批次上限（${maxRounds} 批）`;
+  } else if (!stopReason && passes >= maxPasses) {
+    stopReason = `已達遍數上限（${maxPasses} 遍）`;
+  } else if (!stopReason) {
+    stopReason = "完成";
+  }
+
+  return { totalUpdated, totalMatched, passes, rounds, stopReason };
+}
+
 function FieldGrid({
   fields,
 }: {
@@ -165,8 +276,19 @@ export default function AdminPage() {
   const [message, setMessage] = useState("");
   const [edit, setEdit] = useState<CanonicalEvent | null>(null);
   const [syncPanelOpen, setSyncPanelOpen] = useState(false);
+  const [imagePanelOpen, setImagePanelOpen] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const enrichContinuousAbortRef = useRef(false);
+  const enrichOgAbortRef = useRef(false);
+  const searchPreviewAbortRef = useRef(false);
+  const [searchPreviews, setSearchPreviews] = useState<SearchImagePreview[]>([]);
+  const [searchPreviewMeta, setSearchPreviewMeta] = useState<{
+    attempted: number;
+    matched: number;
+    queueTotal: number;
+  } | null>(null);
+  const [selectedSearchIds, setSelectedSearchIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const toggleExpanded = (key: string) => {
     setExpandedKeys((prev) => {
@@ -315,132 +437,251 @@ export default function AdminPage() {
     await loadStats();
   };
 
-  const runEnrichImages = async () => {
-    setBusy("enrich");
-    setMessage("");
-    const res = await fetch("/api/admin/enrich-images", { method: "POST" });
-    const data = await res.json();
-    setBusy("");
-    setMessage(
-      res.ok
-        ? `補 og 圖完成：${JSON.stringify(data.result).slice(0, 280)}`
-        : `補圖失敗：${JSON.stringify(data).slice(0, 200)}`,
-    );
-    await loadStats();
-    if (tab === "events") await loadEvents();
+  const stopEnrichOg = () => {
+    enrichOgAbortRef.current = true;
+    setMessage("正在停止 og 補圖…");
   };
 
-  const stopEnrichImagesContinuous = () => {
-    enrichContinuousAbortRef.current = true;
-    setMessage("正在停止連續補圖…");
-  };
-
-  const runEnrichImagesContinuous = async () => {
+  const runEnrichOgImages = async () => {
     if (
       !confirm(
-        "將連續掃描缺圖佇列並補 og 圖（每輪最多 40 筆）。掃完一輪或連續 3 輪無進度會自動停止，確定開始？",
+        "將自動執行：清除無效補圖 → 官網 og，各階段掃到無新圖為止。可能需數十分鐘，確定開始？",
       )
     ) {
       return;
     }
 
-    enrichContinuousAbortRef.current = false;
-    setBusy("enrich-continuous");
-    setMessage("連續補圖準備中…");
+    enrichOgAbortRef.current = false;
+    setBusy("enrich-og");
+    setMessage("og 補圖準備中…");
 
-    let totalUpdated = 0;
-    let totalMatched = 0;
-    let rounds = 0;
-    let offset = 0;
-    let zeroStreak = 0;
-    let stopReason = "";
-    const maxRounds = 200;
-    const maxZeroStreak = 3;
+    const summary: string[] = [];
 
     try {
-      while (!enrichContinuousAbortRef.current && rounds < maxRounds) {
-        const res = await fetch(
-          `/api/admin/enrich-images?offset=${offset}`,
-          {
-            method: "POST",
-            cache: "no-store",
-          },
-        );
+      if (!enrichOgAbortRef.current) {
+        setMessage("1/2 清除無效補圖…");
+        const clearRes = await fetch("/api/admin/clear-invalid-search-images", {
+          method: "POST",
+          cache: "no-store",
+        });
+        const clearData = await clearRes.json();
+        if (clearRes.ok) {
+          const r = clearData.result;
+          summary.push(`清除無效 ${r?.cleared ?? 0} 筆`);
+        } else {
+          summary.push("清除無效略過");
+        }
+        await loadStats({ manageBusy: false });
+      }
+
+      if (!enrichOgAbortRef.current) {
+        const og = await runEnrichBatchLoop({
+          endpoint: "/api/admin/enrich-images",
+          shouldAbort: () => enrichOgAbortRef.current,
+          onProgress: (line) => setMessage(`2/2 官網 og — ${line}`),
+        });
+        summary.push(`og +${og.totalUpdated}`);
+        await loadStats({ manageBusy: false });
+      }
+
+      const statsRes = await fetch("/api/admin/stats", { cache: "no-store" });
+      const statsData = await statsRes.json();
+      const missing = statsData.stats?.eventsMissingImage as number | undefined;
+      const total = statsData.stats?.events as number | undefined;
+      const goal = missingImageGoal(total);
+      const goalText =
+        typeof missing === "number" && goal !== null
+          ? missing <= goal
+            ? `缺圖 ${missing}/${total ?? "?"}（已達目標 ≤${goal}）`
+            : `缺圖 ${missing}/${total ?? "?"}（目標 ≤${goal}，仍差 ${missing - goal}）`
+          : "";
+
+      setMessage(
+        enrichOgAbortRef.current
+          ? `已停止。${summary.join(" · ")}${goalText ? ` · ${goalText}` : ""}`
+          : `og 補圖完成：${summary.join(" · ")}${goalText ? ` · ${goalText}` : ""}`,
+      );
+    } catch (error) {
+      setMessage(
+        `og 補圖失敗：${error instanceof Error ? error.message : "未知錯誤"}${summary.length ? `（已完成 ${summary.join(" · ")}）` : ""}`,
+      );
+    } finally {
+      enrichOgAbortRef.current = false;
+      setBusy("");
+      await loadStats({ manageBusy: false });
+      if (tab === "events") await loadEvents();
+    }
+  };
+
+  const stopSearchPreview = () => {
+    searchPreviewAbortRef.current = true;
+    setMessage("正在停止搜圖預覽…");
+  };
+
+  const runSearchPreview = async () => {
+    if (
+      searchPreviews.length > 0 &&
+      !confirm("將清除目前預覽結果並重新搜尋所有缺圖活動，確定繼續？")
+    ) {
+      return;
+    }
+    if (
+      searchPreviews.length === 0 &&
+      !confirm(
+        "將對所有缺圖活動執行關鍵字搜圖，僅產生預覽、不會自動發布。可能需較長時間，確定開始？",
+      )
+    ) {
+      return;
+    }
+
+    searchPreviewAbortRef.current = false;
+    setBusy("search-preview");
+    setSearchPreviews([]);
+    setSearchPreviewMeta(null);
+    setSelectedSearchIds(new Set());
+    setMessage("搜圖預覽準備中…");
+
+    const previews: SearchImagePreview[] = [];
+    let excludeIds: string[] = [];
+    let totalAttempted = 0;
+    let queueTotal = 0;
+    const maxRounds = 500;
+
+    try {
+      for (let round = 0; round < maxRounds; round += 1) {
+        if (searchPreviewAbortRef.current) break;
+
+        const res = await fetch("/api/admin/enrich-search-images", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ excludeIds }),
+        });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(
-            typeof data.error === "string" ? data.error : "補圖請求失敗",
+            typeof data.error === "string" ? data.error : "搜圖請求失敗",
           );
         }
 
         const result = data.result as {
-          remaining?: number;
           queueTotal?: number;
-          updated?: number;
-          matched?: number;
           attempted?: number;
-          nextOffset?: number;
-          scannedAll?: boolean;
-          skipped?: string;
+          matched?: number;
+          attemptedIds?: string[];
+          passComplete?: boolean;
+          previews?: SearchImagePreview[];
         };
 
-        rounds += 1;
-        const roundUpdated = result.updated ?? 0;
-        totalUpdated += roundUpdated;
-        totalMatched += result.matched ?? 0;
+        queueTotal = result.queueTotal ?? queueTotal;
+        totalAttempted += result.attempted ?? 0;
 
-        if (roundUpdated === 0) {
-          zeroStreak += 1;
-        } else {
-          zeroStreak = 0;
+        if (Array.isArray(result.previews) && result.previews.length) {
+          previews.push(...result.previews);
+          setSearchPreviews([...previews]);
+          setSelectedSearchIds(
+            new Set(previews.map((preview) => preview.id)),
+          );
         }
 
-        offset = result.nextOffset ?? 0;
+        if (Array.isArray(result.attemptedIds) && result.attemptedIds.length) {
+          excludeIds = [...excludeIds, ...result.attemptedIds];
+        }
 
+        setSearchPreviewMeta({
+          attempted: totalAttempted,
+          matched: previews.length,
+          queueTotal,
+        });
         setMessage(
-          `連續補圖第 ${rounds} 輪：本輪 +${roundUpdated}，仍缺圖 ${result.remaining ?? "?"} / ${result.queueTotal ?? "?"}，累計 ${totalUpdated} 張`,
+          `搜圖預覽：已試 ${totalAttempted}/${queueTotal || "?"}，找到 ${previews.length} 張`,
         );
 
-        if (result.skipped) {
-          stopReason = result.skipped;
-          break;
-        }
-        if ((result.attempted ?? 0) === 0) {
-          stopReason = "佇列已空";
-          break;
-        }
-        if (result.scannedAll) {
-          stopReason = "已掃描完整個佇列";
-          break;
-        }
-        if (zeroStreak >= maxZeroStreak) {
-          stopReason = `連續 ${maxZeroStreak} 輪無進度`;
-          break;
-        }
+        if (result.passComplete) break;
       }
 
-      if (!stopReason && enrichContinuousAbortRef.current) {
-        stopReason = "手動停止";
-      } else if (!stopReason && rounds >= maxRounds) {
-        stopReason = `已達安全上限（${maxRounds} 輪）`;
-      } else if (!stopReason) {
-        stopReason = "完成";
-      }
-
+      setSearchPreviewMeta({
+        attempted: totalAttempted,
+        matched: previews.length,
+        queueTotal,
+      });
       setMessage(
-        `${stopReason}：${rounds} 輪，命中 ${totalMatched}、寫入 ${totalUpdated} 張`,
+        searchPreviewAbortRef.current
+          ? `搜圖預覽已停止：已試 ${totalAttempted} 筆，找到 ${previews.length} 張`
+          : `搜圖預覽完成：已試 ${totalAttempted} 筆，找到 ${previews.length} 張，無結果 ${Math.max(0, totalAttempted - previews.length)} 筆`,
       );
     } catch (error) {
       setMessage(
-        `連續補圖失敗（已完成 ${rounds} 輪）：${
-          error instanceof Error ? error.message : "未知錯誤"
-        }`,
+        `搜圖預覽失敗：${error instanceof Error ? error.message : "未知錯誤"}`,
       );
     } finally {
-      enrichContinuousAbortRef.current = false;
+      searchPreviewAbortRef.current = false;
       setBusy("");
-      await loadStats();
+    }
+  };
+
+  const toggleSearchPreviewSelection = (id: string) => {
+    setSelectedSearchIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const publishSelectedSearchPreviews = async () => {
+    const selected = searchPreviews.filter((preview) =>
+      selectedSearchIds.has(preview.id),
+    );
+    if (!selected.length) {
+      setMessage("請至少勾選一筆要發布的示意圖");
+      return;
+    }
+    if (
+      !confirm(
+        `確定發布 ${selected.length} 張示意圖至前台？發布後活動圖片會標示「示意圖」。`,
+      )
+    ) {
+      return;
+    }
+
+    setBusy("publish-search");
+    try {
+      const res = await fetch("/api/admin/publish-search-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patches: selected.map((preview) => ({
+            id: preview.id,
+            imageUrl: preview.imageUrl,
+            imageSource: "search",
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "發布失敗");
+      }
+
+      const updated = data.result?.updated ?? 0;
+      const publishedIds = new Set(selected.map((preview) => preview.id));
+      setSearchPreviews((prev) =>
+        prev.filter((preview) => !publishedIds.has(preview.id)),
+      );
+      setSelectedSearchIds((prev) => {
+        const next = new Set(prev);
+        for (const id of publishedIds) next.delete(id);
+        return next;
+      });
+      setMessage(`已發布 ${updated} 張示意圖`);
+      await loadStats({ manageBusy: false });
       if (tab === "events") await loadEvents();
+    } catch (error) {
+      setMessage(
+        `發布失敗：${error instanceof Error ? error.message : "未知錯誤"}`,
+      );
+    } finally {
+      setBusy("");
     }
   };
 
@@ -549,6 +790,14 @@ export default function AdminPage() {
     );
   }
 
+  const missingGoal = missingImageGoal(stats?.events);
+  const missingOk =
+    typeof stats?.eventsMissingImage === "number" &&
+    missingGoal !== null &&
+    stats.eventsMissingImage <= missingGoal;
+  const ogEnrichBusy = busy === "enrich-og";
+  const searchPreviewBusy = busy === "search-preview";
+
   return (
     <div className="mx-auto w-full max-w-full min-w-0 overflow-x-hidden space-y-6 pb-16">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -557,25 +806,6 @@ export default function AdminPage() {
           <p className="text-sm text-gray-500">
             backend: {backend || "—"} · {busy ? `busy: ${busy}` : "ready"}
           </p>
-          {stats ? (
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-              缺圖{" "}
-              <span className="font-bold text-amber-600 dark:text-amber-400">
-                {stats.eventsMissingImage ?? "—"}
-              </span>
-              {typeof stats.events === "number" ? ` / ${stats.events}` : ""}{" "}
-              活動
-              {typeof stats.eventsMissingImageWithWebsite === "number" ? (
-                <>
-                  {" "}
-                  · 可補 og：{" "}
-                  <span className="font-semibold">
-                    {stats.eventsMissingImageWithWebsite}
-                  </span>
-                </>
-              ) : null}
-            </p>
-          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -649,107 +879,251 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
-          <p className="text-sm text-gray-500">
-            上次同步：{formatTaiwanDisplay(stats?.eventsSyncedAt)}
-            {typeof stats?.eventsMissingImage === "number" ? (
-              <>
-                {" "}
-                · 缺圖 {stats.eventsMissingImage}
-                {typeof stats.events === "number" ? ` / ${stats.events}` : ""}
-                {typeof stats.eventsMissingImageWithWebsite === "number"
-                  ? `（可補 og ${stats.eventsMissingImageWithWebsite}）`
-                  : ""}
-              </>
-            ) : null}
-          </p>
           {note ? <p className="text-sm text-amber-600">{note}</p> : null}
 
-          <section className="rounded-2xl border-2 border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setSyncPanelOpen((open) => !open)}
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-              aria-expanded={syncPanelOpen}
-            >
-              <div>
-                <h2 className="text-base font-bold">資料同步與遷移</h2>
-                <p className="mt-0.5 text-xs text-gray-500">
-                  平時收合；需要同步來源或從 GAS 遷移時再展開
-                </p>
-              </div>
-              {syncPanelOpen ? <UpOutlined /> : <DownOutlined />}
-            </button>
+          <div className="overflow-hidden rounded-2xl border-2 border-slate-200 dark:border-slate-700">
+            <div className="border-b border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setImagePanelOpen((open) => !open)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                aria-expanded={imagePanelOpen}
+              >
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold">活動圖片</h2>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    上次同步：{formatTaiwanDisplay(stats?.eventsSyncedAt)}
+                    {typeof stats?.eventsMissingImage === "number" ? (
+                      <>
+                        {" "}
+                        · 缺圖 {stats.eventsMissingImage}
+                        {typeof stats.events === "number"
+                          ? ` / ${stats.events}`
+                          : ""}
+                        {missingGoal !== null
+                          ? `（目標 ≤ ${missingGoal}）`
+                          : ""}
+                        {missingOk ? " · 已達標" : ""}
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                {imagePanelOpen ? <UpOutlined /> : <DownOutlined />}
+              </button>
 
-            {syncPanelOpen ? (
-              <div className="space-y-4 border-t border-slate-200 px-4 py-4 dark:border-slate-700">
-                <div className="rounded-xl border-2 border-slate-200 p-3 dark:border-slate-600">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-gray-500">
-                    來源 API
+              {imagePanelOpen ? (
+                <div className="space-y-4 border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+                  <p className="text-xs text-gray-500">
+                    og：清除無效補圖後掃描官網 og，自動寫入。搜圖：對缺圖活動產生關鍵字候選圖，預覽後人工勾選發布。
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => void runSync()}
-                      disabled={Boolean(busy)}
-                      className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                      onClick={() => {
+                        if (ogEnrichBusy) {
+                          stopEnrichOg();
+                          return;
+                        }
+                        void runEnrichOgImages();
+                      }}
+                      disabled={Boolean(busy) && !ogEnrichBusy}
+                      className="rounded-xl border-2 border-primary bg-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                     >
-                      {busy === "sync" ? "同步中…" : "手動同步文化部／新北"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void runEnrichImages()}
-                      disabled={Boolean(busy)}
-                      className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                    >
-                      {busy === "enrich" ? "補圖中…" : "補 og 圖（一輪）"}
+                      {ogEnrichBusy ? "停止 og 補圖" : "一鍵補齊 og 圖片"}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (busy === "enrich-continuous") {
-                          stopEnrichImagesContinuous();
+                        if (searchPreviewBusy) {
+                          stopSearchPreview();
                           return;
                         }
-                        void runEnrichImagesContinuous();
+                        void runSearchPreview();
                       }}
-                      disabled={Boolean(busy) && busy !== "enrich-continuous"}
-                      className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                      disabled={Boolean(busy) && !searchPreviewBusy}
+                      className="rounded-xl border-2 border-slate-400 px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
                     >
-                      {busy === "enrich-continuous"
-                        ? "停止連續補圖"
-                        : "連續補 og 圖（掃描佇列）"}
+                      {searchPreviewBusy
+                        ? "停止搜圖預覽"
+                        : searchPreviews.length > 0
+                          ? "重新執行搜圖"
+                          : "補齊搜圖圖片（預覽）"}
                     </button>
                   </div>
-                </div>
 
-                <div className="rounded-xl border-2 border-slate-200 p-3 dark:border-slate-600">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-gray-500">
-                    GAS → Cloudflare
+                  {searchPreviewMeta || searchPreviews.length > 0 ? (
+                    <div className="space-y-3 rounded-xl border-2 border-slate-200 p-3 dark:border-slate-600">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">
+                          搜圖預覽
+                          {searchPreviewMeta ? (
+                            <span className="ml-2 font-normal text-gray-500">
+                              已試 {searchPreviewMeta.attempted} 筆 · 找到{" "}
+                              {searchPreviewMeta.matched} 張
+                            </span>
+                          ) : null}
+                        </p>
+                        {searchPreviews.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedSearchIds(
+                                  new Set(
+                                    searchPreviews.map((preview) => preview.id),
+                                  ),
+                                )
+                              }
+                              disabled={Boolean(busy)}
+                              className="rounded-lg border border-slate-300 px-2 py-1 text-xs dark:border-slate-600"
+                            >
+                              全選
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSearchIds(new Set())}
+                              disabled={Boolean(busy)}
+                              className="rounded-lg border border-slate-300 px-2 py-1 text-xs dark:border-slate-600"
+                            >
+                              全不選
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void publishSelectedSearchPreviews()}
+                              disabled={
+                                Boolean(busy) || selectedSearchIds.size === 0
+                              }
+                              className="rounded-lg border-2 border-primary bg-primary px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                            >
+                              {busy === "publish-search"
+                                ? "發布中…"
+                                : `發布勾選（${selectedSearchIds.size}）`}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {searchPreviews.length === 0 ? (
+                        <p className="text-xs text-gray-500">
+                          尚無候選圖，請按「補齊搜圖圖片（預覽）」開始搜尋。
+                        </p>
+                      ) : (
+                        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {searchPreviews.map((preview) => (
+                            <li
+                              key={preview.id}
+                              className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
+                            >
+                              <label className="flex cursor-pointer gap-2 p-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSearchIds.has(preview.id)}
+                                  onChange={() =>
+                                    toggleSearchPreviewSelection(preview.id)
+                                  }
+                                  className="mt-1 shrink-0"
+                                />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <p className="line-clamp-2 text-sm font-semibold">
+                                    {preview.title || preview.id}
+                                  </p>
+                                  {preview.cityName ? (
+                                    <p className="text-xs text-gray-500">
+                                      {preview.cityName}
+                                    </p>
+                                  ) : null}
+                                  <p className="text-xs">
+                                    <span className="text-gray-500">
+                                      keyword：
+                                    </span>
+                                    <span className="font-mono break-all">
+                                      {preview.keyword}
+                                    </span>
+                                  </p>
+                                </div>
+                              </label>
+                              <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-800">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={getCultureImageUrl(preview.imageUrl)}
+                                  alt={preview.title || preview.id}
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => setSyncPanelOpen((open) => !open)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                aria-expanded={syncPanelOpen}
+              >
+                <div>
+                  <h2 className="text-base font-bold">資料同步與遷移</h2>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    平時收合；需要同步來源或從 GAS 遷移時再展開
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {(
-                      [
-                        ["events", "遷移活動"],
-                        ["users", "遷移使用者"],
-                        ["favorites", "遷移收藏"],
-                        ["push", "遷移 Push"],
-                      ] as const
-                    ).map(([scope, label]) => (
+                </div>
+                {syncPanelOpen ? <UpOutlined /> : <DownOutlined />}
+              </button>
+
+              {syncPanelOpen ? (
+                <div className="space-y-4 border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+                  <div className="rounded-xl border-2 border-slate-200 p-3 dark:border-slate-600">
+                    <p className="mb-2 text-xs font-semibold tracking-wide text-gray-500">
+                      來源 API
+                    </p>
+                    <div className="flex flex-wrap gap-2">
                       <button
-                        key={scope}
                         type="button"
-                        onClick={() => void migrate(scope)}
+                        onClick={() => void runSync()}
                         disabled={Boolean(busy)}
                         className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
                       >
-                        {busy === `migrate-${scope}` ? `${label}中…` : label}
+                        {busy === "sync" ? "同步中…" : "僅同步文化部／新北"}
                       </button>
-                    ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border-2 border-slate-200 p-3 dark:border-slate-600">
+                    <p className="mb-2 text-xs font-semibold tracking-wide text-gray-500">
+                      GAS → Cloudflare
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        [
+                          ["events", "遷移活動"],
+                          ["users", "遷移使用者"],
+                          ["favorites", "遷移收藏"],
+                          ["push", "遷移 Push"],
+                        ] as const
+                      ).map(([scope, label]) => (
+                        <button
+                          key={scope}
+                          type="button"
+                          onClick={() => void migrate(scope)}
+                          disabled={Boolean(busy)}
+                          className="rounded-xl border-2 border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                        >
+                          {busy === `migrate-${scope}` ? `${label}中…` : label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : null}
-          </section>
+              ) : null}
+            </div>
+          </div>
         </div>
       )}
 

@@ -8,6 +8,7 @@ import { getCultureImageUrl } from "@/utils/imageProxy";
 import { eventCityName } from "@/utils/city";
 import { eventDetailPath } from "@/utils/eventId";
 import { getEventCategoryLabel } from "@/utils/eventCategories";
+import EventImageSourceBadge from "@/components/events/EventImageSourceBadge";
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-no-image.png";
 
@@ -56,6 +57,7 @@ export default function OrgEventCard({ event, onBeforeNavigate }: OrgEventCardPr
             {categoryLabel}
           </span>
         ) : null}
+        <EventImageSourceBadge imageSource={event.imageSource} />
         <div
           className="absolute top-2.5 right-2.5 z-10"
           onClick={(e) => {

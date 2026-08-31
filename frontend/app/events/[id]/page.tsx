@@ -21,7 +21,8 @@ import {
 } from "@/utils/eventId";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import { findOrgEventByRouteId } from "@/services/events/canonicalToLegacy";
-import { loadSessionCategories } from "@/utils/eventCategories";
+import { loadSessionCategories, getEventCategoryLabel } from "@/utils/eventCategories";
+import EventImageSourceBadge from "@/components/events/EventImageSourceBadge";
 
 function formatDateRange(startTime?: string, endTime?: string): string {
   const start = formatDateSmart(startTime);
@@ -69,6 +70,7 @@ export default function EventDetailPage() {
   }, [orgData, id]);
 
   const city = event ? eventCityName(event) : null;
+  const categoryLabel = event ? getEventCategoryLabel(event) : "";
 
   const cityEvents = useMemo(() => {
     if (!event) return [];
@@ -179,6 +181,12 @@ export default function EventDetailPage() {
                       "/images/placeholder-no-image.png";
                   }}
                 />
+                {categoryLabel ? (
+                  <span className="absolute top-2.5 left-2.5 z-10 rounded-md bg-black/65 px-2 py-1 text-[11px] font-semibold tracking-wide text-white">
+                    {categoryLabel}
+                  </span>
+                ) : null}
+                <EventImageSourceBadge imageSource={event.imageSource} />
                 <div className="absolute top-2.5 right-2.5 z-10">
                   <FavoriteButton
                     eventId={event.id}

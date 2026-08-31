@@ -5,6 +5,8 @@ export type EventsBrowseState = {
   mode: "city" | "search";
   city?: string;
   searchQuery?: string;
+  dateFrom?: string;
+  dateTo?: string;
   scrollY: number;
 };
 

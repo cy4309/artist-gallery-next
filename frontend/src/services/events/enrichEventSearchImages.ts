@@ -1,6 +1,8 @@
 import { CanonicalEvent } from "@/types/event";
 import { GAS_ACTION } from "@/types/gas/actionConstants";
-import { fetchOgImageUrl } from "@/services/events/ogImage";
+import { buildEventSearchKeywords } from "@/services/events/searchKeywords";
+import { SEARCH_IMAGES_AUTO_PUBLISH } from "@/services/events/searchImageConfig";
+import { searchStockImageUrl } from "@/services/events/stockImageSearch";
 import { validateRemoteImageUrl } from "@/services/events/validateImageUrl";
 import {
   getDataBackend,
@@ -11,42 +13,46 @@ import {
   listEventsFromSheet,
 } from "@/services/server/eventsSheetService";
 
-const DEFAULT_LIMIT = 40;
-const DEFAULT_CONCURRENCY = 6;
+const DEFAULT_LIMIT = 30;
+const DEFAULT_CONCURRENCY = 4;
 
-export type EnrichOgImagesResult = {
+export type SearchImagePreview = {
+  id: string;
+  title: string;
+  cityName: string;
+  keyword: string;
+  imageUrl: string;
+};
+
+export type EnrichSearchImagesResult = {
   backend: ReturnType<typeof getDataBackend>;
-  /** 本輪實際處理筆數 */
+  mode: "publish" | "preview";
   attempted: number;
-  /** 本輪抓到 og 圖的筆數 */
   matched: number;
-  /** 本輪寫入 DB 的筆數 */
   updated: number;
-  /** 本輪開始前：缺圖且有官網的總數 */
   queueTotal: number;
-  /** 本輪後仍缺圖且有官網的數量 */
   remaining: number;
-  /** 本輪已處理的活動 id */
   attemptedIds: string[];
-  /** 本輪處理了但沒抓到 og 的 id */
   failedIds: string[];
-  /** 本輪是否已試完目前佇列（含 exclude 後無剩餘） */
   passComplete: boolean;
+  previews?: SearchImagePreview[];
   skipped?: string;
 };
 
 type ImagePatch = {
   id: string;
   imageUrl: string;
-  imageSource: "og";
+  imageSource: "search";
+};
+
+type SearchMatch = ImagePatch & {
+  title: string;
+  cityName: string;
+  keyword: string;
 };
 
 function isMissingImage(event: CanonicalEvent): boolean {
   return !event.imageUrl?.trim();
-}
-
-function hasWebsite(event: CanonicalEvent): boolean {
-  return Boolean(event.website?.trim());
 }
 
 async function mapWithConcurrency<T, R>(
@@ -73,16 +79,31 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export async function enrichEventsWithOgImages(options?: {
+async function findSearchImageForEvent(
+  event: CanonicalEvent,
+): Promise<{ imageUrl: string; keyword: string } | null> {
+  const keywords = buildEventSearchKeywords(event);
+  for (const keyword of keywords) {
+    const candidate = await searchStockImageUrl(keyword);
+    if (!candidate) continue;
+    const valid = await validateRemoteImageUrl(candidate);
+    if (valid) return { imageUrl: candidate, keyword };
+  }
+  return null;
+}
+
+export async function enrichEventsWithSearchImages(options?: {
   limit?: number;
   concurrency?: number;
-  /** 本輪掃描已試過、暫時跳過的 id（通常為本輪已抓不到 og 的） */
   excludeIds?: string[];
-}): Promise<EnrichOgImagesResult> {
+}): Promise<EnrichSearchImagesResult> {
   const backend = getDataBackend();
+  const mode = SEARCH_IMAGES_AUTO_PUBLISH ? "publish" : "preview";
+
   if (backend !== "cloudflare") {
     return {
       backend,
+      mode,
       attempted: 0,
       matched: 0,
       updated: 0,
@@ -99,21 +120,17 @@ export async function enrichEventsWithOgImages(options?: {
   const concurrency = options?.concurrency ?? DEFAULT_CONCURRENCY;
   const exclude = new Set(options?.excludeIds ?? []);
   const events = await listEventsFromSheet();
+  const queueTotal = events.filter((event) => isMissingImage(event)).length;
   const targets = events.filter(
-    (event) =>
-      isMissingImage(event) &&
-      hasWebsite(event) &&
-      !exclude.has(event.id),
+    (event) => isMissingImage(event) && !exclude.has(event.id),
   );
-  const queueTotal = events.filter(
-    (event) => isMissingImage(event) && hasWebsite(event),
-  ).length;
   const batch = targets.slice(0, limit);
   const passComplete = batch.length === 0;
 
   if (passComplete) {
     return {
       backend,
+      mode,
       attempted: 0,
       matched: 0,
       updated: 0,
@@ -127,31 +144,50 @@ export async function enrichEventsWithOgImages(options?: {
 
   const attemptedIds = batch.map((event) => event.id);
 
-  const patchResults = await mapWithConcurrency(
+  const matchResults = await mapWithConcurrency(
     batch,
     concurrency,
     async (event) => {
-      const candidate = await fetchOgImageUrl(event.website);
-      if (!candidate) return null;
-      const valid = await validateRemoteImageUrl(candidate);
-      if (!valid) return null;
+      const hit = await findSearchImageForEvent(event);
+      if (!hit) return null;
       return {
         id: event.id,
-        imageUrl: candidate,
-        imageSource: "og" as const,
+        imageUrl: hit.imageUrl,
+        imageSource: "search" as const,
+        title: event.title?.trim() ?? "",
+        cityName: event.cityName?.trim() ?? "",
+        keyword: hit.keyword,
       };
     },
   );
 
-  const patches = patchResults.filter((patch): patch is ImagePatch =>
-    Boolean(patch),
+  const matches = matchResults.filter((match): match is SearchMatch =>
+    Boolean(match),
   );
   const failedIds = attemptedIds.filter(
-    (id) => !patches.some((patch) => patch.id === id),
+    (id) => !matches.some((match) => match.id === id),
+  );
+
+  const previews: SearchImagePreview[] = matches.map(
+    ({ id, title, cityName, keyword, imageUrl }) => ({
+      id,
+      title,
+      cityName,
+      keyword,
+      imageUrl,
+    }),
   );
 
   let updated = 0;
-  if (patches.length > 0) {
+  if (SEARCH_IMAGES_AUTO_PUBLISH && matches.length > 0) {
+    const patches: ImagePatch[] = matches.map(
+      ({ id, imageUrl, imageSource }) => ({
+        id,
+        imageUrl,
+        imageSource,
+      }),
+    );
+
     const json = await postToDataBackend<{
       ok?: boolean;
       updated?: number;
@@ -171,13 +207,20 @@ export async function enrichEventsWithOgImages(options?: {
 
   return {
     backend,
+    mode,
     attempted: batch.length,
-    matched: patches.length,
+    matched: matches.length,
     updated,
     queueTotal,
-    remaining: Math.max(0, queueTotal - updated),
+    remaining: SEARCH_IMAGES_AUTO_PUBLISH
+      ? Math.max(0, queueTotal - updated)
+      : queueTotal,
     attemptedIds,
     failedIds,
     passComplete: false,
+    previews: previews.length ? previews : undefined,
+    skipped: SEARCH_IMAGES_AUTO_PUBLISH
+      ? undefined
+      : "preview only — 未寫入 D1",
   };
 }

@@ -9,6 +9,7 @@ import BackButton from "@/components/BackButton";
 import EventsMobileList from "@/components/events/EventsMobileList";
 import EventCategoryPicker from "@/components/events/EventCategoryPicker";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+import EventDateRangeFilter from "@/components/events/EventDateRangeFilter";
 import {
   EventSearchInline,
   EventSearchTrigger,
@@ -19,7 +20,7 @@ import { useLocale } from "@/locales/contexts/LocaleContext";
 import LoadingIndicator from "@/components/LoadingIndicator";
 import { displayCityName } from "@/utils/city";
 import { eventDetailPath } from "@/utils/eventId";
-import { filterEventsByKeyword } from "@/utils/eventSearch";
+import { filterEvents, hasEventSearchFilter } from "@/utils/eventSearch";
 import {
   EventCategoryId,
   loadSessionCategories,
@@ -45,6 +46,10 @@ export default function EventsPage() {
   const [orgLoading, setOrgLoading] = useState(false);
   const [emptyCity, setEmptyCity] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [draftDateFrom, setDraftDateFrom] = useState("");
+  const [draftDateTo, setDraftDateTo] = useState("");
+  const [appliedDateFrom, setAppliedDateFrom] = useState("");
+  const [appliedDateTo, setAppliedDateTo] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileListKey, setMobileListKey] = useState(0);
 
@@ -56,6 +61,10 @@ export default function EventsPage() {
     setOrgData([]);
     setOrgLoading(false);
     setSearchQuery("");
+    setDraftDateFrom("");
+    setDraftDateTo("");
+    setAppliedDateFrom("");
+    setAppliedDateTo("");
     setSearchOpen(false);
     const saved = loadSessionCategories();
     if (saved && saved.length > 0) {
@@ -97,19 +106,45 @@ export default function EventsPage() {
     ensureCatalog,
   } = useEventSearchCatalog();
 
-  const searchResults = useMemo(
-    () => filterEventsByKeyword(catalog, searchQuery),
-    [catalog, searchQuery],
+  const dateFilter = useMemo(
+    () => ({ from: appliedDateFrom, to: appliedDateTo }),
+    [appliedDateFrom, appliedDateTo],
   );
 
-  const isSearching = searchQuery.trim().length > 0;
+  const dateDraftDirty =
+    draftDateFrom !== appliedDateFrom || draftDateTo !== appliedDateTo;
+
+  const clearDateFilters = useCallback(() => {
+    setDraftDateFrom("");
+    setDraftDateTo("");
+    setAppliedDateFrom("");
+    setAppliedDateTo("");
+  }, []);
+
+  const searchResults = useMemo(
+    () => filterEvents(catalog, { query: searchQuery, date: dateFilter }),
+    [catalog, searchQuery, dateFilter],
+  );
+
+  const hasFilterActive = hasEventSearchFilter({
+    query: searchQuery,
+    date: dateFilter,
+  });
+
+  const isSearching = hasFilterActive;
   const showLoading = orgLoading || (searchOpen && catalogLoading);
 
   const toggleSearch = () => {
     setSearchOpen((open) => {
       const next = !open;
-      if (!next) setSearchQuery("");
-      else void ensureCatalog();
+      if (!next) {
+        setSearchQuery("");
+        clearDateFilters();
+      } else {
+        setDraftDateFrom(appliedDateFrom);
+        setDraftDateTo(appliedDateTo);
+        void ensureCatalog();
+      }
       return next;
     });
   };
@@ -117,6 +152,26 @@ export default function EventsPage() {
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     if (value.trim()) void ensureCatalog();
+  };
+
+  const handleDateFromChange = (value: string) => {
+    setDraftDateFrom(value);
+  };
+
+  const handleDateToChange = (value: string) => {
+    setDraftDateTo(value);
+  };
+
+  const handleConfirmDates = () => {
+    setAppliedDateFrom(draftDateFrom);
+    setAppliedDateTo(draftDateTo);
+    if (draftDateFrom || draftDateTo || searchQuery.trim()) {
+      void ensureCatalog();
+    }
+  };
+
+  const handleClearDates = () => {
+    clearDateFilters();
   };
 
   const loadCityEvents = useCallback(
@@ -159,6 +214,7 @@ export default function EventsPage() {
     setEmptyCity(false);
     setOrgData([]);
     setSearchQuery("");
+    clearDateFilters();
     setSearchOpen(false);
     void loadCityEvents(id, categories);
   };
@@ -186,6 +242,7 @@ export default function EventsPage() {
     setEmptyCity(false);
     setOrgData([]);
     setSearchQuery("");
+    clearDateFilters();
     setSearchOpen(false);
     setPickingCategories(true);
   };
@@ -204,32 +261,53 @@ export default function EventsPage() {
       </div>
 
       <div className="hidden lg:flex flex-col w-full h-full min-h-0">
-        <div className="w-full shrink-0 flex items-center justify-end gap-2 pb-2">
-          <button
-            type="button"
-            onClick={handleChangeCategories}
-            className="text-xs font-semibold text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline px-2"
-          >
-            變更活動類型
-          </button>
-          <div className="flex items-center">
-            <EventSearchTrigger
-              expanded={searchOpen}
-              onToggle={toggleSearch}
-              label={t.events.searchPlaceholder}
-            />
-            <EventSearchInline
-              expanded={searchOpen}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder={t.events.searchPlaceholder}
-            />
-            {isSearching && !catalogLoading && (
-              <p className="text-sm text-gray-400 whitespace-nowrap">
-                {searchResults.length} 筆
-              </p>
-            )}
+        <div className="w-full shrink-0 space-y-2 pb-2">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleChangeCategories}
+              className="text-xs font-semibold text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline px-2"
+            >
+              變更活動類型
+            </button>
+            <div className="flex items-center">
+              <EventSearchTrigger
+                expanded={searchOpen}
+                onToggle={toggleSearch}
+                label={t.events.searchPlaceholder}
+              />
+              <EventSearchInline
+                expanded={searchOpen}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder={t.events.searchPlaceholder}
+              />
+              {isSearching && !catalogLoading && (
+                <p className="text-sm text-gray-400 whitespace-nowrap">
+                  {searchResults.length} 筆
+                </p>
+              )}
+            </div>
           </div>
+          {searchOpen ? (
+            <div className="flex justify-end">
+              <div className="w-full max-w-xl space-y-1">
+                <EventDateRangeFilter
+                  from={draftDateFrom}
+                  to={draftDateTo}
+                  onFromChange={handleDateFromChange}
+                  onToChange={handleDateToChange}
+                  onConfirm={handleConfirmDates}
+                  confirmDisabled={!dateDraftDirty}
+                  onClear={handleClearDates}
+                  compact
+                />
+                <p className="text-right text-xs text-gray-400">
+                  {t.events.dateFilterHint}
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="container mx-auto px-4 flex-1 min-h-0 flex flex-col">

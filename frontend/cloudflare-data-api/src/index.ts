@@ -581,6 +581,44 @@ async function handleAction(
     return { ok: true, success: true, updated };
   }
 
+  if (action === "clearEventImages") {
+    const ids = Array.isArray(data.ids)
+      ? (data.ids as unknown[]).map((id) => String(id)).filter(Boolean)
+      : [];
+    if (!ids.length) {
+      return { ok: true, success: true, cleared: 0 };
+    }
+
+    const BATCH = 50;
+    let cleared = 0;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const slice = ids.slice(i, i + BATCH);
+      const placeholders = slice.map(() => "?").join(",");
+      const result = await db
+        .prepare(
+          `UPDATE events
+           SET image_url = NULL, image_source = NULL
+           WHERE id IN (${placeholders}) AND image_source IN ('og', 'search')`,
+        )
+        .bind(...slice)
+        .run();
+      cleared += result.meta?.changes ?? 0;
+    }
+
+    return { ok: true, success: true, cleared };
+  }
+
+  if (action === "clearSearchImages") {
+    const result = await db
+      .prepare(
+        `UPDATE events
+         SET image_url = NULL, image_source = NULL
+         WHERE image_source = 'search'`,
+      )
+      .run();
+    return { ok: true, success: true, cleared: result.meta?.changes ?? 0 };
+  }
+
   if (action === "deleteEvent") {
     const id = String(data.id || "");
     if (!id) return { ok: false, error: "id required" };

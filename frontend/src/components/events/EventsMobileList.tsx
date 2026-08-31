@@ -12,7 +12,7 @@ import OrgEventCard from "@/components/events/OrgEventCard";
 import { getOrgData } from "@/services/client/orgDataClient";
 import { OrgEvent } from "@/types/event";
 import { CITY_ORDER } from "@/utils/city";
-import { filterEventsByKeyword } from "@/utils/eventSearch";
+import { filterEvents, hasEventSearchFilter } from "@/utils/eventSearch";
 import {
   EventCategoryId,
   loadSessionCategories,
@@ -40,6 +40,10 @@ export default function EventsMobileList() {
   const [orgLoading, setOrgLoading] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [draftDateFrom, setDraftDateFrom] = useState("");
+  const [draftDateTo, setDraftDateTo] = useState("");
+  const [appliedDateFrom, setAppliedDateFrom] = useState("");
+  const [appliedDateTo, setAppliedDateTo] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
@@ -56,18 +60,47 @@ export default function EventsMobileList() {
     return loadSessionCategories() ?? [];
   }, [selectedCategories]);
 
+  const dateFilter = useMemo(
+    () => ({ from: appliedDateFrom, to: appliedDateTo }),
+    [appliedDateFrom, appliedDateTo],
+  );
+
+  const dateDraftDirty =
+    draftDateFrom !== appliedDateFrom || draftDateTo !== appliedDateTo;
+
+  const clearDateFilters = useCallback(() => {
+    setDraftDateFrom("");
+    setDraftDateTo("");
+    setAppliedDateFrom("");
+    setAppliedDateTo("");
+  }, []);
+
+  const hasFilterActive = hasEventSearchFilter({
+    query: searchQuery,
+    date: dateFilter,
+  });
+
   const persistBrowseState = useCallback(
     (scrollY = captureEventsScrollY()) => {
-      if (!hasConfirmed && !searchQuery.trim()) return;
+      if (!hasConfirmed && !hasFilterActive) return;
       saveEventsBrowseState({
         source: "mobile",
-        mode: searchQuery.trim() ? "search" : "city",
+        mode: hasFilterActive ? "search" : "city",
         city: selectedCity,
         searchQuery: searchQuery.trim(),
+        dateFrom: appliedDateFrom || undefined,
+        dateTo: appliedDateTo || undefined,
         scrollY,
       });
     },
-    [hasConfirmed, searchQuery, selectedCity],
+    [
+      appliedDateFrom,
+      appliedDateTo,
+      hasConfirmed,
+      hasFilterActive,
+      searchQuery,
+      selectedCity,
+    ],
   );
 
   const loadEvents = useCallback(
@@ -119,9 +152,17 @@ export default function EventsMobileList() {
 
         const browse = loadEventsBrowseState();
         if (browse?.source === "mobile") {
-          if (browse.mode === "search" && browse.searchQuery) {
+          const restoredHasFilter = hasEventSearchFilter({
+            query: browse.searchQuery,
+            date: { from: browse.dateFrom, to: browse.dateTo },
+          });
+          if (restoredHasFilter) {
             if (!cancelled) {
-              setSearchQuery(browse.searchQuery);
+              setSearchQuery(browse.searchQuery ?? "");
+              setDraftDateFrom(browse.dateFrom ?? "");
+              setDraftDateTo(browse.dateTo ?? "");
+              setAppliedDateFrom(browse.dateFrom ?? "");
+              setAppliedDateTo(browse.dateTo ?? "");
               setSearchOpen(true);
             }
             await ensureCatalog();
@@ -165,8 +206,8 @@ export default function EventsMobileList() {
 
   useEffect(() => {
     if (restoreScrollY === null) return;
-    if (orgLoading || (searchQuery.trim() && catalogLoading)) return;
-    if (!hasConfirmed && !searchQuery.trim()) return;
+    if (orgLoading || (hasFilterActive && catalogLoading)) return;
+    if (!hasConfirmed && !hasFilterActive) return;
 
     const y = restoreScrollY;
     setRestoreScrollY(null);
@@ -186,14 +227,17 @@ export default function EventsMobileList() {
     orgLoading,
     catalogLoading,
     searchQuery,
+    appliedDateFrom,
+    appliedDateTo,
     hasConfirmed,
+    hasFilterActive,
     orgData.length,
     catalog.length,
   ]);
 
   useEffect(() => {
     if (initializing) return;
-    if (!hasConfirmed && !searchQuery.trim()) return;
+    if (!hasConfirmed && !hasFilterActive) return;
 
     const root = getEventsScrollRoot();
     if (!root) return;
@@ -209,26 +253,31 @@ export default function EventsMobileList() {
       clearTimeout(timer);
       root.removeEventListener("scroll", onScroll);
     };
-  }, [initializing, hasConfirmed, searchQuery, persistBrowseState]);
+  }, [initializing, hasConfirmed, hasFilterActive, persistBrowseState]);
 
   const searchResults = useMemo(
-    () => filterEventsByKeyword(catalog, searchQuery),
-    [catalog, searchQuery],
+    () => filterEvents(catalog, { query: searchQuery, date: dateFilter }),
+    [catalog, searchQuery, dateFilter],
   );
 
   const cityFiltered = useMemo(
-    () => filterEventsByKeyword(orgData, searchQuery),
-    [orgData, searchQuery],
+    () => filterEvents(orgData, { query: searchQuery, date: dateFilter }),
+    [orgData, searchQuery, dateFilter],
   );
 
-  const hasSearch = searchQuery.trim().length > 0;
-  const listEvents = hasSearch ? searchResults : cityFiltered;
+  const listEvents = hasFilterActive ? searchResults : cityFiltered;
 
   const toggleSearch = () => {
     setSearchOpen((open) => {
       const next = !open;
-      if (!next) setSearchQuery("");
-      else void ensureCatalog();
+      if (!next) {
+        setSearchQuery("");
+        clearDateFilters();
+      } else {
+        setDraftDateFrom(appliedDateFrom);
+        setDraftDateTo(appliedDateTo);
+        void ensureCatalog();
+      }
       return next;
     });
   };
@@ -236,6 +285,26 @@ export default function EventsMobileList() {
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     if (value.trim()) void ensureCatalog();
+  };
+
+  const handleDateFromChange = (value: string) => {
+    setDraftDateFrom(value);
+  };
+
+  const handleDateToChange = (value: string) => {
+    setDraftDateTo(value);
+  };
+
+  const handleConfirmDates = () => {
+    setAppliedDateFrom(draftDateFrom);
+    setAppliedDateTo(draftDateTo);
+    if (draftDateFrom || draftDateTo || searchQuery.trim()) {
+      void ensureCatalog();
+    }
+  };
+
+  const handleClearDates = () => {
+    clearDateFilters();
   };
 
   const handleSelectCity = (city: string) => {
@@ -249,6 +318,7 @@ export default function EventsMobileList() {
     setHasConfirmed(false);
     setOrgData([]);
     setSearchQuery("");
+    clearDateFilters();
     void loadEvents(city, categories);
   };
 
@@ -274,11 +344,12 @@ export default function EventsMobileList() {
     setSelectedCategories(saved && saved.length > 0 ? saved : []);
     setPickingCategories(true);
     setSearchQuery("");
+    clearDateFilters();
     setSearchOpen(false);
     clearEventsBrowseState();
   };
 
-  if (pickingCategories && !hasSearch) {
+  if (pickingCategories && !hasFilterActive) {
     return (
       <EventCategoryPicker
         selected={selectedCategories}
@@ -290,7 +361,7 @@ export default function EventsMobileList() {
     );
   }
 
-  if (initializing || orgLoading || (hasSearch && catalogLoading)) {
+  if (initializing || orgLoading || (hasFilterActive && catalogLoading)) {
     return <LoadingIndicator />;
   }
 
@@ -317,9 +388,17 @@ export default function EventsMobileList() {
         value={searchQuery}
         onChange={handleSearchChange}
         placeholder={t.events.searchPlaceholder}
+        dateFrom={draftDateFrom}
+        dateTo={draftDateTo}
+        onDateFromChange={handleDateFromChange}
+        onDateToChange={handleDateToChange}
+        onConfirmDates={handleConfirmDates}
+        confirmDatesDisabled={!dateDraftDirty}
+        onClearDates={handleClearDates}
+        dateHint={t.events.dateFilterHint}
       />
 
-      {!hasSearch && (
+      {!hasFilterActive && (
         <CityPicker
           cities={cities}
           selected={selectedCity}
@@ -327,7 +406,7 @@ export default function EventsMobileList() {
         />
       )}
 
-      {!hasSearch && !hasConfirmed && (
+      {!hasFilterActive && !hasConfirmed && (
         <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-lg font-semibold">選擇縣市開始瀏覽</p>
           <p className="text-sm text-gray-400">
@@ -336,28 +415,31 @@ export default function EventsMobileList() {
         </div>
       )}
 
-      {!hasSearch && hasConfirmed && orgData.length === 0 && (
+      {!hasFilterActive && hasConfirmed && orgData.length === 0 && (
         <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-lg font-semibold">目前沒有符合的活動</p>
           <p className="text-sm text-gray-400">試試其他縣市或變更類型</p>
         </div>
       )}
 
-      {!hasSearch && hasConfirmed && orgData.length > 0 && listEvents.length === 0 && (
+      {!hasFilterActive &&
+        hasConfirmed &&
+        orgData.length > 0 &&
+        listEvents.length === 0 && (
         <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-lg font-semibold">沒有符合的活動</p>
           <p className="text-sm text-gray-400">試試調整搜尋關鍵字</p>
         </div>
       )}
 
-      {hasSearch && listEvents.length === 0 && (
+      {hasFilterActive && listEvents.length === 0 && (
         <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-lg font-semibold">{t.events.searchNoResults}</p>
           <p className="text-sm text-gray-400">{t.events.searchHint}</p>
         </div>
       )}
 
-      {listEvents.length > 0 && (hasSearch || hasConfirmed) && (
+      {listEvents.length > 0 && (hasFilterActive || hasConfirmed) && (
         <div className="px-5 pt-4 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
           {listEvents.map((event) => (
             <OrgEventCard

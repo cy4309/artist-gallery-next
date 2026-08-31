@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
+import EventDateRangeFilter from "@/components/events/EventDateRangeFilter";
 
 type EventSearchTriggerProps = {
   expanded: boolean;
@@ -82,6 +83,14 @@ type EventSearchPanelProps = {
   placeholder: string;
   className?: string;
   innerClassName?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  onDateFromChange?: (value: string) => void;
+  onDateToChange?: (value: string) => void;
+  onConfirmDates?: () => void;
+  confirmDatesDisabled?: boolean;
+  onClearDates?: () => void;
+  dateHint?: string;
 };
 
 export function EventSearchPanel({
@@ -91,6 +100,14 @@ export function EventSearchPanel({
   placeholder,
   className = "",
   innerClassName = "",
+  dateFrom = "",
+  dateTo = "",
+  onDateFromChange,
+  onDateToChange,
+  onConfirmDates,
+  confirmDatesDisabled,
+  onClearDates,
+  dateHint,
 }: EventSearchPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -108,7 +125,7 @@ export function EventSearchPanel({
       } ${className}`}
     >
       <div className="overflow-hidden min-h-0">
-        <div className={`px-5 pb-3 pt-1 ${innerClassName}`}>
+        <div className={`space-y-3 px-5 pb-3 pt-1 ${innerClassName}`}>
           <input
             ref={inputRef}
             type="search"
@@ -119,6 +136,22 @@ export function EventSearchPanel({
             autoCorrect="off"
             enterKeyHint="search"
           />
+          {onDateFromChange && onDateToChange ? (
+            <div className="space-y-2">
+              <EventDateRangeFilter
+                from={dateFrom}
+                to={dateTo}
+                onFromChange={onDateFromChange}
+                onToChange={onDateToChange}
+                onConfirm={onConfirmDates}
+                confirmDisabled={confirmDatesDisabled}
+                onClear={onClearDates}
+              />
+              {dateHint ? (
+                <p className="text-xs text-gray-400">{dateHint}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

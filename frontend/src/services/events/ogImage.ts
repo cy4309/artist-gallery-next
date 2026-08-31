@@ -1,3 +1,5 @@
+import { isPlausiblePublicImageUrl } from "@/services/events/validateImageUrl";
+
 const FETCH_TIMEOUT_MS = 5000;
 const MAX_HTML_BYTES = 512 * 1024;
 const USER_AGENT =
@@ -86,7 +88,9 @@ function resolveImageUrl(pageUrl: URL, candidate: string): string | null {
     if (isPrivateHostname(resolved.hostname)) {
       return null;
     }
-    return resolved.toString();
+    const url = resolved.toString();
+    if (!isPlausiblePublicImageUrl(url)) return null;
+    return url;
   } catch {
     return null;
   }

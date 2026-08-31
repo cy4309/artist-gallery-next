@@ -38,6 +38,7 @@ export interface OrgEvent {
   endTime: string;
   address: string;
   imageUrl: string;
+  imageSource?: EventImageSource;
   description: string;
   website: string;
 }

@@ -32,6 +32,7 @@ export function canonicalToOrgEvent(event: CanonicalEvent): OrgEvent {
     description: event.description,
     website: event.website,
     imageUrl: event.imageUrl,
+    imageSource: event.imageSource,
   };
 }
 

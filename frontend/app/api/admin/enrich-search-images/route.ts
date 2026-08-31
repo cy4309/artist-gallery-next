@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/services/server/adminAuth";
-import { enrichEventsWithOgImages } from "@/services/events/enrichEventImages";
+import { enrichEventsWithSearchImages } from "@/services/events/enrichEventSearchImages";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,14 +31,14 @@ export async function POST(req: NextRequest) {
 
     const limitParam = req.nextUrl.searchParams.get("limit");
     const limit = limitParam ? Number(limitParam) : undefined;
-    const result = await enrichEventsWithOgImages({
+    const result = await enrichEventsWithSearchImages({
       limit: Number.isFinite(limit) && limit! > 0 ? limit : undefined,
       excludeIds: parseExcludeIds(req, body),
     });
 
     return NextResponse.json({ ok: true, result });
   } catch (error) {
-    console.error("[/api/admin/enrich-images]", error);
+    console.error("[/api/admin/enrich-search-images]", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
       { status: 500 },

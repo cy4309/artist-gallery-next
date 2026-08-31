@@ -11,6 +11,8 @@ import { showConfirmSwal } from "@/utils/notification";
 import { getEventShareUrl, shareEvent } from "@/utils/share";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import { getEventCategoryLabel } from "@/utils/eventCategories";
+import EventImageSourceBadge from "@/components/events/EventImageSourceBadge";
+import type { EventImageSource } from "@/types/event";
 
 export interface CarouselItem {
   id: string;
@@ -20,6 +22,7 @@ export interface CarouselItem {
   endTime: string;
   address: string;
   imageUrl: string;
+  imageSource?: EventImageSource;
   description: string;
   website: string;
   category?: string;
@@ -541,6 +544,7 @@ const Carousel = ({
                           "/images/placeholder-no-image.png";
                       }}
                     />
+                    <EventImageSourceBadge imageSource={item.imageSource} />
                   </div>
                 </li>
 

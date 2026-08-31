@@ -9,18 +9,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "ArtistGalleryBot/1.0 (+https://artistgallery.tw)",
+        Accept: "image/*,*/*;q=0.8",
+      },
+    });
 
     if (!res.ok) {
       return new Response("Image fetch failed", { status: 404 });
     }
 
-    const contentType = res.headers.get("content-type") || "image/jpeg";
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType && !contentType.startsWith("image/")) {
+      return new Response("Not an image", { status: 415 });
+    }
     const buffer = await res.arrayBuffer();
 
     return new Response(buffer, {
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": contentType || "image/jpeg",
         "Content-Length": String(buffer.byteLength),
         "Cache-Control": "public, max-age=86400",
       },

@@ -127,7 +127,12 @@ export const zh = {
     title: "請選擇城市",
     searchPlaceholder: "搜尋活動關鍵字…",
     searchNoResults: "找不到符合的活動",
-    searchHint: "試試其他關鍵字或縣市",
+    searchHint: "試試其他關鍵字、日期或縣市",
+    dateFrom: "開始日期",
+    dateTo: "結束日期",
+    dateFilterHint: "可只填一端，與關鍵字可同時使用",
+    clearDates: "清除日期",
+    dateConfirm: "確認篩選",
   },
   favorites: {
     sortedHint: "依收藏時間排序（新 → 舊）",
