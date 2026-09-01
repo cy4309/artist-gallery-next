@@ -3,17 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import BackButton from "@/components/BackButton";
-import BaseButton from "@/components/BaseButton";
-import FavoriteButton from "@/components/FavoriteButton";
 import LoadingIndicator from "@/components/LoadingIndicator";
 import Carousel, { CarouselItem } from "@/components/Carousel";
 import { getOrgData } from "@/services/client/orgDataClient";
 import { OrgEvent } from "@/types/event";
-import { formatDateSmart, toISODateTime } from "@/utils/date";
-import { getCultureImageUrl } from "@/utils/imageProxy";
 import { eventCityName, displayCityName } from "@/utils/city";
-import { showConfirmSwal } from "@/utils/notification";
-import { getEventShareUrl, shareEvent } from "@/utils/share";
 import {
   eventDetailPath,
   favoriteIdAliases,
@@ -21,15 +15,7 @@ import {
 } from "@/utils/eventId";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import { findOrgEventByRouteId } from "@/services/events/canonicalToLegacy";
-import { loadSessionCategories, getEventCategoryLabel } from "@/utils/eventCategories";
-import EventImageSourceBadge from "@/components/events/EventImageSourceBadge";
-
-function formatDateRange(startTime?: string, endTime?: string): string {
-  const start = formatDateSmart(startTime);
-  const end = formatDateSmart(endTime);
-  if (start && end && start !== end) return `${start} – ${end}`;
-  return start || end;
-}
+import { loadSessionCategories } from "@/utils/eventCategories";
 
 export default function EventDetailPage() {
   const { t } = useLocale();
@@ -70,7 +56,6 @@ export default function EventDetailPage() {
   }, [orgData, id]);
 
   const city = event ? eventCityName(event) : null;
-  const categoryLabel = event ? getEventCategoryLabel(event) : "";
 
   const cityEvents = useMemo(() => {
     if (!event) return [];
@@ -109,8 +94,15 @@ export default function EventDetailPage() {
     return index >= 0 ? index : 0;
   }, [cityEvents, effectiveId]);
 
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  useEffect(() => {
+    setCarouselIndex(activeIndex);
+  }, [activeIndex]);
+
   const handleIndexChange = useCallback(
-    (_index: number, item: CarouselItem) => {
+    (index: number, item: CarouselItem) => {
+      setCarouselIndex(index);
       const nextUrl = eventDetailPath(item.id);
       if (window.location.pathname === nextUrl) return;
       window.history.replaceState(null, "", nextUrl);
@@ -118,16 +110,15 @@ export default function EventDetailPage() {
     [],
   );
 
-  const hasImage = Boolean(event?.imageUrl?.trim());
-  const imageUrl = event
-    ? hasImage
-      ? getCultureImageUrl(event.imageUrl)
-      : "/images/placeholder-no-image.png"
-    : "";
-  const favoriteImageUrl =
-    event && hasImage
-      ? (process.env.NEXT_PUBLIC_BASE_URL || "") + imageUrl
-      : undefined;
+  const carouselPositionLabel = useMemo(() => {
+    if (!event || cityEvents.length === 0) return null;
+    const cityLabel =
+      displayCityName(city ?? event.cityName) || t.events.title;
+    return t.events.listPositionWithCity
+      .replace("{city}", cityLabel)
+      .replace("{current}", String(carouselIndex + 1))
+      .replace("{total}", String(cityEvents.length));
+  }, [carouselIndex, city, cityEvents.length, event, t.events]);
 
   const notFound = status === "success" && !event;
 
@@ -136,173 +127,50 @@ export default function EventDetailPage() {
   }
 
   return (
-    <>
-      {/* 手機：活動詳情 */}
-      <div className="lg:hidden min-h-dvh">
-        <div className="flex items-center gap-3 px-5 pt-4 pb-4">
+    <div className="container mx-auto flex min-h-0 w-full flex-col items-center px-4 py-4 lg:py-6">
+      {(status === "error" || notFound) && (
+        <div className="flex w-full max-w-[600px] flex-col items-center justify-center">
           <BackButton />
-          <h1 className="text-lg font-bold tracking-[2px]">活動詳情</h1>
-        </div>
-
-        {status === "error" && (
-          <div className="flex flex-1 min-h-0 w-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-lg font-semibold">載入失敗</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {errorMessage}
-            </p>
+          <p className="my-4 text-center">
+            {notFound ? "找不到這個活動" : errorMessage}
+          </p>
+          {status === "error" ? (
             <button
               type="button"
               onClick={load}
-              className="mt-2 rounded-lg bg-primary text-white dark:bg-white dark:text-black px-5 py-2.5 text-sm font-semibold"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black"
             >
               再試一次
             </button>
-          </div>
-        )}
-
-        {notFound && (
-          <div className="flex flex-1 min-h-0 w-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-lg font-semibold">找不到這個活動</p>
-          </div>
-        )}
-
-        {status === "success" && event && (
-          <div className="px-5 pb-8 space-y-3">
-            <div className="relative overflow-hidden rounded-2xl border-[3px] border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90">
-              <div className="relative w-full min-w-0 aspect-[16/9] bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                <img
-                  loading="lazy"
-                  decoding="async"
-                  src={imageUrl}
-                  alt={event.actName || "活動圖片"}
-                  className="absolute inset-0 h-full w-full max-h-full max-w-full object-cover object-center"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src =
-                      "/images/placeholder-no-image.png";
-                  }}
-                />
-                {categoryLabel ? (
-                  <span className="absolute top-2.5 left-2.5 z-10 rounded-md bg-black/65 px-2 py-1 text-[11px] font-semibold tracking-wide text-white">
-                    {categoryLabel}
-                  </span>
-                ) : null}
-                <EventImageSourceBadge imageSource={event.imageSource} />
-                <div className="absolute top-2.5 right-2.5 z-10">
-                  <FavoriteButton
-                    eventId={event.id}
-                    eventTitle={event.actName}
-                    eventStartDate={toISODateTime(event.startTime)}
-                    eventEndDate={toISODateTime(event.endTime)}
-                    eventLocation={event.address}
-                    eventUrl={event.website}
-                    imageUrl={favoriteImageUrl}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {city ? (
-              <p className="text-xs font-semibold tracking-wide text-primaryBlue dark:text-blue-300">
-                {city}
-              </p>
-            ) : null}
-
-            <h2 className="text-xl font-bold leading-snug">{event.actName}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {formatDateRange(event.startTime, event.endTime)}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {event.address || event.cityName}
-            </p>
-
-            {event.description ? (
-              <p className="text-sm leading-7 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
-                {event.description}
-              </p>
-            ) : null}
-
-            <div className="mt-2 flex flex-wrap justify-center gap-6">
-              {event.website ? (
-                <BaseButton
-                  className="!px-4"
-                  onClick={async () => {
-                    const confirmed = await showConfirmSwal({
-                      title: t.notification.confirmOpenExternal.title,
-                      text: t.notification.confirmOpenExternal.text,
-                      confirmText:
-                        t.notification.confirmOpenExternal.confirmText,
-                      cancelText: t.notification.confirmOpenExternal.cancelText,
-                    });
-
-                    if (confirmed) {
-                      window.open(
-                        event.website,
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
-                    }
-                  }}
-                >
-                  {t.buttons.visit}
-                </BaseButton>
-              ) : null}
-
-              <BaseButton
-                className="!px-4"
-                onClick={() =>
-                  shareEvent({
-                    title: event.actName,
-                    url: getEventShareUrl(event.id),
-                    copiedTitle: t.notification.shareCopied.title,
-                    copiedText: t.notification.shareCopied.text,
-                  })
-                }
-              >
-                {t.buttons.share}
-              </BaseButton>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 桌面：同一城市 Carousel，網址跟著目前活動走 */}
-      <div className="hidden lg:block">
-        <div className="container flex justify-center items-center mx-auto">
-          {(status === "error" || notFound) && (
-            <div className="m-4 w-full flex flex-col justify-center items-center">
-              <BackButton />
-              <p className="my-4 text-center">
-                {notFound ? "找不到這個活動" : errorMessage}
-              </p>
-            </div>
-          )}
-
-          {status === "success" && event && (
-            <div className="flex flex-col justify-center items-center">
-              <div className="m-4 w-full flex justify-between items-center gap-3">
-                <BackButton />
-                <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                  {displayCityName(city ?? event.cityName) || "活動"}
-                  {cityEvents.length > 0 ? ` · 共 ${cityEvents.length} 筆` : ""}
-                </p>
-              </div>
-
-              <Carousel
-                key={city ?? event.cityName}
-                autoplay={false}
-                autoplayDelay={3000}
-                baseWidth={300}
-                items={cityEvents}
-                loop={true}
-                pauseOnHover={true}
-                round={false}
-                activeIndex={activeIndex}
-                onIndexChange={handleIndexChange}
-              />
-            </div>
-          )}
+          ) : null}
         </div>
-      </div>
-    </>
+      )}
+
+      {status === "success" && event && (
+        <div className="flex w-full max-w-[600px] flex-col items-center">
+          <div className="mb-4 flex w-full items-center justify-between gap-3">
+            <BackButton className="shrink-0" />
+            {carouselPositionLabel ? (
+              <p className="whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-300">
+                {carouselPositionLabel}
+              </p>
+            ) : null}
+          </div>
+
+          <Carousel
+            key={city ?? event.cityName}
+            autoplay={false}
+            autoplayDelay={3000}
+            baseWidth={300}
+            items={cityEvents}
+            loop={true}
+            pauseOnHover={true}
+            round={false}
+            activeIndex={activeIndex}
+            onIndexChange={handleIndexChange}
+          />
+        </div>
+      )}
+    </div>
   );
 }

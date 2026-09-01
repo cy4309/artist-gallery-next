@@ -38,12 +38,6 @@ function uuid(): string {
   return crypto.randomUUID();
 }
 
-const SUPPLEMENTAL_IMAGE_SOURCES = new Set(["og", "search"]);
-
-function isSupplementalImageSource(source: string | null | undefined): boolean {
-  return Boolean(source && SUPPLEMENTAL_IMAGE_SOURCES.has(source));
-}
-
 function resolveEventImage(
   incomingUrl: string | null,
   incomingSource: string | null,
@@ -56,15 +50,19 @@ function resolveEventImage(
   }
 
   const keptUrl = existingUrl?.trim() || "";
-  if (keptUrl && isSupplementalImageSource(existingSource)) {
-    return { imageUrl: keptUrl, imageSource: existingSource };
+  if (keptUrl) {
+    const source = existingSource?.trim() || null;
+    return {
+      imageUrl: keptUrl,
+      imageSource: source || "official",
+    };
   }
 
   if (incomingSource?.trim()) {
     return { imageUrl: incomingUrl, imageSource: incomingSource };
   }
 
-  return { imageUrl: incomingUrl, imageSource: null };
+  return { imageUrl: null, imageSource: null };
 }
 
 function authorize(req: Request, env: Env): boolean {

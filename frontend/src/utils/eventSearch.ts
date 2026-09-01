@@ -29,6 +29,10 @@ export function filterEventsByKeyword(
   });
 }
 
+export function hasKeywordSearch(query?: string): boolean {
+  return Boolean(query?.trim());
+}
+
 export function filterEvents(
   events: OrgEvent[],
   options: { query?: string; date?: EventDateFilter },
@@ -43,9 +47,10 @@ export function filterEvents(
   return list;
 }
 
+/** @deprecated 關鍵字與日期篩選 scope 不同，請改用 hasKeywordSearch / hasEventDateFilter */
 export function hasEventSearchFilter(options: {
   query?: string;
   date?: EventDateFilter;
 }): boolean {
-  return Boolean(options.query?.trim()) || hasEventDateFilter(options.date ?? {});
+  return hasKeywordSearch(options.query) || hasEventDateFilter(options.date ?? {});
 }

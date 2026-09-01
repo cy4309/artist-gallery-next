@@ -280,7 +280,9 @@ export default function AdminPage() {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const enrichOgAbortRef = useRef(false);
   const searchPreviewAbortRef = useRef(false);
-  const [searchPreviews, setSearchPreviews] = useState<SearchImagePreview[]>([]);
+  const [searchPreviews, setSearchPreviews] = useState<SearchImagePreview[]>(
+    [],
+  );
   const [searchPreviewMeta, setSearchPreviewMeta] = useState<{
     attempted: number;
     matched: number;
@@ -579,9 +581,7 @@ export default function AdminPage() {
         if (Array.isArray(result.previews) && result.previews.length) {
           previews.push(...result.previews);
           setSearchPreviews([...previews]);
-          setSelectedSearchIds(
-            new Set(previews.map((preview) => preview.id)),
-          );
+          setSelectedSearchIds(new Set(previews.map((preview) => preview.id)));
         }
 
         if (Array.isArray(result.attemptedIds) && result.attemptedIds.length) {
@@ -914,7 +914,8 @@ export default function AdminPage() {
               {imagePanelOpen ? (
                 <div className="space-y-4 border-t border-slate-200 px-4 py-4 dark:border-slate-700">
                   <p className="text-xs text-gray-500">
-                    og：清除無效補圖後掃描官網 og，自動寫入。搜圖：對缺圖活動產生關鍵字候選圖，預覽後人工勾選發布。
+                    og：清除無效補圖後掃描官網
+                    og，自動寫入。搜圖：對缺圖活動產生關鍵字候選圖，預覽後人工勾選發布。
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -927,7 +928,7 @@ export default function AdminPage() {
                         void runEnrichOgImages();
                       }}
                       disabled={Boolean(busy) && !ogEnrichBusy}
-                      className="rounded-xl border-2 border-primary bg-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                      className="rounded-xl border-2 border-primary bg-primary px-5 py-2.5 text-sm font-bold text-white dark:text-primary dark:bg-white dark:border-white disabled:opacity-50"
                     >
                       {ogEnrichBusy ? "停止 og 補圖" : "一鍵補齊 og 圖片"}
                     </button>
@@ -989,7 +990,9 @@ export default function AdminPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => void publishSelectedSearchPreviews()}
+                              onClick={() =>
+                                void publishSelectedSearchPreviews()
+                              }
                               disabled={
                                 Boolean(busy) || selectedSearchIds.size === 0
                               }

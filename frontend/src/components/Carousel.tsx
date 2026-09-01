@@ -105,6 +105,8 @@ const Carousel = ({
   const canLoopRef = useRef(canLoop);
   const trackItemOffsetRef = useRef(trackItemOffset);
   const [slideHeight, setSlideHeight] = useState<number | undefined>(undefined);
+  const [dragEnabled, setDragEnabled] = useState(false);
+  const dragEnabledRef = useRef(false);
 
   itemsRef.current = items;
   canLoopRef.current = canLoop;
@@ -264,6 +266,19 @@ const Carousel = ({
     }
   }, [activeIndex]);
 
+  // Desktop: drag to swipe. Mobile: buttons/dots only so vertical scroll works.
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      dragEnabledRef.current = media.matches;
+      setDragEnabled(media.matches);
+    };
+
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
   useLayoutEffect(() => {
     if (round) return;
 
@@ -286,7 +301,7 @@ const Carousel = ({
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (isSingle) return;
+    if (!dragEnabledRef.current || isSingle) return;
     if ((event.target as HTMLElement).closest("button, a")) return;
 
     draggingRef.current = true;
@@ -429,7 +444,7 @@ const Carousel = ({
     >
       {!isSingle && !round && (
         <div
-          className="mb-3 hidden w-full lg:flex items-center justify-between gap-3"
+          className="mb-3 flex w-full items-center justify-between gap-3"
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button
@@ -455,17 +470,23 @@ const Carousel = ({
       )}
 
       <div
-        className="overflow-hidden cursor-grab active:cursor-grabbing select-none"
+        className={`select-none overflow-hidden ${
+          dragEnabled ? "cursor-grab active:cursor-grabbing" : ""
+        }`}
         style={{
-          touchAction: "pan-x",
+          touchAction: dragEnabled ? "pan-x" : "pan-y",
           ...(!round && slideHeight != null
             ? { height: slideHeight, maxHeight: "85vh" }
             : {}),
         }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        {...(dragEnabled
+          ? {
+              onPointerDown,
+              onPointerMove,
+              onPointerUp,
+              onPointerCancel: onPointerUp,
+            }
+          : {})}
       >
         <motion.div
           className="flex items-start"
@@ -602,15 +623,11 @@ const Carousel = ({
         </motion.div>
       </div>
 
-      {!isSingle && (
+      {!isSingle && round && (
         <div
-          className={`flex w-full justify-center ${
-            round
-              ? "absolute z-20 bottom-12 left-1/2 -translate-x-1/2"
-              : "lg:hidden"
-          }`}
+          className="absolute z-20 bottom-12 left-1/2 flex w-full -translate-x-1/2 justify-center"
         >
-          <div className="mt-4 flex w-[150px] justify-between px-8">
+          <div className="flex w-[150px] justify-between px-8">
             {renderDots()}
           </div>
         </div>

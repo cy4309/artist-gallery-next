@@ -5,17 +5,20 @@ import { CloseOutlined } from "@ant-design/icons";
 import BaseButton from "@/components/BaseButton";
 
 export const ALL_CITIES = "全部";
+export const NO_CITY_SELECTED = "";
 
 type CityPickerProps = {
   cities: string[];
   selected: string;
   onSelect: (city: string) => void;
+  placeholder?: string;
 };
 
 export default function CityPicker({
   cities,
   selected,
   onSelect,
+  placeholder = "請選擇縣市…",
 }: CityPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -37,6 +40,9 @@ export default function CityPicker({
     close();
   };
 
+  const hasSelection = Boolean(selected);
+  const displayLabel = hasSelection ? selected : placeholder;
+
   return (
     <>
       <div className="px-5 pb-3 border-b border-slate-200 dark:border-slate-700">
@@ -44,13 +50,23 @@ export default function CityPicker({
           type="button"
           onClick={() => setOpen(true)}
           className="w-full flex items-center justify-between rounded-2xl border-2 border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90 px-4 py-3 text-left hover:opacity-90"
-          aria-label={`選擇縣市，目前 ${selected}`}
+          aria-label={
+            hasSelection ? `選擇縣市，目前 ${selected}` : "選擇縣市"
+          }
         >
           <span>
             <span className="block text-xs tracking-wide text-gray-500 dark:text-gray-400">
               縣市
             </span>
-            <span className="mt-0.5 block text-lg font-bold">{selected}</span>
+            <span
+              className={`mt-0.5 block text-lg ${
+                hasSelection
+                  ? "font-bold"
+                  : "font-medium text-gray-400 dark:text-gray-500"
+              }`}
+            >
+              {displayLabel}
+            </span>
           </span>
           <span className="text-sm font-semibold text-primaryBlue dark:text-blue-300">
             選擇 ▾
@@ -87,7 +103,7 @@ export default function CityPicker({
               </p>
             ) : (
               options.map((item) => {
-                const active = item === selected;
+                const active = hasSelection && item === selected;
                 return (
                   <button
                     key={item}
