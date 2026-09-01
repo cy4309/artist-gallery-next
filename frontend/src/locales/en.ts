@@ -7,8 +7,8 @@ export const en = {
   header: {
     events: "Events",
     favorites: "Favorites",
-    interviews: "Special Columns",
-    about: "About Us",
+    interviews: "Interviews",
+    about: "About",
     switchToZh: "中文",
     switchToEn: "ENGLISH",
     switchToDark: "Dark Mode",
@@ -91,6 +91,12 @@ export const en = {
       "If you’re a creator, organizer, cultural worker, or someone who simply loves what we’re doing — we’d love to hear from you.",
     ],
     contact: "contact",
+    coffee: {
+      title: "Buy us a coffee",
+      body: "If CYC Zine has been helpful, you're welcome to buy us a coffee. This is personal support, not a purchase — no invoice provided.",
+      payButton: "Pay NT$50 with LINE Pay",
+      comingSoon: "Payment link coming soon",
+    },
   },
   interviews: {
     hero: {
@@ -133,10 +139,12 @@ export const en = {
     searchPlaceholder: "Search events…",
     advancedSearch: "Advanced",
     searchNoResults: "No matching events",
-    searchHint: "Search all Taiwan by title, description, or location — try another keyword",
+    searchHint:
+      "Search all Taiwan by title, description, or location — try another keyword",
     dateFrom: "From",
     dateTo: "To",
-    dateFilterHint: "Narrows the selected city and categories; keywords search all Taiwan",
+    dateFilterHint:
+      "Narrows the selected city and categories; keywords search all Taiwan",
     dateBrowseOnlyHint: "Select a city on the map before applying dates",
     clearDates: "Clear dates",
     dateConfirm: "Apply dates",

@@ -11,6 +11,9 @@ import { ReloadOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import type { CanonicalEvent } from "@/types/event";
 import type { SearchImagePreview } from "@/services/events/enrichEventSearchImages";
 import { getCultureImageUrl } from "@/utils/imageProxy";
+import packageJson from "../../package.json";
+
+const APP_VERSION = packageJson.version;
 
 type Stats = {
   events?: number;
@@ -767,6 +770,7 @@ export default function AdminPage() {
         }}
       >
         <h1 className="text-2xl font-bold">Admin</h1>
+        <p className="text-sm text-gray-500">v{APP_VERSION}</p>
         <p className="text-sm text-gray-500">輸入 ADMIN_SECRET 登入</p>
         <div className="flex justify-center items-center gap-2">
           <input
@@ -804,7 +808,8 @@ export default function AdminPage() {
         <div>
           <h1 className="text-2xl font-bold">資料後台</h1>
           <p className="text-sm text-gray-500">
-            backend: {backend || "—"} · {busy ? `busy: ${busy}` : "ready"}
+            v{APP_VERSION} · backend: {backend || "—"} ·{" "}
+            {busy ? `busy: ${busy}` : "ready"}
           </p>
         </div>
         <div className="flex items-center gap-2">

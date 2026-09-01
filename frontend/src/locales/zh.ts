@@ -8,7 +8,7 @@ export const zh = {
     events: "活動",
     favorites: "收藏",
     interviews: "專欄",
-    about: "關於我們",
+    about: "關於",
     switchToZh: "中文",
     switchToEn: "ENGLISH",
     switchToDark: "深色模式",
@@ -87,6 +87,12 @@ export const zh = {
       "如果你是創作者、策展人、文化工作者，或只是喜歡我們正在做的事——都歡迎與我們聯繫。",
     ],
     contact: "聯絡我們",
+    coffee: {
+      title: "請我們喝一杯",
+      body: "若你覺得 CYC Zine 有幫助，歡迎請我們喝杯咖啡。此為個人支持，非商品交易，恕不開立發票。",
+      payButton: "LINE Pay 付款 NT$50",
+      comingSoon: "付款連結即將開放",
+    },
   },
   interviews: {
     hero: {
