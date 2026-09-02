@@ -55,7 +55,8 @@ export default function EventsMobileList() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
-  const { catalog, catalogLoading, ensureCatalog } = useEventSearchCatalog();
+  const { catalog, catalogLoading, catalogReady, ensureCatalog } =
+    useEventSearchCatalog();
 
   const cities = useMemo(() => [...CITY_ORDER], []);
 
@@ -279,8 +280,10 @@ export default function EventsMobileList() {
       const next = !open;
       if (!next) {
         setSearchQuery("");
+      } else {
+        setAdvancedOpen(false);
+        void ensureCatalog();
       }
-      if (next) setAdvancedOpen(false);
       return next;
     });
   };
@@ -387,7 +390,7 @@ export default function EventsMobileList() {
     );
   }
 
-  if (initializing || orgLoading || (hasKeyword && catalogLoading)) {
+  if (initializing || orgLoading) {
     return <LoadingIndicator />;
   }
 
@@ -437,44 +440,6 @@ export default function EventsMobileList() {
       </p>
     </div>
   ) : null;
-
-  if (hasKeyword) {
-    return (
-      <div className="min-h-dvh">
-        <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
-          {hasConfirmed ? (
-            <BackButton
-              onClick={() => {
-                setSearchQuery("");
-                setKeywordOpen(false);
-              }}
-              className="mb-0 shrink-0"
-            />
-          ) : null}
-          {keywordSearchControls(!hasConfirmed)}
-        </div>
-
-        {keywordSearchHint}
-
-        {listEvents.length === 0 ? (
-          <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-lg font-semibold">{t.events.searchNoResults}</p>
-            <p className="text-sm text-gray-400">{t.events.searchHint}</p>
-          </div>
-        ) : (
-          <div className="px-5 pt-4 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {listEvents.map((event) => (
-              <OrgEventCard
-                key={event.id}
-                event={event}
-                onBeforeNavigate={persistBrowseState}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   if (showCityBrowse) {
     return (
@@ -544,24 +509,58 @@ export default function EventsMobileList() {
   return (
     <div className="min-h-dvh">
       <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
-        {keywordSearchControls()}
+        {hasKeyword && hasConfirmed ? (
+          <BackButton
+            onClick={() => {
+              setSearchQuery("");
+              setKeywordOpen(false);
+            }}
+            className="mb-0 shrink-0"
+          />
+        ) : null}
+        {keywordSearchControls(!hasConfirmed || !hasKeyword)}
       </div>
 
       {keywordSearchHint}
 
-      <CityPicker
-        cities={cities}
-        selected={selectedCity}
-        onSelect={handleSelectCity}
-        placeholder={t.events.selectCityPlaceholder}
-      />
+      {hasKeyword ? (
+        catalogLoading && !catalogReady ? (
+          <div className="min-h-[50dvh] flex items-center justify-center">
+            <LoadingIndicator />
+          </div>
+        ) : listEvents.length === 0 ? (
+          <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="text-lg font-semibold">{t.events.searchNoResults}</p>
+            <p className="text-sm text-gray-400">{t.events.searchHint}</p>
+          </div>
+        ) : (
+          <div className="px-5 pt-4 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {listEvents.map((event) => (
+              <OrgEventCard
+                key={event.id}
+                event={event}
+                onBeforeNavigate={persistBrowseState}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <>
+          <CityPicker
+            cities={cities}
+            selected={selectedCity}
+            onSelect={handleSelectCity}
+            placeholder={t.events.selectCityPlaceholder}
+          />
 
-      <div className="min-h-[40dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-lg font-semibold">選擇縣市開始瀏覽</p>
-        <p className="text-sm text-gray-400">
-          也可直接用上方放大鏡全台搜尋；會沿用已選的活動類型
-        </p>
-      </div>
+          <div className="min-h-[40dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="text-lg font-semibold">選擇縣市開始瀏覽</p>
+            <p className="text-sm text-gray-400">
+              也可直接用上方放大鏡全台搜尋；會沿用已選的活動類型
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

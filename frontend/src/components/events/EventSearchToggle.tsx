@@ -1,9 +1,41 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 import EventDateRangeFilter from "@/components/events/EventDateRangeFilter";
+
+/** 受控 input + 注音/拼音 IME：組字期間用本地 draft，避免 parent value 重绘清掉組字 */
+function useImeSafeInput(value: string, onChange: (value: string) => void) {
+  const [draft, setDraft] = useState(value);
+  const isComposingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isComposingRef.current) {
+      setDraft(value);
+    }
+  }, [value]);
+
+  return {
+    value: draft,
+    onCompositionStart: () => {
+      isComposingRef.current = true;
+    },
+    onCompositionEnd: (e: React.CompositionEvent<HTMLInputElement>) => {
+      isComposingRef.current = false;
+      const next = e.currentTarget.value;
+      setDraft(next);
+      onChange(next);
+    },
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
+      setDraft(next);
+      if (!isComposingRef.current) {
+        onChange(next);
+      }
+    },
+  };
+}
 
 type EventSearchTriggerProps = {
   expanded: boolean;
@@ -51,6 +83,7 @@ export function EventSearchInline({
   size = "flex",
 }: EventSearchInlineProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const imeInput = useImeSafeInput(value, onChange);
 
   useEffect(() => {
     if (expanded) {
@@ -75,11 +108,14 @@ export function EventSearchInline({
     >
       <input
         ref={inputRef}
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        type="text"
+        value={imeInput.value}
+        onCompositionStart={imeInput.onCompositionStart}
+        onCompositionEnd={imeInput.onCompositionEnd}
+        onChange={imeInput.onChange}
         placeholder={placeholder}
         className={`${inputClassName} rounded-lg border-2 border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-white/5 px-3 py-1.5 text-base placeholder:text-gray-400 outline-none focus:border-primary dark:focus:border-primaryGray`}
+        autoComplete="off"
         autoCorrect="off"
         enterKeyHint="search"
       />
@@ -138,6 +174,7 @@ export function EventKeywordPanel({
   innerClassName = "",
 }: EventKeywordPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const imeInput = useImeSafeInput(value, onChange);
 
   useEffect(() => {
     if (expanded) {
@@ -156,11 +193,14 @@ export function EventKeywordPanel({
         <div className={`space-y-2 px-5 pb-3 pt-1 ${innerClassName}`}>
           <input
             ref={inputRef}
-            type="search"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            type="text"
+            value={imeInput.value}
+            onCompositionStart={imeInput.onCompositionStart}
+            onCompositionEnd={imeInput.onCompositionEnd}
+            onChange={imeInput.onChange}
             placeholder={placeholder}
             className="w-full rounded-lg border-2 border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-white/5 px-3 py-2 text-base placeholder:text-gray-400 outline-none focus:border-primary dark:focus:border-primaryGray"
+            autoComplete="off"
             autoCorrect="off"
             enterKeyHint="search"
           />

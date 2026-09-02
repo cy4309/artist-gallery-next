@@ -330,8 +330,10 @@ export default function EventsPage() {
       const next = !open;
       if (!next) {
         setSearchQuery("");
+      } else {
+        setAdvancedOpen(false);
+        void ensureCatalog();
       }
-      if (next) setAdvancedOpen(false);
       return next;
     });
   };
