@@ -192,6 +192,11 @@ main picture img:not([data-allow-download]) {
   transform: translate(-5px, -5px);
 }
 
+/* 桌面「全部城市」hover：全圖亮起（不加位移，避免整張圖抖開） */
+.mapAllLit .map-region {
+  fill: #B99362;
+}
+
 /* 離島：只放大可點範圍，外觀不變 */
 .lienchiang_country,
 .penghu_country,

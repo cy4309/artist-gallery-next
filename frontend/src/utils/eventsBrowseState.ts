@@ -48,6 +48,32 @@ export function saveEventsBrowseState(state: EventsBrowseState): void {
   }
 }
 
+/**
+ * 寫入瀏覽狀態；若仍是同一 source/mode/city，保留既有 scrollY
+ * （避免從詳情返回重新 fetch 時把捲動位置蓋成 0）
+ */
+export function saveEventsBrowseStatePreservingScroll(
+  next: Omit<EventsBrowseState, "scrollY"> & { scrollY?: number },
+): void {
+  const prev = loadEventsBrowseState();
+  const samePlace =
+    Boolean(prev) &&
+    prev!.source === next.source &&
+    prev!.mode === next.mode &&
+    (prev!.city ?? "") === (next.city ?? "") &&
+    (prev!.searchQuery ?? "") === (next.searchQuery ?? "");
+
+  saveEventsBrowseState({
+    ...next,
+    scrollY:
+      typeof next.scrollY === "number"
+        ? next.scrollY
+        : samePlace
+          ? prev!.scrollY
+          : 0,
+  });
+}
+
 export function loadEventsBrowseState(): EventsBrowseState | null {
   if (typeof window === "undefined") return null;
   try {

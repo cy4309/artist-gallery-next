@@ -13,9 +13,11 @@
 - **後台**：`/admin`（`ADMIN_SECRET`）— 統計、活動 CRUD、使用者／收藏／Push 列表、手動 sync、GAS→CF 遷移
 - **活動資料**：文化部 API + 新北 API → Next normalize／merge／dedupe → 寫入目前後端快取
 - **排程**：Vercel Cron 每日自動 sync 活動
-- **其他**：next-themes、SweetAlert2、GA、OG 圖 API
+- **測試**：Vitest（`npm test`）— 列表 URL／fetch 契約、假 id 文案等
+- **其他**：next-themes、SweetAlert2、GA、OG 圖 API；語系 `cyc-locale` localStorage（對齊 theme）
 
-> Vercel 專案 **Root Directory** 請設為 `frontend/`（`vercel.json` 才會生效）。
+> Vercel 專案 **Root Directory** 請設為 `frontend/`（`vercel.json` 才會生效）。  
+> Agent／產品約束見 repo 根目錄 [`AGENTS.md`](../AGENTS.md)；路線圖見 [`docs/events-optimization-roadmap.md`](../docs/events-optimization-roadmap.md)。
 
 ---
 
@@ -42,15 +44,17 @@
 文化部節慶 + 全 category ─┐
 新北 API（白名單）────────┼─► sync → 目前後端 EVENTS 快取（CF D1 或 GAS Sheet）
                           │
-活動頁：選縣市 → 選類型 → GET /api/events?city&categories（快取篩選，失敗才 live）
+活動列表：選類型 → 選縣市 → Client getOrgData
+          → GET /api/events?city&categories（快取篩選，失敗才 live）
+活動詳情：Server fetchOrgEventCityPeersByRouteId → Client 輪播島
 ```
 
 - **文化部**：節慶 + category 1–8、11、13–17（寫入為中文：節慶／展覽／音樂…）
 - **新北**：只收 `活動、表演與節慶`、`展覽`（類型寫成「新北文化局」）
-- 進頁不預載；確認類型後才打 API
+- 進頁不預載；確認類型後再選縣市才打瀏覽 API
 - 讀取端有短暫記憶體快取；description 截斷減輕 payload
-- **Canonical id**：`culture:…`、`ntpc:…`；網址 `/events/culture-901` 等
-- 前端透過 `/api/events` 取資料，再 map 成 `OrgEvent`
+- **Canonical id**：內部 `culture:…`、`ntpc:…`；網址路徑 `/events/culture-901`（dash，避免 `:` 編碼）
+- 前端列表透過 `/api/events` 取資料，再 map 成 `OrgEvent`；詳情由 Server 直接取同城 peers
 
 相關程式：
 
@@ -59,11 +63,49 @@
 | `src/services/events/adapters/` | 各來源 adapter |
 | `src/services/events/merge.ts` | 合併／去重 |
 | `src/services/events/filterActive.ts` | 過期過濾 |
+| `src/services/server/eventsServer.ts` | 詳情 Server 取 peers |
 | `app/api/events/route.ts` | 讀取（後端快取 → fallback live） |
 | `app/api/events/sync/route.ts` | Cron／手動同步寫入 |
 | `app/api/admin/sync/route.ts` | Admin 手動同步（在**目前這台 Next**執行） |
 | `cloudflare-data-api/` | CF Worker + D1 |
 | `scripts/CURRENT_GAS.js` | GAS 原始碼（需手動部署到 Apps Script） |
+
+---
+
+## 活動列表／詳情（前端現行）
+
+### 列表 `/events`（仍為 Client）
+
+- **URL 為 source of truth**（英文代號）：`/events?city=taipei&categories=music,festival`
+- 全選類型時省略 `categories`；全部縣市為 `city=all`
+- `city=all` + 全選 → `getOrgData({})`；無 `city` → 不發縣市瀏覽請求
+- Helper：`src/utils/eventsListUrl.ts`、`src/utils/city.ts`、`src/utils/eventCategories.ts`
+- 桌面：`app/events/page.tsx`；手機：`EventsMobileList` + `CityPicker`
+- 捲動／類型偏好可用 sessionStorage／localStorage；**不要**為列表 hover／clickedId 開 Redux
+
+### 詳情 `/events/[id]`（Server Component + Client 島）
+
+- Server：`app/events/[id]/page.tsx` → `fetchOrgEventCityPeersByRouteId`
+- Client 島：`EventDetailClient`（Carousel）；找不到／失敗：`EventDetailStatus`
+- 路徑例：`/events/culture-68ef…`；非全選類型時列表卡片可帶 `?categories=exhibition` 篩 peers；全選則乾淨路徑（利於分享）
+- 假 id 契約文案：「找不到這個活動」（`eventDetailCopy`）；UI 另走 `t.events.notFound`
+
+### 語系
+
+- `LocaleContext`：`localStorage` key `cyc-locale`（對齊 next-themes）
+- 縣市／類型標籤、變更類型看板、CityPicker 等走 `zh.ts`／`en.ts`
+
+### 測試
+
+```bash
+cd frontend
+npm test          # vitest run
+npm run test:watch
+```
+
+契約含：台北 + 類型 → fetch 帶 `city`；假 id 文案；URL 代號 parse／serialize。
+
+未做（見路線圖）：CI lint／build、TanStack Query 防重複列表請求、量測慢 `/api/events` 後再優化 payload。
 
 ---
 
@@ -211,6 +253,7 @@ i18n 文案已備於 `src/locales/zh.ts`、`en.ts` 的 `about.coffee.*`。
 cd frontend
 npm install
 npm run dev
+npm test
 
 # 可選：本機 Worker（見 cloudflare-data-api/README.md）
 cd cloudflare-data-api

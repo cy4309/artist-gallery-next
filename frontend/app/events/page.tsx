@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { getOrgData } from "@/services/client/orgDataClient";
 import MapTw from "@/containers/evnets/MapTw";
 import BaseButton from "@/components/BaseButton";
@@ -18,11 +18,12 @@ import OrgEventCard from "@/components/events/OrgEventCard";
 import { OrgEvent } from "@/types/event";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import LoadingIndicator from "@/components/LoadingIndicator";
-import { displayCityName } from "@/utils/city";
+import { CITY_ALL_LABEL, displayCityName } from "@/utils/city";
 import { filterEvents, hasKeywordSearch } from "@/utils/eventSearch";
 import { hasEventDateFilter } from "@/utils/eventDateFilter";
 import {
   EventCategoryId,
+  ALL_EVENT_CATEGORY_IDS,
   loadSessionCategories,
   saveSessionCategories,
 } from "@/utils/eventCategories";
@@ -34,11 +35,23 @@ import {
   loadEventsBrowseState,
   restoreEventsScrollY,
   saveEventsBrowseState,
+  saveEventsBrowseStatePreservingScroll,
 } from "@/utils/eventsBrowseState";
 import { useEventSearchCatalog } from "@/hooks/useEventSearchCatalog";
+import { useEventsListUrl } from "@/hooks/useEventsListUrl";
+import { buildCityBrowseFetchOptions } from "@/utils/eventsListUrl";
 
 export default function EventsPage() {
+  return (
+    <Suspense fallback={<LoadingIndicator />}>
+      <EventsPageContent />
+    </Suspense>
+  );
+}
+
+function EventsPageContent() {
   const { t } = useLocale();
+  const { listUrlState, replaceListUrl, clearListUrl } = useEventsListUrl();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [clickedId, setClickedId] = useState<string | null>(null);
   const [pickingCategories, setPickingCategories] = useState(false);
@@ -58,9 +71,11 @@ export default function EventsPage() {
   const [mobileListKey, setMobileListKey] = useState(0);
   const [desktopInitializing, setDesktopInitializing] = useState(true);
   const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
+  const [mapHighlightAll, setMapHighlightAll] = useState(false);
 
   const resetToStart = useCallback(() => {
     clearEventsBrowseState();
+    clearListUrl();
     setHoveredId(null);
     setClickedId(null);
     setEmptyCity(false);
@@ -79,24 +94,14 @@ export default function EventsPage() {
     if (saved && saved.length > 0) {
       setSelectedCategories(saved);
       setPickingCategories(false);
+      replaceListUrl({ categories: saved });
     } else {
       setSelectedCategories([]);
       setPickingCategories(true);
     }
     setMobileListKey((key) => key + 1);
     restoreEventsScrollY(0);
-  }, []);
-
-  useEffect(() => {
-    const saved = loadSessionCategories();
-    if (saved && saved.length > 0) {
-      setSelectedCategories(saved);
-      setPickingCategories(false);
-    } else {
-      setSelectedCategories([]);
-      setPickingCategories(true);
-    }
-  }, []);
+  }, [clearListUrl, replaceListUrl]);
 
   useEffect(() => {
     const onNavReset = () => resetToStart();
@@ -128,20 +133,30 @@ export default function EventsPage() {
 
   const loadBrowseEvents = useCallback(
     async (city: string, categories: EventCategoryId[]) => {
+      const fetchOptions = buildCityBrowseFetchOptions(city, categories);
+      if (!fetchOptions) {
+        setBrowseOrgData([]);
+        setEmptyCity(true);
+        return [];
+      }
+
       try {
         setBrowseLoading(true);
         setEmptyCity(false);
-        const events = await getOrgData({ city, categories });
+        replaceListUrl({
+          city,
+          categories: categories.length > 0 ? categories : undefined,
+        });
+        const events = await getOrgData(fetchOptions);
         setBrowseOrgData(events);
         if (events.length === 0) {
           setEmptyCity(true);
         }
-        saveEventsBrowseState({
+        saveEventsBrowseStatePreservingScroll({
           source: "desktop",
           mode: "city",
           city,
           searchQuery: "",
-          scrollY: 0,
         });
         return events;
       } catch (error) {
@@ -153,7 +168,7 @@ export default function EventsPage() {
         setBrowseLoading(false);
       }
     },
-    [],
+    [replaceListUrl],
   );
 
   const keywordResults = useMemo(
@@ -203,16 +218,76 @@ export default function EventsPage() {
 
     void (async () => {
       try {
+        const urlCity = listUrlState.city;
+        const urlCategories = listUrlState.categories;
+        const sessionCategories = loadSessionCategories();
+        const urlHasCategoriesParam = Boolean(
+          urlCategories && urlCategories.length > 0,
+        );
+
+        // URL 有 city 但無 categories → 視為全選類型（省略 param）
+        const categories =
+          urlHasCategoriesParam
+            ? urlCategories!
+            : urlCity
+              ? ALL_EVENT_CATEGORY_IDS
+              : sessionCategories && sessionCategories.length > 0
+                ? sessionCategories
+                : null;
+
+        if (categories?.length) {
+          if (!cancelled) {
+            setSelectedCategories(categories);
+            setPickingCategories(false);
+            saveSessionCategories(categories);
+          }
+        } else if (!cancelled) {
+          setSelectedCategories([]);
+          setPickingCategories(true);
+        }
+
+        if (urlCity) {
+          if (!cancelled) setClickedId(urlCity);
+          const fetchOptions = buildCityBrowseFetchOptions(
+            urlCity,
+            categories ?? ALL_EVENT_CATEGORY_IDS,
+          );
+          if (!fetchOptions) return;
+          setBrowseLoading(true);
+          try {
+            const events = await getOrgData(fetchOptions);
+            if (!cancelled) {
+              setBrowseOrgData(events);
+              setEmptyCity(events.length === 0);
+              replaceListUrl({
+                city: urlCity,
+                categories: categories ?? undefined,
+              });
+              const browse = loadEventsBrowseState();
+              if (browse?.source === "desktop" && browse.scrollY > 0) {
+                setRestoreScrollY(browse.scrollY);
+              }
+            }
+          } catch (error) {
+            console.error("Failed to restore events from URL:", error);
+            if (!cancelled) {
+              setBrowseOrgData([]);
+              setEmptyCity(true);
+            }
+          } finally {
+            if (!cancelled) setBrowseLoading(false);
+          }
+          return;
+        }
+
+        if (urlCategories?.length && !urlCity) {
+          if (!cancelled) replaceListUrl({ categories: urlCategories });
+          return;
+        }
+
         const browse = loadEventsBrowseState();
         if (browse?.source !== "desktop") return;
-
-        const categories = loadSessionCategories();
         if (!categories?.length) return;
-
-        if (!cancelled) {
-          setSelectedCategories(categories);
-          setPickingCategories(false);
-        }
 
         const restoredKeyword = hasKeywordSearch(browse.searchQuery);
         const restoredDate = hasEventDateFilter({
@@ -230,6 +305,7 @@ export default function EventsPage() {
         } else if (browse.city) {
           if (!cancelled) {
             setClickedId(browse.city);
+            replaceListUrl({ city: browse.city, categories });
             if (restoredDate) {
               setDraftDateFrom(browse.dateFrom ?? "");
               setDraftDateTo(browse.dateTo ?? "");
@@ -238,9 +314,14 @@ export default function EventsPage() {
               setAdvancedOpen(true);
             }
           }
+          const fetchOptions = buildCityBrowseFetchOptions(
+            browse.city,
+            categories,
+          );
+          if (!fetchOptions) return;
           setBrowseLoading(true);
           try {
-            const events = await getOrgData({ city: browse.city, categories });
+            const events = await getOrgData(fetchOptions);
             if (!cancelled) {
               setBrowseOrgData(events);
               setEmptyCity(events.length === 0);
@@ -405,6 +486,8 @@ export default function EventsPage() {
     setPickingCategories(false);
     if (clickedId) {
       await loadBrowseEvents(clickedId, categories);
+    } else {
+      replaceListUrl({ categories });
     }
   };
 
@@ -416,8 +499,11 @@ export default function EventsPage() {
     clearDateFilters();
     setAdvancedOpen(false);
     clearEventsBrowseState();
+    const cats = resolveCategories();
+    if (cats.length > 0) replaceListUrl({ categories: cats });
+    else clearListUrl();
     restoreEventsScrollY(0);
-  }, [clearDateFilters]);
+  }, [clearDateFilters, clearListUrl, replaceListUrl, resolveCategories]);
 
   const handleChangeCategories = () => {
     const saved = loadSessionCategories();
@@ -440,6 +526,7 @@ export default function EventsPage() {
     setPickingCategories(true);
 
     clearEventsBrowseState();
+    clearListUrl();
   };
 
   return (
@@ -478,9 +565,13 @@ export default function EventsPage() {
                   <button
                     type="button"
                     onClick={handleChangeCategories}
-                    className="shrink-0 text-xs font-semibold text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline px-2"
+                    className={`shrink-0 text-xs font-semibold underline underline-offset-2 px-2 transition-colors hover:text-black dark:hover:text-white ${
+                      pickingCategories
+                        ? "text-black dark:text-white"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
                   >
-                    變更類型
+                    {t.events.changeCategories}
                   </button>
                   <EventAdvancedSearchTrigger
                     expanded={advancedOpen}
@@ -488,21 +579,33 @@ export default function EventsPage() {
                     label={t.events.advancedSearch}
                     active={hasDateFilter}
                   />
-                  <p className="shrink-0 text-sm text-gray-400 whitespace-nowrap">
-                    {`${browseResults.length} 筆`}
-                  </p>
                 </>
               ) : (
                 <button
                   type="button"
                   onClick={handleChangeCategories}
-                  className="shrink-0 text-xs font-semibold text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline px-2"
+                  className={`shrink-0 text-xs font-semibold underline underline-offset-2 px-2 transition-colors hover:text-black dark:hover:text-white ${
+                    pickingCategories
+                      ? "text-black dark:text-white"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`}
                 >
-                  變更類型
+                  {t.events.changeCategories}
                 </button>
               )}
             </div>
           </div>
+
+          {showCityBrowse ? (
+            <div className="flex justify-end">
+              <p className="text-sm text-gray-400 whitespace-nowrap">
+                {t.events.listCount.replace(
+                  "{count}",
+                  String(browseResults.length),
+                )}
+              </p>
+            </div>
+          ) : null}
 
           {keywordOpen && !showCityBrowse ? (
             <div className="flex justify-start">
@@ -524,7 +627,7 @@ export default function EventsPage() {
                   onConfirmDates={handleConfirmDates}
                   confirmDatesDisabled={!dateDraftDirty}
                   onClearDates={handleClearDates}
-                  dateHint={`${displayCityName(clickedId)} · ${t.events.dateFilterHint}`}
+                  dateHint={`${displayCityName(clickedId, t.cities)} · ${t.events.dateFilterHint}`}
                   compact
                   innerClassName="px-0"
                 />
@@ -552,6 +655,7 @@ export default function EventsPage() {
                     <OrgEventCard
                       key={event.id}
                       event={event}
+                      categories={selectedCategories}
                       onBeforeNavigate={persistBrowseState}
                     />
                   ))}
@@ -569,7 +673,7 @@ export default function EventsPage() {
                   </p>
 
                   <p className="text-sm text-gray-400">
-                    {displayCityName(clickedId)} · {t.events.dateFilterHint}
+                    {displayCityName(clickedId, t.cities)} · {t.events.dateFilterHint}
                   </p>
                 </div>
               ) : (
@@ -578,6 +682,7 @@ export default function EventsPage() {
                     <OrgEventCard
                       key={event.id}
                       event={event}
+                      categories={selectedCategories}
                       onBeforeNavigate={persistBrowseState}
                     />
                   ))}
@@ -593,13 +698,40 @@ export default function EventsPage() {
                   {(hoveredId ?? t.events.title) && (
                     <BaseButton className="my-4 shrink-0">
                       <h5 className="text-center text-xl font-bold">
-                        - {displayCityName(hoveredId) || t.events.title} -
+                        - {displayCityName(hoveredId, t.cities) || t.events.title} -
                       </h5>
                     </BaseButton>
                   )}
 
+                  <p className="mb-2 shrink-0 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    {t.events.browseCityHint}
+                    <button
+                      type="button"
+                      onClick={() => handleMapClick(CITY_ALL_LABEL)}
+                      onMouseEnter={() => {
+                        setMapHighlightAll(true);
+                        handleMapHover(CITY_ALL_LABEL);
+                      }}
+                      onMouseLeave={() => {
+                        setMapHighlightAll(false);
+                        handleMapHover(null);
+                      }}
+                      className={`underline underline-offset-2 transition-colors hover:text-black dark:hover:text-white ${
+                        mapHighlightAll
+                          ? "text-black dark:text-white"
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      {t.events.browseAllCities}
+                    </button>
+                  </p>
+
                   <section className="p-4 flex-1 min-h-0 w-full flex items-center justify-center">
-                    <MapTw onHover={handleMapHover} onClick={handleMapClick} />
+                    <MapTw
+                      onHover={handleMapHover}
+                      onClick={handleMapClick}
+                      highlightAll={mapHighlightAll}
+                    />
                   </section>
                 </div>
               )}
@@ -621,11 +753,14 @@ export default function EventsPage() {
               {emptyCity && (
                 <div className="m-4 w-full flex flex-col justify-center items-center">
                   <p className="my-4 text-center">
-                    {displayCityName(clickedId)} · 共 0 筆
+                    {t.events.listCountZero.replace(
+                      "{city}",
+                      displayCityName(clickedId, t.cities),
+                    )}
                   </p>
 
                   <p className="text-sm text-gray-400">
-                    這個縣市目前沒有符合的活動
+                    {t.events.emptyCityNoResults}
                   </p>
                 </div>
               )}
@@ -635,11 +770,14 @@ export default function EventsPage() {
           {!showLoading && showCityBrowse && emptyCity && (
             <div className="m-4 w-full flex flex-col justify-center items-center flex-1">
               <p className="my-4 text-center">
-                {displayCityName(clickedId)} · 共 0 筆
+                {t.events.listCountZero.replace(
+                  "{city}",
+                  displayCityName(clickedId, t.cities),
+                )}
               </p>
 
               <p className="text-sm text-gray-400">
-                這個縣市目前沒有符合的活動
+                {t.events.emptyCityNoResults}
               </p>
             </div>
           )}

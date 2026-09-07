@@ -7,8 +7,10 @@ import {
   ALL_EVENT_CATEGORY_IDS,
   EVENT_CATEGORY_OPTIONS,
   EventCategoryId,
+  getCategoryOptionLabel,
 } from "@/utils/eventCategories";
 import { getEventsScrollRoot } from "@/utils/eventsBrowseState";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 type EventCategoryPickerProps = {
   selected: EventCategoryId[];
@@ -31,6 +33,8 @@ export default function EventCategoryPicker({
   confirmLoadsData = false,
   variant = "modal",
 }: EventCategoryPickerProps) {
+  const { t } = useLocale();
+  const copy = t.events.categoryPicker;
   const selectedSet = new Set(selected);
   const allSelected = selected.length === ALL_EVENT_CATEGORY_IDS.length;
   const isModal = variant === "modal";
@@ -60,9 +64,7 @@ export default function EventCategoryPicker({
   const card = (
     <div
       className={`relative flex w-full max-w-lg min-h-0 flex-col rounded-2xl border-[3px] border-primary bg-white/95 p-5 dark:border-primaryGray dark:bg-primary/95 ${
-        isModal
-          ? "h-[min(90dvh,calc(100dvh-7rem))]"
-          : "max-h-[min(85vh,40rem)]"
+        isModal ? "h-[min(90dvh,calc(100dvh-7rem))]" : "max-h-[min(85vh,40rem)]"
       }`}
     >
       <div className="absolute top-3 right-3 z-10">
@@ -77,11 +79,13 @@ export default function EventCategoryPicker({
       <div className="shrink-0 space-y-4 pr-10">
         <div>
           <p className="text-xs tracking-wide text-gray-500 dark:text-gray-400">
-            步驟 1
+            {copy.step}
           </p>
-          <h2 className="mt-1 text-xl font-bold">活動類型</h2>
+          <h2 className="mt-1 text-xl font-black tracking-[2px]">
+            {copy.title}
+          </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            請勾選想看的活動類型（預設不選），確認後再選擇縣市
+            {copy.hint}
           </p>
         </div>
 
@@ -91,18 +95,20 @@ export default function EventCategoryPicker({
             onClick={selectAll}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600"
           >
-            全選
+            {copy.selectAll}
           </button>
           <button
             type="button"
             onClick={clearAll}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600"
           >
-            清空
+            {copy.clearAll}
           </button>
           <span className="text-xs text-gray-400 self-center">
-            已選 {selected.length}/{ALL_EVENT_CATEGORY_IDS.length}
-            {allSelected ? "（全部）" : ""}
+            {copy.selectedCount
+              .replace("{current}", String(selected.length))
+              .replace("{total}", String(ALL_EVENT_CATEGORY_IDS.length))}
+            {allSelected ? copy.selectedAllSuffix : ""}
           </span>
         </div>
       </div>
@@ -126,7 +132,7 @@ export default function EventCategoryPicker({
                     : "border-slate-200 dark:border-slate-700 opacity-70"
                 }`}
               >
-                {option.label}
+                {getCategoryOptionLabel(option.id, t.categories)}
               </button>
             );
           })}
@@ -141,7 +147,11 @@ export default function EventCategoryPicker({
             onConfirm(selected);
           }}
         >
-          {loading ? "載入中…" : confirmLoadsData ? "確認載入" : "確認"}
+          {loading
+            ? copy.loading
+            : confirmLoadsData
+              ? copy.confirmLoad
+              : copy.confirm}
         </BaseButton>
       </div>
     </div>
@@ -156,7 +166,7 @@ export default function EventCategoryPicker({
       className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden px-5 py-4"
       role="dialog"
       aria-modal="true"
-      aria-label="選擇活動類型"
+      aria-label={copy.ariaLabel}
     >
       {card}
     </div>

@@ -3,6 +3,7 @@ import { fetchOrgEventByRouteId } from "@/services/server/eventsServer";
 import { formatDateSmart } from "@/utils/date";
 import { getEventOgImageUrl } from "@/utils/imageProxy";
 import { eventDetailPath } from "@/utils/eventId";
+import { EVENT_NOT_FOUND_MESSAGE } from "@/utils/eventDetailCopy";
 import {
   getSiteBaseUrl,
   SITE_DESCRIPTION,
@@ -49,7 +50,7 @@ export async function generateMetadata({
     if (!event) {
       return {
         title: { absolute: SITE_NAME },
-        description: "找不到這個活動",
+        description: EVENT_NOT_FOUND_MESSAGE,
       };
     }
 

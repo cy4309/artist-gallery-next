@@ -22,6 +22,7 @@ import { filterEvents, hasKeywordSearch } from "@/utils/eventSearch";
 import { hasEventDateFilter } from "@/utils/eventDateFilter";
 import {
   EventCategoryId,
+  ALL_EVENT_CATEGORY_IDS,
   loadSessionCategories,
   saveSessionCategories,
 } from "@/utils/eventCategories";
@@ -32,12 +33,16 @@ import {
   loadEventsBrowseState,
   restoreEventsScrollY,
   saveEventsBrowseState,
+  saveEventsBrowseStatePreservingScroll,
 } from "@/utils/eventsBrowseState";
 import { useLocale } from "@/locales/contexts/LocaleContext";
 import { useEventSearchCatalog } from "@/hooks/useEventSearchCatalog";
+import { useEventsListUrl } from "@/hooks/useEventsListUrl";
+import { buildCityBrowseFetchOptions } from "@/utils/eventsListUrl";
 
 export default function EventsMobileList() {
   const { t } = useLocale();
+  const { listUrlState, replaceListUrl, clearListUrl } = useEventsListUrl();
   const [selectedCity, setSelectedCity] = useState(NO_CITY_SELECTED);
   const [pickingCategories, setPickingCategories] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<
@@ -109,21 +114,28 @@ export default function EventsMobileList() {
 
   const loadEvents = useCallback(
     async (city: string, categories: EventCategoryId[]) => {
+      const fetchOptions = buildCityBrowseFetchOptions(city, categories);
+      if (!fetchOptions) {
+        setOrgData([]);
+        setHasConfirmed(true);
+        return [];
+      }
+
       try {
         setOrgLoading(true);
         setPickingCategories(false);
-        const events = await getOrgData({
-          city: city === ALL_CITIES ? undefined : city,
-          categories,
+        replaceListUrl({
+          city,
+          categories: categories.length > 0 ? categories : undefined,
         });
+        const events = await getOrgData(fetchOptions);
         setOrgData(events);
         setHasConfirmed(true);
-        saveEventsBrowseState({
+        saveEventsBrowseStatePreservingScroll({
           source: "mobile",
           mode: "city",
           city,
           searchQuery: "",
-          scrollY: 0,
         });
         return events;
       } catch (error) {
@@ -135,7 +147,7 @@ export default function EventsMobileList() {
         setOrgLoading(false);
       }
     },
-    [],
+    [replaceListUrl],
   );
 
   useEffect(() => {
@@ -143,15 +155,51 @@ export default function EventsMobileList() {
 
     void (async () => {
       try {
-        const categories = loadSessionCategories();
+        const urlCity = listUrlState.city;
+        const urlCategories = listUrlState.categories;
+        const sessionCategories = loadSessionCategories();
+        const urlHasCategoriesParam = Boolean(
+          urlCategories && urlCategories.length > 0,
+        );
+
+        // URL 有 city 但無 categories → 視為全選類型（省略 param）
+        const categories: EventCategoryId[] | null = urlHasCategoriesParam
+          ? urlCategories!
+          : urlCity
+            ? [...ALL_EVENT_CATEGORY_IDS]
+            : sessionCategories && sessionCategories.length > 0
+              ? sessionCategories
+              : null;
+
         if (!categories?.length) {
-          if (!cancelled) setPickingCategories(true);
+          if (!cancelled) {
+            setSelectedCategories([]);
+            setPickingCategories(true);
+          }
           return;
         }
 
         if (!cancelled) {
           setSelectedCategories(categories);
           setPickingCategories(false);
+          saveSessionCategories(categories);
+        }
+
+        if (urlCity) {
+          if (!cancelled) setSelectedCity(urlCity);
+          await loadEvents(urlCity, categories);
+          if (!cancelled) {
+            const browse = loadEventsBrowseState();
+            if (browse?.source === "mobile" && browse.scrollY > 0) {
+              setRestoreScrollY(browse.scrollY);
+            }
+          }
+          return;
+        }
+
+        if (urlCategories?.length && !urlCity) {
+          if (!cancelled) replaceListUrl({ categories: urlCategories });
+          return;
         }
 
         const browse = loadEventsBrowseState();
@@ -172,6 +220,7 @@ export default function EventsMobileList() {
           } else if (browse.city) {
             if (!cancelled) {
               setSelectedCity(browse.city);
+              replaceListUrl({ city: browse.city, categories });
               if (restoredDate) {
                 setDraftDateFrom(browse.dateFrom ?? "");
                 setDraftDateTo(browse.dateTo ?? "");
@@ -180,26 +229,8 @@ export default function EventsMobileList() {
                 setAdvancedOpen(true);
               }
             }
-            setOrgLoading(true);
-            try {
-              const events = await getOrgData({
-                city: browse.city === ALL_CITIES ? undefined : browse.city,
-                categories,
-              });
-              if (!cancelled) {
-                setOrgData(events);
-                setHasConfirmed(true);
-                setRestoreScrollY(browse.scrollY);
-              }
-            } catch (error) {
-              console.error("Failed to restore events browse:", error);
-              if (!cancelled) {
-                setOrgData([]);
-                setHasConfirmed(true);
-              }
-            } finally {
-              if (!cancelled) setOrgLoading(false);
-            }
+            await loadEvents(browse.city, categories);
+            if (!cancelled) setRestoreScrollY(browse.scrollY);
           }
         }
       } finally {
@@ -329,8 +360,11 @@ export default function EventsMobileList() {
     clearDateFilters();
     setAdvancedOpen(false);
     clearEventsBrowseState();
+    const cats = resolveCategories();
+    if (cats.length > 0) replaceListUrl({ categories: cats });
+    else clearListUrl();
     restoreEventsScrollY(0);
-  }, [clearDateFilters]);
+  }, [clearDateFilters, clearListUrl, replaceListUrl, resolveCategories]);
 
   const handleSelectCity = (city: string) => {
     const categories = resolveCategories();
@@ -359,8 +393,13 @@ export default function EventsMobileList() {
     saveSessionCategories(categories);
     setPickingCategories(false);
     clearEventsBrowseState();
-    if (hasConfirmed) {
+    if (hasConfirmed && selectedCity) {
       await loadEvents(selectedCity, categories);
+    } else {
+      replaceListUrl({
+        city: selectedCity || undefined,
+        categories,
+      });
     }
   };
 
@@ -376,6 +415,7 @@ export default function EventsMobileList() {
     setKeywordOpen(false);
     setAdvancedOpen(false);
     clearEventsBrowseState();
+    clearListUrl();
   };
 
   if (pickingCategories && !hasKeyword) {
@@ -394,16 +434,19 @@ export default function EventsMobileList() {
     return <LoadingIndicator />;
   }
 
-  const cityLabel =
-    selectedCity === ALL_CITIES ? ALL_CITIES : displayCityName(selectedCity);
+  const cityLabel = displayCityName(selectedCity, t.cities);
 
   const headerChangeCategories = (
     <button
       type="button"
       onClick={handleChangeCategories}
-      className="text-xs font-semibold text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline shrink-0 px-2"
+      className={`text-xs font-semibold underline underline-offset-2 shrink-0 px-2 transition-colors hover:text-black dark:hover:text-white ${
+        pickingCategories
+          ? "text-black dark:text-white"
+          : "text-gray-500 dark:text-gray-400"
+      }`}
     >
-      變更類型
+      {t.events.changeCategories}
     </button>
   );
 
@@ -423,14 +466,15 @@ export default function EventsMobileList() {
         />
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {hasKeyword && (
-          <p className="shrink-0 text-sm text-gray-400 whitespace-nowrap">
-            {`${listEvents.length} 筆`}
-          </p>
-        )}
         {showChangeCategories && headerChangeCategories}
       </div>
     </>
+  );
+
+  const listCountLabel = (
+    <p className="text-sm text-gray-400 whitespace-nowrap">
+      {t.events.listCount.replace("{count}", String(listEvents.length))}
+    </p>
   );
 
   const keywordSearchHint = keywordOpen ? (
@@ -444,20 +488,20 @@ export default function EventsMobileList() {
   if (showCityBrowse) {
     return (
       <div className="min-h-dvh">
-        <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
-          <BackButton onClick={handleBackToCitySelect} className="mb-0" />
-          <div className="flex items-center justify-end gap-3 min-w-0">
-            {headerChangeCategories}
-            <EventAdvancedSearchTrigger
-              expanded={advancedOpen}
-              onToggle={toggleAdvanced}
-              label={t.events.advancedSearch}
-              active={hasDateFilter}
-            />
-            <p className="text-sm text-gray-400 whitespace-nowrap shrink-0">
-              {`${listEvents.length} 筆`}
-            </p>
+        <div className="px-5 pt-4 pb-2 space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <BackButton onClick={handleBackToCitySelect} className="mb-0" />
+            <div className="flex items-center justify-end gap-3 min-w-0">
+              {headerChangeCategories}
+              <EventAdvancedSearchTrigger
+                expanded={advancedOpen}
+                onToggle={toggleAdvanced}
+                label={t.events.advancedSearch}
+                active={hasDateFilter}
+              />
+            </div>
           </div>
+          <div className="flex justify-end">{listCountLabel}</div>
         </div>
 
         <EventAdvancedSearchPanel
@@ -475,9 +519,9 @@ export default function EventsMobileList() {
 
         {orgData.length === 0 && (
           <div className="min-h-[50dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-lg font-semibold">目前沒有符合的活動</p>
+            <p className="text-lg font-semibold">{t.events.browseNoResults}</p>
             <p className="text-sm text-gray-400">
-              {cityLabel} · 試試其他縣市或變更類型
+              {cityLabel} · {t.events.browseNoResultsHint}
             </p>
           </div>
         )}
@@ -497,6 +541,7 @@ export default function EventsMobileList() {
               <OrgEventCard
                 key={event.id}
                 event={event}
+                categories={selectedCategories}
                 onBeforeNavigate={persistBrowseState}
               />
             ))}
@@ -508,17 +553,22 @@ export default function EventsMobileList() {
 
   return (
     <div className="min-h-dvh">
-      <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
-        {hasKeyword && hasConfirmed ? (
-          <BackButton
-            onClick={() => {
-              setSearchQuery("");
-              setKeywordOpen(false);
-            }}
-            className="mb-0 shrink-0"
-          />
+      <div className="px-5 pt-4 pb-2 space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          {hasKeyword && hasConfirmed ? (
+            <BackButton
+              onClick={() => {
+                setSearchQuery("");
+                setKeywordOpen(false);
+              }}
+              className="mb-0 shrink-0"
+            />
+          ) : null}
+          {keywordSearchControls(!hasConfirmed || !hasKeyword)}
+        </div>
+        {hasKeyword ? (
+          <div className="flex justify-end">{listCountLabel}</div>
         ) : null}
-        {keywordSearchControls(!hasConfirmed || !hasKeyword)}
       </div>
 
       {keywordSearchHint}
@@ -539,6 +589,7 @@ export default function EventsMobileList() {
               <OrgEventCard
                 key={event.id}
                 event={event}
+                categories={selectedCategories}
                 onBeforeNavigate={persistBrowseState}
               />
             ))}
@@ -554,9 +605,11 @@ export default function EventsMobileList() {
           />
 
           <div className="min-h-[40dvh] flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-lg font-semibold">選擇縣市開始瀏覽</p>
+            <p className="text-lg font-semibold">
+              {t.events.selectCityToBrowse}
+            </p>
             <p className="text-sm text-gray-400">
-              也可直接用上方放大鏡全台搜尋；會沿用已選的活動類型
+              {t.events.selectCityToBrowseHint}
             </p>
           </div>
         </>

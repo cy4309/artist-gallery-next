@@ -10,8 +10,7 @@ import {
   eventMatchesCategories,
   parseCategoryQuery,
 } from "@/utils/eventCategories";
-import { findOrgEventByRouteId } from "@/services/events/canonicalToLegacy";
-import { canonicalListToOrgEvents } from "@/services/events/canonicalToLegacy";
+import { buildEventDetailCityPeers } from "@/utils/eventDetailPeers";
 import { CanonicalEvent } from "@/types/event";
 
 async function loadEvents(): Promise<{
@@ -45,33 +44,12 @@ function filterEvents(
     id?: string | null;
   },
 ): CanonicalEvent[] {
-  // 詳情頁：同城活動；若有 categories 則一併篩選（仍保留目前這筆）
   if (options.id) {
-    const orgEvents = canonicalListToOrgEvents(events);
-    const hit = findOrgEventByRouteId(orgEvents, options.id);
-    if (!hit) return [];
-
-    const hitCanonical =
-      events.find((event) => event.id === hit.id) ??
-      events.find((event) =>
-        eventMatchesCity(event, hit.cityName) && event.title === hit.actName,
-      );
-
-    let cityPeers = events.filter((event) =>
-      eventMatchesCity(event, hit.cityName),
+    return buildEventDetailCityPeers(
+      events,
+      options.id,
+      options.categories,
     );
-
-    if (options.categories && options.categories.length > 0) {
-      cityPeers = cityPeers.filter((event) =>
-        eventMatchesCategories(event, options.categories!),
-      );
-    }
-
-    if (hitCanonical && !cityPeers.some((event) => event.id === hitCanonical.id)) {
-      cityPeers = [hitCanonical, ...cityPeers];
-    }
-
-    return cityPeers;
   }
 
   let list = events;

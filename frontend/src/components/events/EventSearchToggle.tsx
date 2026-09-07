@@ -138,14 +138,16 @@ export function EventAdvancedSearchTrigger({
   active = false,
   className = "",
 }: EventAdvancedSearchTriggerProps) {
+  const selected = expanded || active;
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`text-xs font-semibold underline-offset-2 hover:underline px-1 whitespace-nowrap ${
-        expanded || active
-          ? "text-primary dark:text-primaryGray"
+      aria-pressed={selected}
+      className={`text-xs font-semibold underline underline-offset-2 px-1 whitespace-nowrap transition-colors hover:text-black dark:hover:text-white ${
+        selected
+          ? "text-black dark:text-white"
           : "text-gray-500 dark:text-gray-400"
       } ${className}`}
     >

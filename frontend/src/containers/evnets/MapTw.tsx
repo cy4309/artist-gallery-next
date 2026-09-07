@@ -3,9 +3,11 @@ import { useState } from "react";
 interface MapTwProps {
   onHover: (id: string | null) => void;
   onClick: (id: string) => void;
+  /** 全部城市按鈕 hover 時整張地圖亮起 */
+  highlightAll?: boolean;
 }
 
-const MapTw = ({ onHover, onClick }: MapTwProps) => {
+const MapTw = ({ onHover, onClick, highlightAll = false }: MapTwProps) => {
   const [clickedId, setClickedId] = useState<string | null>(null);
 
   const handleMouseEnter = (id: string | null) => {
@@ -24,7 +26,9 @@ const MapTw = ({ onHover, onClick }: MapTwProps) => {
   return (
     <>
       <svg
-        className="layerOne h-full w-auto max-h-full"
+        className={`layerOne h-full w-auto max-h-full${
+          highlightAll ? " mapAllLit" : ""
+        }`}
         data-name="layerOne"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 1440 2055"

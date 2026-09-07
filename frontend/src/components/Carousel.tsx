@@ -520,7 +520,7 @@ const Carousel = ({
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <span className="rounded-md bg-white/15 px-2 py-1 text-[11px] font-semibold tracking-wide text-white">
-                    {getEventCategoryLabel(item) || "活動"}
+                    {getEventCategoryLabel(item, t.categories) || t.header.events}
                   </span>
                   <FavoriteButton
                     eventId={item.id}

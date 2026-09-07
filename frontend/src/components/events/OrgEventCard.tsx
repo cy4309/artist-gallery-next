@@ -6,15 +6,18 @@ import { OrgEvent } from "@/types/event";
 import { formatDateSmart, toISODateTime } from "@/utils/date";
 import { getCultureImageUrl } from "@/utils/imageProxy";
 import { eventCityName } from "@/utils/city";
-import { eventDetailPath } from "@/utils/eventId";
-import { getEventCategoryLabel } from "@/utils/eventCategories";
+import { eventDetailHref } from "@/utils/eventId";
+import { getEventCategoryLabel, EventCategoryId } from "@/utils/eventCategories";
 import EventImageSourceBadge from "@/components/events/EventImageSourceBadge";
+import { useLocale } from "@/locales/contexts/LocaleContext";
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-no-image.png";
 
 type OrgEventCardProps = {
   event: OrgEvent;
   onBeforeNavigate?: () => void;
+  /** 帶進詳情 URL，供 Server 篩同城 peers */
+  categories?: EventCategoryId[];
 };
 
 function formatDateRange(startTime?: string, endTime?: string): string {
@@ -24,20 +27,26 @@ function formatDateRange(startTime?: string, endTime?: string): string {
   return start || end;
 }
 
-export default function OrgEventCard({ event, onBeforeNavigate }: OrgEventCardProps) {
+export default function OrgEventCard({
+  event,
+  onBeforeNavigate,
+  categories,
+}: OrgEventCardProps) {
+  const { t } = useLocale();
   const hasImage = Boolean(event.imageUrl?.trim());
   const imageUrl = hasImage
     ? getCultureImageUrl(event.imageUrl)
     : PLACEHOLDER_IMAGE;
   const city = eventCityName(event);
-  const categoryLabel = getEventCategoryLabel(event);
+  const categoryLabel = getEventCategoryLabel(event, t.categories);
   const favoriteImageUrl = hasImage
     ? (process.env.NEXT_PUBLIC_BASE_URL || "") + imageUrl
     : undefined;
 
   return (
     <Link
-      href={eventDetailPath(event.id)}
+      href={eventDetailHref(event.id, categories)}
+      scroll={false}
       onClick={() => onBeforeNavigate?.()}
       className="block rounded-2xl overflow-hidden border-[3px] border-primary dark:border-primaryGray bg-white/90 dark:bg-primary/90 backdrop-blur-md transition-opacity hover:opacity-90 active:opacity-80"
     >
