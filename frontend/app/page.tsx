@@ -68,10 +68,10 @@ export default function Home() {
         <div className="relative w-full max-h-dvh overflow-hidden">
           <video
             ref={videoRef}
-            className="w-full h-[80vh] md:h-full object-cover object-center opacity-80 saturate-50 scale-x-125 md:scale-x-100"
+            className="w-full h-[80vh] md:h-full object-cover object-bottom opacity-80 saturate-50 scale-125 md:scale-100"
             src={VIDEO_SRC}
             preload="auto"
-            // loop
+            loop
             muted
             playsInline
           />
