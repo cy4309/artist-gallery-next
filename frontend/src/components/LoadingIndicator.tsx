@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 type LoadingIndicatorProps = {
@@ -10,14 +10,16 @@ type LoadingIndicatorProps = {
   variant?: "inline" | "intro";
   /** intro：為 true 才開始滑開（例如影片已可播） */
   ready?: boolean;
+  /** intro：開始滑開當下（可比 onComplete 早，用來提早播影片） */
+  onExitStart?: () => void;
   onComplete?: () => void;
 };
 
 const INTRO_HOLD_MS = 480;
 /** 第一層較慢；第二層較快但稍晚起步，約略同時離場完成 */
-const LAYER1_DURATION = 1.2;
-const LAYER2_DURATION = 0.95;
-const LAYER2_DELAY = 0.25;
+const LAYER1_DURATION = 1.15;
+const LAYER2_DURATION = 0.9;
+const LAYER2_DELAY = 0.22;
 
 const exitEase = [0.76, 0, 0.24, 1] as const;
 
@@ -47,13 +49,16 @@ function InlineLoading({
 
 function IntroLoading({
   ready = false,
+  onExitStart,
   onComplete,
 }: {
   ready?: boolean;
+  onExitStart?: () => void;
   onComplete?: () => void;
 }) {
   const [holdDone, setHoldDone] = useState(false);
-  const [exiting, setExiting] = useState(false);
+  const exitStartedRef = useRef(false);
+  const exiting = holdDone && ready;
 
   useEffect(() => {
     const t = window.setTimeout(() => setHoldDone(true), INTRO_HOLD_MS);
@@ -61,8 +66,10 @@ function IntroLoading({
   }, []);
 
   useEffect(() => {
-    if (holdDone && ready) setExiting(true);
-  }, [holdDone, ready]);
+    if (!exiting || exitStartedRef.current) return;
+    exitStartedRef.current = true;
+    onExitStart?.();
+  }, [exiting, onExitStart]);
 
   return (
     <div
@@ -71,9 +78,21 @@ function IntroLoading({
       aria-live="polite"
       aria-busy={!exiting}
     >
-      {/* 第一層（主色）：先動、較慢 */}
+      {/* 第二層：追趕用（light 接近白，避免整屏發灰） */}
       <motion.div
-        className="absolute inset-0 z-0 bg-white dark:bg-primary"
+        className="absolute inset-0 z-0 bg-[#f3f3f3] dark:bg-[#1a1a1a]"
+        initial={{ y: "0%" }}
+        animate={{ y: exiting ? "-100%" : "0%" }}
+        transition={{
+          ease: exitEase,
+          duration: LAYER2_DURATION,
+          delay: exiting ? LAYER2_DELAY : 0,
+        }}
+      />
+
+      {/* 第一層：白／黑 + 紙紋 */}
+      <motion.div
+        className="absolute inset-0 z-[1] overflow-hidden bg-white dark:bg-black"
         initial={{ y: "0%" }}
         animate={{ y: exiting ? "-100%" : "0%" }}
         transition={{
@@ -84,29 +103,38 @@ function IntroLoading({
         onAnimationComplete={() => {
           if (exiting) onComplete?.();
         }}
-      />
-      {/* 第二層（灰）：稍晚起步、較快追趕後一同上離場 */}
-      <motion.div
-        className="absolute inset-0 z-[1] bg-neutral-400 dark:bg-neutral-600"
-        initial={{ y: "0%" }}
-        animate={{ y: exiting ? "-100%" : "0%" }}
-        transition={{
-          ease: exitEase,
-          duration: LAYER2_DURATION,
-          delay: exiting ? LAYER2_DELAY : 0,
-        }}
-      />
+      >
+        {/* light：淡一點，避免白底被 multiply 洗成灰 */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.28] mix-blend-multiply bg-repeat dark:hidden"
+          style={{
+            backgroundImage: "url(/images/noise.gif)",
+            backgroundSize: "140px 140px",
+          }}
+          aria-hidden
+        />
+        {/* dark：gif 多半是暗點，反相成亮點再用 screen 疊上黑底 */}
+        <div
+          className="absolute inset-0 pointer-events-none hidden opacity-[0.45] mix-blend-screen bg-repeat dark:block"
+          style={{
+            backgroundImage: "url(/images/noise.gif)",
+            backgroundSize: "140px 140px",
+            filter: "invert(1) contrast(1.35)",
+          }}
+          aria-hidden
+        />
+      </motion.div>
 
       <motion.div
         className="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-5 pointer-events-none"
         initial={{ opacity: 1 }}
         animate={exiting ? { opacity: 0, y: -28 } : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
       >
         <p className="font-dela text-3xl tracking-[0.12em] text-primary dark:text-white md:text-5xl">
           CYC <span className="tracking-[0.18em]">ZINE</span>
         </p>
-        <div className="loader scale-75 opacity-70" aria-hidden="true" />
+        <div className="loader md:scale-110 opacity-75" aria-hidden="true" />
       </motion.div>
     </div>
   );
@@ -117,10 +145,17 @@ const LoadingIndicator = ({
   className,
   variant = "inline",
   ready,
+  onExitStart,
   onComplete,
 }: LoadingIndicatorProps) => {
   if (variant === "intro") {
-    return <IntroLoading ready={ready} onComplete={onComplete} />;
+    return (
+      <IntroLoading
+        ready={ready}
+        onExitStart={onExitStart}
+        onComplete={onComplete}
+      />
+    );
   }
   return <InlineLoading label={label} className={className} />;
 };

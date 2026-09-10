@@ -7,7 +7,7 @@ import { useLocale } from "@/locales/contexts/LocaleContext";
 
 const VIDEO_SRC = "/videos/taiwan_culture_video_montage_clip.mp4";
 /** 影片遲遲未就緒時仍允許離場，避免卡死 */
-const VIDEO_READY_FALLBACK_MS = 10000;
+const VIDEO_READY_FALLBACK_MS = 6000;
 
 export default function Home() {
   const { t } = useLocale();
@@ -23,32 +23,35 @@ export default function Home() {
     const el = videoRef.current;
     if (!el) return;
 
-    // 快取命中時可能已可播
-    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      markVideoReady();
-    }
-
     const onReady = () => markVideoReady();
-    el.addEventListener("canplaythrough", onReady);
     el.addEventListener("loadeddata", onReady);
+    el.addEventListener("canplay", onReady);
+
+    // 已快取時勿在 effect 內同步 setState（會 cascading render）
+    let cachedReadyId = 0;
+    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      cachedReadyId = window.setTimeout(onReady, 0);
+    }
 
     const fallback = window.setTimeout(markVideoReady, VIDEO_READY_FALLBACK_MS);
 
     return () => {
-      el.removeEventListener("canplaythrough", onReady);
       el.removeEventListener("loadeddata", onReady);
+      el.removeEventListener("canplay", onReady);
+      window.clearTimeout(cachedReadyId);
       window.clearTimeout(fallback);
+      el.pause();
     };
   }, [markVideoReady]);
 
-  useEffect(() => {
-    if (!introDone) return;
+  // 遮罩開始滑開就從頭播，避免滑完才 play 的空窗
+  const startVideo = useCallback(() => {
     const el = videoRef.current;
     if (!el) return;
-    void el.play().catch(() => {
-      // 自動播放被擋時維持靜音重試；失敗則停在首幀
-    });
-  }, [introDone]);
+    el.pause();
+    el.currentTime = 0;
+    void el.play().catch(() => {});
+  }, []);
 
   return (
     <>
@@ -56,6 +59,7 @@ export default function Home() {
         <LoadingIndicator
           variant="intro"
           ready={videoReady}
+          onExitStart={startVideo}
           onComplete={() => setIntroDone(true)}
         />
       ) : null}
@@ -64,13 +68,12 @@ export default function Home() {
         <div className="relative w-full max-h-dvh overflow-hidden">
           <video
             ref={videoRef}
-            className="w-full h-[90vh] md:h-full object-cover opacity-80 saturate-50"
+            className="w-full h-[80vh] md:h-full object-cover object-center opacity-80 saturate-50 scale-x-125 md:scale-x-100"
             src={VIDEO_SRC}
             preload="auto"
-            loop
+            // loop
             muted
             playsInline
-            // 遮罩滑開前不播放；揭開後再 play()
           />
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.35] mix-blend-overlay bg-repeat"
@@ -78,7 +81,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="absolute w-full flex flex-col justify-center items-center text-center gap-8">
+        <div className="absolute w-full flex flex-col items-center justify-center text-center gap-8">
           <motion.h1
             className="text-5xl md:text-7xl lg:text-9xl text-white font-dela"
             initial={{ opacity: 0, y: 40 }}
