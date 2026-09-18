@@ -185,7 +185,7 @@ export function useLiff() {
 //     // ⭐ Web Login：必須用 liff.login()，但 redirectUri 必須指向 LIFF URL
 //     liff.login({
 //       // redirectUri: window.location.origin, // LIFF 會自動補上 liffId
-//       redirectUri: "https://cyc-zine.vercel.app/auth",
+//       redirectUri: "https://zine.cyc-studio.com/auth",
 //     });
 //   }
 

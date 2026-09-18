@@ -6,7 +6,7 @@ export const SITE_DESCRIPTION = "探索台灣文化活動、獨立專欄與 CYC 
 export const DEFAULT_OG_IMAGE = "/images/cyc-logo.png";
 
 export function getSiteBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL ?? "https://cyc-zine.vercel.app";
+  return process.env.NEXT_PUBLIC_BASE_URL ?? "https://zine.cyc-studio.com";
 }
 
 export function getDefaultOgImageUrl(baseUrl = getSiteBaseUrl()): string {

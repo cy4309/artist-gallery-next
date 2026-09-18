@@ -239,7 +239,8 @@ i18n 文案已備於 `src/locales/zh.ts`、`en.ts` 的 `about.coffee.*`。
    Authorized redirect URIs 需包含：
 
    - `http://localhost:3000/api/auth/login`
-   - `https://your-domain.com/api/auth/login`
+   - `https://zine.cyc-studio.com/api/auth/login`
+   -（App）`https://zine.cyc-studio.com/api/auth/app-login`（若有使用）
 
 2. **Google Sheet**（GAS 備援／遷移來源）  
    https://docs.google.com/spreadsheets/d/1CPBJowgWYTUNJGgI2ExwuvriPmHjXk2DKI9YmRrNdeg/edit?gid=1907587179#gid=1907587179
